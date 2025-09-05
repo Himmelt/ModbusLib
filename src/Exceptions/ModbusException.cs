@@ -23,7 +23,7 @@ public class ModbusException : Exception
     public ModbusFunction Function { get; }
 
     public ModbusException(ModbusExceptionCode exceptionCode, byte slaveId, ModbusFunction function)
-        : base($"Modbus异常: 从站{slaveId}, 功能码{function:X2}, 异常码{exceptionCode}")
+        : base($"Modbus异常: 从站{slaveId}, 功能码{(byte)function:X2}, 异常码{(byte)exceptionCode}")
     {
         ExceptionCode = exceptionCode;
         SlaveId = slaveId;

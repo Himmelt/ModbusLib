@@ -206,7 +206,7 @@ public class TcpProtocol : IModbusProtocol
             throw new ArgumentException("WriteMultipleRegisters需要数据");
 
         var byteCount = (byte)request.Data.Length;
-        var pdu = new byte[5 + byteCount];
+        var pdu = new byte[6 + byteCount];
         
         pdu[0] = (byte)request.Function;
         pdu[1] = (byte)(request.StartAddress >> 8);
@@ -232,7 +232,7 @@ public class TcpProtocol : IModbusProtocol
         Array.Copy(request.Data, 4, writeData, 0, writeData.Length);
 
         var byteCount = (byte)writeData.Length;
-        var pdu = new byte[9 + byteCount];
+        var pdu = new byte[10 + byteCount];
         
         pdu[0] = (byte)request.Function;
         pdu[1] = (byte)(request.StartAddress >> 8);
