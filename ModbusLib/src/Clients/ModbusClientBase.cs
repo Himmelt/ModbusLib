@@ -3,6 +3,7 @@ using ModbusLib.Exceptions;
 using ModbusLib.Interfaces;
 using ModbusLib.Models;
 using ModbusLib.Protocols;
+using System.Runtime.CompilerServices;
 
 namespace ModbusLib.Clients;
 
@@ -143,6 +144,46 @@ public abstract class ModbusClientBase : IModbusClient
 
     #endregion
 
+    #region 泛型读取功能
+
+    public async Task<T[]> ReadHoldingRegistersAsync<T>(byte slaveId, ushort startAddress, ushort count, 
+        ModbusEndianness endianness = ModbusEndianness.BigEndian, CancellationToken cancellationToken = default) where T : unmanaged
+    {
+        if (count == 0)
+            throw new ArgumentException("元素数量不能为0", nameof(count));
+        
+        var registerCount = (ushort)ModbusDataConverter.GetTotalRegisterCount<T>(count);
+        ValidateReadParameters(registerCount, 125);
+        
+        var registers = await ReadHoldingRegistersAsync(slaveId, startAddress, registerCount, cancellationToken);
+        
+        // 将寄存器数据转换为字节数组
+        var bytes = ModbusUtils.UshortArrayToByteArray(registers);
+        
+        // 使用泛型转换器转换为目标类型
+        return ModbusDataConverter.FromBytes<T>(bytes, count, endianness);
+    }
+    
+    public async Task<T[]> ReadInputRegistersAsync<T>(byte slaveId, ushort startAddress, ushort count,
+        ModbusEndianness endianness = ModbusEndianness.BigEndian, CancellationToken cancellationToken = default) where T : unmanaged
+    {
+        if (count == 0)
+            throw new ArgumentException("元素数量不能为0", nameof(count));
+        
+        var registerCount = (ushort)ModbusDataConverter.GetTotalRegisterCount<T>(count);
+        ValidateReadParameters(registerCount, 125);
+        
+        var registers = await ReadInputRegistersAsync(slaveId, startAddress, registerCount, cancellationToken);
+        
+        // 将寄存器数据转换为字节数组
+        var bytes = ModbusUtils.UshortArrayToByteArray(registers);
+        
+        // 使用泛型转换器转换为目标类型
+        return ModbusDataConverter.FromBytes<T>(bytes, count, endianness);
+    }
+
+    #endregion
+
     #region 写入功能
 
     public async Task WriteSingleCoilAsync(byte slaveId, ushort address, bool value, CancellationToken cancellationToken = default)
@@ -195,6 +236,56 @@ public abstract class ModbusClientBase : IModbusClient
         
         if (response.IsError)
             throw new ModbusException(response.ExceptionCode!.Value, slaveId, ModbusFunction.WriteMultipleRegisters);
+    }
+
+    #endregion
+
+    #region 泛型写入功能
+
+    public async Task WriteSingleRegisterAsync<T>(byte slaveId, ushort address, T value,
+        ModbusEndianness endianness = ModbusEndianness.BigEndian, CancellationToken cancellationToken = default) where T : unmanaged
+    {
+        var registerCount = ModbusDataConverter.GetRegisterCount<T>();
+        
+        if (registerCount == 1)
+        {
+            // 对于单寄存器值，直接转换
+            var bytes = ModbusDataConverter.ToBytes(new[] { value }, endianness);
+            if (bytes.Length >= 2)
+            {
+                var registerValue = (ushort)((bytes[0] << 8) | bytes[1]);
+                await WriteSingleRegisterAsync(slaveId, address, registerValue, cancellationToken);
+            }
+            else
+            {
+                throw new ArgumentException($"类型 {typeof(T).Name} 需要至少1个寄存器");
+            }
+        }
+        else
+        {
+            // 对于多寄存器值，使用WriteMultipleRegisters
+            await WriteMultipleRegistersAsync(slaveId, address, new[] { value }, endianness, cancellationToken);
+        }
+    }
+    
+    public async Task WriteMultipleRegistersAsync<T>(byte slaveId, ushort startAddress, T[] values,
+        ModbusEndianness endianness = ModbusEndianness.BigEndian, CancellationToken cancellationToken = default) where T : unmanaged
+    {
+        if (values == null || values.Length == 0)
+            throw new ArgumentException("值数组不能为空", nameof(values));
+        
+        var registerCount = ModbusDataConverter.GetTotalRegisterCount<T>(values.Length);
+        if (registerCount > 123)
+            throw new ArgumentException($"所需寄存器数量({registerCount})不能超过123", nameof(values));
+        
+        // 将泛型数组转换为字节数组
+        var bytes = ModbusDataConverter.ToBytes(values, endianness);
+        
+        // 将字节数组转换为寄存器数组
+        var registers = ModbusUtils.ByteArrayToUshortArray(bytes);
+        
+        // 调用原始写入方法
+        await WriteMultipleRegistersAsync(slaveId, startAddress, registers, cancellationToken);
     }
 
     #endregion

@@ -133,7 +133,7 @@ public class ModbusWriteTests
         SetupSuccessfulRequest(response);
 
         // Act
-        await _client.WriteSingleRegisterAsync(slaveId, address, value);
+        await ((IModbusClient)_client).WriteSingleRegisterAsync(slaveId, address, value, default);
 
         // Assert
         VerifyWriteRequest(slaveId, ModbusFunction.WriteSingleRegister, address, 1);
@@ -150,8 +150,8 @@ public class ModbusWriteTests
         var response = new ModbusResponse(slaveId, ModbusFunction.WriteSingleRegister);
         SetupSuccessfulRequest(response);
 
-        // Act
-        await _client.WriteSingleRegisterAsync(slaveId, address, value);
+        // Act  
+        await ((IModbusClient)_client).WriteSingleRegisterAsync(slaveId, address, value, default);
 
         // Assert
         _mockProtocol.Verify(p => p.BuildRequest(It.Is<ModbusRequest>(r =>
@@ -268,7 +268,7 @@ public class ModbusWriteTests
         SetupSuccessfulRequest(response);
 
         // Act
-        await _client.WriteMultipleRegistersAsync(slaveId, startAddress, values);
+        await ((IModbusClient)_client).WriteMultipleRegistersAsync(slaveId, startAddress, values, default);
 
         // Assert
         VerifyWriteRequest(slaveId, ModbusFunction.WriteMultipleRegisters, startAddress, (ushort)values.Length);
@@ -287,7 +287,7 @@ public class ModbusWriteTests
         SetupSuccessfulRequest(response);
 
         // Act
-        await _client.WriteMultipleRegistersAsync(slaveId, startAddress, values);
+        await ((IModbusClient)_client).WriteMultipleRegistersAsync(slaveId, startAddress, values, default);
 
         // Assert
         _mockProtocol.Verify(p => p.BuildRequest(It.Is<ModbusRequest>(r =>
@@ -307,7 +307,7 @@ public class ModbusWriteTests
         SetupSuccessfulRequest(response);
 
         // Act
-        await _client.WriteMultipleRegistersAsync(slaveId, startAddress, values);
+        await ((IModbusClient)_client).WriteMultipleRegistersAsync(slaveId, startAddress, values, default);
 
         // Assert
         VerifyWriteRequest(slaveId, ModbusFunction.WriteMultipleRegisters, startAddress, 123);
@@ -325,7 +325,7 @@ public class ModbusWriteTests
         SetupSuccessfulRequest(response);
 
         // Act
-        await _client.WriteMultipleRegistersAsync(slaveId, startAddress, values);
+        await ((IModbusClient)_client).WriteMultipleRegistersAsync(slaveId, startAddress, values, default);
 
         // Assert
         VerifyWriteRequest(slaveId, ModbusFunction.WriteMultipleRegisters, startAddress, 3);
@@ -339,7 +339,7 @@ public class ModbusWriteTests
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(() => 
-            _client.WriteMultipleRegistersAsync(TestHelper.TestSlaveId, 0, emptyArray));
+            ((IModbusClient)_client).WriteMultipleRegistersAsync(TestHelper.TestSlaveId, 0, emptyArray, CancellationToken.None));
     }
 
     [Fact]
@@ -347,7 +347,7 @@ public class ModbusWriteTests
     {
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(() => 
-            _client.WriteMultipleRegistersAsync(TestHelper.TestSlaveId, 0, null!));
+            ((IModbusClient)_client).WriteMultipleRegistersAsync(TestHelper.TestSlaveId, 0, null!, CancellationToken.None));
     }
 
     [Fact]
@@ -358,7 +358,7 @@ public class ModbusWriteTests
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(() => 
-            _client.WriteMultipleRegistersAsync(TestHelper.TestSlaveId, 0, tooManyRegisters));
+            ((IModbusClient)_client).WriteMultipleRegistersAsync(TestHelper.TestSlaveId, 0, tooManyRegisters, CancellationToken.None));
     }
 
     #endregion

@@ -72,12 +72,13 @@ public class ModbusClientFactoryTests
 
     [Theory]
     [InlineData("")]
-    [InlineData(null)]
+    [InlineData("null")]
     public void CreateRtuClient_InvalidPortName_ThrowsArgumentException(string invalidPortName)
     {
         // Act & Assert
+        var portName = invalidPortName == "null" ? null : invalidPortName;
         Assert.Throws<ArgumentException>(() => 
-            ModbusClientFactory.CreateRtuClient(invalidPortName!, 9600));
+            ModbusClientFactory.CreateRtuClient(portName!, 9600));
     }
 
     #endregion
@@ -141,12 +142,13 @@ public class ModbusClientFactoryTests
 
     [Theory]
     [InlineData("")]
-    [InlineData(null)]
+    [InlineData("null")]
     public void CreateTcpClient_InvalidHost_ThrowsArgumentException(string invalidHost)
     {
         // Act & Assert
+        var host = invalidHost == "null" ? null : invalidHost;
         Assert.Throws<ArgumentException>(() => 
-            ModbusClientFactory.CreateTcpClient(invalidHost!, 502));
+            ModbusClientFactory.CreateTcpClient(host!, 502));
     }
 
     #endregion
@@ -210,12 +212,13 @@ public class ModbusClientFactoryTests
 
     [Theory]
     [InlineData("")]
-    [InlineData(null)]
+    [InlineData("null")]
     public void CreateUdpClient_InvalidHost_ThrowsArgumentException(string invalidHost)
     {
         // Act & Assert
+        var host = invalidHost == "null" ? null : invalidHost;
         Assert.Throws<ArgumentException>(() => 
-            ModbusClientFactory.CreateUdpClient(invalidHost!, 502));
+            ModbusClientFactory.CreateUdpClient(host!, 502));
     }
 
     #endregion
@@ -279,12 +282,13 @@ public class ModbusClientFactoryTests
 
     [Theory]
     [InlineData("")]
-    [InlineData(null)]
+    [InlineData("null")]
     public void CreateRtuOverTcpClient_InvalidHost_ThrowsArgumentException(string invalidHost)
     {
         // Act & Assert
+        var host = invalidHost == "null" ? null : invalidHost;
         Assert.Throws<ArgumentException>(() => 
-            ModbusClientFactory.CreateRtuOverTcpClient(invalidHost!, 502));
+            ModbusClientFactory.CreateRtuOverTcpClient(host!, 502));
     }
 
     #endregion
@@ -348,12 +352,13 @@ public class ModbusClientFactoryTests
 
     [Theory]
     [InlineData("")]
-    [InlineData(null)]
+    [InlineData("null")]
     public void CreateRtuOverUdpClient_InvalidHost_ThrowsArgumentException(string invalidHost)
     {
         // Act & Assert
+        var host = invalidHost == "null" ? null : invalidHost;
         Assert.Throws<ArgumentException>(() => 
-            ModbusClientFactory.CreateRtuOverUdpClient(invalidHost!, 502));
+            ModbusClientFactory.CreateRtuOverUdpClient(host!, 502));
     }
 
     #endregion

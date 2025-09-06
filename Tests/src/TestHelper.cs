@@ -53,4 +53,25 @@ public static class TestHelper
         }
         return result;
     }
+    
+    /// <summary>
+    /// 将字节数组转换为ushort数组（用于测试）
+    /// </summary>
+    /// <param name="bytes">字节数组</param>
+    /// <returns>ushort数组</returns>
+    public static ushort[] BytesToUshortArray(byte[] bytes)
+    {
+        var result = new ushort[(bytes.Length + 1) / 2];
+        for (int i = 0; i < result.Length; i++)
+        {
+            var baseIndex = i * 2;
+            ushort value = 0;
+            if (baseIndex < bytes.Length)
+                value = (ushort)(bytes[baseIndex] << 8);
+            if (baseIndex + 1 < bytes.Length)
+                value |= bytes[baseIndex + 1];
+            result[i] = value;
+        }
+        return result;
+    }
 }

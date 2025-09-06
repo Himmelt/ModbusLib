@@ -1,3 +1,5 @@
+using ModbusLib.Enums;
+
 namespace ModbusLib.Interfaces;
 
 /// <summary>
@@ -126,6 +128,68 @@ public interface IModbusClient : IDisposable
     Task<ushort[]> ReadWriteMultipleRegistersAsync(byte slaveId, ushort readStartAddress, ushort readQuantity,
         ushort writeStartAddress, ushort[] writeValues, CancellationToken cancellationToken = default);
 
+    #endregion
+
+    #region 泛型读取功能
+    
+    /// <summary>
+    /// 泛型读取保持寄存器
+    /// </summary>
+    /// <typeparam name="T">数据类型 (支持 unmanaged 类型)</typeparam>
+    /// <param name="slaveId">从站地址</param>
+    /// <param name="startAddress">起始地址</param>
+    /// <param name="count">要返回的T类型元素数量 (例如: count=10且T=byte时返回10个byte值，实际需要5个寄存器)</param>
+    /// <param name="endianness">字节序模式</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>指定类型的数组，长度为count</returns>
+    Task<T[]> ReadHoldingRegistersAsync<T>(byte slaveId, ushort startAddress, ushort count, 
+        ModbusEndianness endianness = ModbusEndianness.BigEndian, CancellationToken cancellationToken = default) 
+        where T : unmanaged;
+    
+    /// <summary>
+    /// 泛型读取输入寄存器
+    /// </summary>
+    /// <typeparam name="T">数据类型 (支持 unmanaged 类型)</typeparam>
+    /// <param name="slaveId">从站地址</param>
+    /// <param name="startAddress">起始地址</param>
+    /// <param name="count">要返回的T类型元素数量 (例如: count=10且T=byte时返回10个byte值，实际需要5个寄存器)</param>
+    /// <param name="endianness">字节序模式</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>指定类型的数组，长度为count</returns>
+    Task<T[]> ReadInputRegistersAsync<T>(byte slaveId, ushort startAddress, ushort count,
+        ModbusEndianness endianness = ModbusEndianness.BigEndian, CancellationToken cancellationToken = default) 
+        where T : unmanaged;
+    
+    #endregion
+
+    #region 泛型写入功能
+    
+    /// <summary>
+    /// 泛型写入单个寄存器
+    /// </summary>
+    /// <typeparam name="T">数据类型 (支持 unmanaged 类型)</typeparam>
+    /// <param name="slaveId">从站地址</param>
+    /// <param name="address">寄存器地址</param>
+    /// <param name="value">要写入的值</param>
+    /// <param name="endianness">字节序模式</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    Task WriteSingleRegisterAsync<T>(byte slaveId, ushort address, T value,
+        ModbusEndianness endianness = ModbusEndianness.BigEndian, CancellationToken cancellationToken = default) 
+        where T : unmanaged;
+    
+    /// <summary>
+    /// 泛型写入多个寄存器
+    /// </summary>
+    /// <typeparam name="T">数据类型 (支持 unmanaged 类型)</typeparam>
+    /// <param name="slaveId">从站地址</param>
+    /// <param name="startAddress">起始地址</param>
+    /// <param name="values">要写入的值数组</param>
+    /// <param name="endianness">字节序模式</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    Task WriteMultipleRegistersAsync<T>(byte slaveId, ushort startAddress, T[] values,
+        ModbusEndianness endianness = ModbusEndianness.BigEndian, CancellationToken cancellationToken = default) 
+        where T : unmanaged;
+    
     #endregion
 
     #region 配置属性
