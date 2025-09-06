@@ -25,11 +25,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="Tests/**/*.cs" />
+    <Compile Include="src/**/*.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="ModbusLib.csproj" />
+    <ProjectReference Include="..\ModbusLib\ModbusLib.csproj" />
   </ItemGroup>
 
 </Project>
