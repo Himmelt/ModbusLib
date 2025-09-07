@@ -5,8 +5,7 @@ namespace ModbusLib.Interfaces;
 /// <summary>
 /// Modbus客户端接口
 /// </summary>
-public interface IModbusClient : IDisposable
-{
+public interface IModbusClient : IDisposable {
     #region 连接管理
 
     /// <summary>
@@ -131,7 +130,7 @@ public interface IModbusClient : IDisposable
     #endregion
 
     #region 泛型读取功能
-    
+
     /// <summary>
     /// 泛型读取保持寄存器
     /// </summary>
@@ -142,10 +141,10 @@ public interface IModbusClient : IDisposable
     /// <param name="endianness">字节序模式</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>指定类型的数组，长度为count</returns>
-    Task<T[]> ReadHoldingRegistersAsync<T>(byte slaveId, ushort startAddress, ushort count, 
-        ModbusEndianness endianness = ModbusEndianness.BigEndian, CancellationToken cancellationToken = default) 
+    Task<T[]> ReadHoldingRegistersAsync<T>(byte slaveId, ushort startAddress, ushort count,
+        ModbusEndianness endianness = ModbusEndianness.BigEndian, CancellationToken cancellationToken = default)
         where T : unmanaged;
-    
+
     /// <summary>
     /// 泛型读取输入寄存器
     /// </summary>
@@ -157,13 +156,13 @@ public interface IModbusClient : IDisposable
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>指定类型的数组，长度为count</returns>
     Task<T[]> ReadInputRegistersAsync<T>(byte slaveId, ushort startAddress, ushort count,
-        ModbusEndianness endianness = ModbusEndianness.BigEndian, CancellationToken cancellationToken = default) 
+        ModbusEndianness endianness = ModbusEndianness.BigEndian, CancellationToken cancellationToken = default)
         where T : unmanaged;
-    
+
     #endregion
 
     #region 泛型写入功能
-    
+
     /// <summary>
     /// 泛型写入单个寄存器
     /// </summary>
@@ -174,9 +173,9 @@ public interface IModbusClient : IDisposable
     /// <param name="endianness">字节序模式</param>
     /// <param name="cancellationToken">取消令牌</param>
     Task WriteSingleRegisterAsync<T>(byte slaveId, ushort address, T value,
-        ModbusEndianness endianness = ModbusEndianness.BigEndian, CancellationToken cancellationToken = default) 
+        ModbusEndianness endianness = ModbusEndianness.BigEndian, CancellationToken cancellationToken = default)
         where T : unmanaged;
-    
+
     /// <summary>
     /// 泛型写入多个寄存器
     /// </summary>
@@ -187,9 +186,9 @@ public interface IModbusClient : IDisposable
     /// <param name="endianness">字节序模式</param>
     /// <param name="cancellationToken">取消令牌</param>
     Task WriteMultipleRegistersAsync<T>(byte slaveId, ushort startAddress, T[] values,
-        ModbusEndianness endianness = ModbusEndianness.BigEndian, CancellationToken cancellationToken = default) 
+        ModbusEndianness endianness = ModbusEndianness.BigEndian, CancellationToken cancellationToken = default)
         where T : unmanaged;
-    
+
     #endregion
 
     #region 配置属性
