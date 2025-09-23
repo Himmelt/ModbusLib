@@ -127,7 +127,7 @@ namespace ModbusLib.Models
             try
             {
                 var byteSpan = byteBuffer.AsSpan(0, typeSize);
-                MemoryMarshal.Write(byteSpan, ref value);
+                MemoryMarshal.Write(byteSpan, in value);
                 
                 // 根据系统字节序调整字节顺序
                 if (BitConverter.IsLittleEndian && typeSize > 1)
@@ -177,7 +177,7 @@ namespace ModbusLib.Models
             try
             {
                 var byteSpan = byteBuffer.AsSpan(0, typeSize);
-                MemoryMarshal.Write(byteSpan, ref value);
+                MemoryMarshal.Write(byteSpan, in value);
                 
                 // 在小端序系统上，需要先反转字节顺序以便后续处理
                 if (BitConverter.IsLittleEndian && typeSize > 1)
