@@ -45,4 +45,6 @@ public class ModbusException : Exception
         SlaveId = slaveId;
         Function = function;
     }
+    public ModbusException() {
+    }
 }

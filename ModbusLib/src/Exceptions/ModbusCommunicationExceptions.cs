@@ -12,6 +12,8 @@ public class ModbusCommunicationException : Exception
     public ModbusCommunicationException(string message, Exception innerException) : base(message, innerException)
     {
     }
+    public ModbusCommunicationException() {
+    }
 }
 
 /// <summary>
@@ -26,6 +28,8 @@ public class ModbusConnectionException : Exception
     public ModbusConnectionException(string message, Exception innerException) : base(message, innerException)
     {
     }
+    public ModbusConnectionException() {
+    }
 }
 
 /// <summary>
@@ -39,5 +43,7 @@ public class ModbusTimeoutException : Exception
 
     public ModbusTimeoutException(string message, Exception innerException) : base(message, innerException)
     {
+    }
+    public ModbusTimeoutException() {
     }
 }
