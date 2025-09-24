@@ -136,14 +136,14 @@ public class TcpProtocol : IModbusProtocol
 
     private static byte[] BuildReadPdu(ModbusRequest request)
     {
-        return new byte[]
-        {
+        return
+        [
             (byte)request.Function,
             (byte)(request.StartAddress >> 8),
             (byte)(request.StartAddress & 0xFF),
             (byte)(request.Quantity >> 8),
             (byte)(request.Quantity & 0xFF)
-        };
+        ];
     }
 
     private static byte[] BuildWriteSingleCoilPdu(ModbusRequest request)
@@ -153,14 +153,14 @@ public class TcpProtocol : IModbusProtocol
 
         var value = request.Data[0] != 0 ? (ushort)0xFF00 : (ushort)0x0000;
         
-        return new byte[]
-        {
+        return
+        [
             (byte)request.Function,
             (byte)(request.StartAddress >> 8),
             (byte)(request.StartAddress & 0xFF),
             (byte)(value >> 8),
             (byte)(value & 0xFF)
-        };
+        ];
     }
 
     private static byte[] BuildWriteSingleRegisterPdu(ModbusRequest request)
@@ -170,14 +170,14 @@ public class TcpProtocol : IModbusProtocol
 
         var value = (ushort)((request.Data[0] << 8) | request.Data[1]);
         
-        return new byte[]
-        {
+        return
+        [
             (byte)request.Function,
             (byte)(request.StartAddress >> 8),
             (byte)(request.StartAddress & 0xFF),
             (byte)(value >> 8),
             (byte)(value & 0xFF)
-        };
+        ];
     }
 
     private static byte[] BuildWriteMultipleCoilsPdu(ModbusRequest request)

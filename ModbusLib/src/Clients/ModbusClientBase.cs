@@ -233,7 +233,7 @@ public abstract class ModbusClientBase : IModbusClient {
 
         if (registerCount == 1) {
             // 对于单寄存器值，直接转换
-            var bytes = ModbusDataConverter.ToBytes(new[] { value }, byteOrder, wordOrder);
+            var bytes = ModbusDataConverter.ToBytes([value], byteOrder, wordOrder);
             if (bytes.Length >= 2) {
                 var registerValue = (ushort)((bytes[0] << 8) | bytes[1]);
                 await WriteSingleRegisterAsync(slaveId, address, registerValue, cancellationToken);
@@ -242,7 +242,7 @@ public abstract class ModbusClientBase : IModbusClient {
             }
         } else {
             // 对于多寄存器值，使用WriteMultipleRegisters
-            await WriteMultipleRegistersAsync(slaveId, address, new[] { value }, byteOrder, wordOrder, cancellationToken);
+            await WriteMultipleRegistersAsync(slaveId, address, [value], byteOrder, wordOrder, cancellationToken);
         }
     }
 

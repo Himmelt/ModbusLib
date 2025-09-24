@@ -23,4 +23,12 @@
     <PackageReference Include="System.IO.Ports" Version="9.0.8" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EditorConfigFiles Remove="D:\Projects\ModbusLib\ModbusLib\.editorconfig" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="D:\Projects\ModbusLib\ModbusLib\.editorconfig" />
+  </ItemGroup>
+
 </Project>
