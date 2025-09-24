@@ -1,4 +1,6 @@
 .vs/
+.qoder/
+.claude/
 
 # Build results
 bin/
