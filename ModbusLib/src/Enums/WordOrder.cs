@@ -3,7 +3,7 @@ namespace ModbusLib.Enums;
 /// <summary>
 /// 字序枚举
 /// </summary>
-public enum WordOrder : byte
+public enum WordOrder 
 {
     /// <summary>
     /// 高字在前 (ABCD)

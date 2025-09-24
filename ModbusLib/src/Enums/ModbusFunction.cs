@@ -3,7 +3,7 @@ namespace ModbusLib.Enums;
 /// <summary>
 /// Modbus 功能码枚举
 /// </summary>
-public enum ModbusFunction : byte
+public enum ModbusFunction 
 {
     /// <summary>
     /// 读取线圈状态 (0x01)

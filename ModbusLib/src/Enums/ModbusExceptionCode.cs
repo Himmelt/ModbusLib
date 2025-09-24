@@ -3,7 +3,7 @@ namespace ModbusLib.Enums;
 /// <summary>
 /// Modbus 异常码枚举
 /// </summary>
-public enum ModbusExceptionCode : byte
+public enum ModbusExceptionCode 
 {
     /// <summary>
     /// 非法功能码
