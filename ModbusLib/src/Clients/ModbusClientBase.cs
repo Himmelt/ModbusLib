@@ -63,7 +63,7 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
         if (response.IsError)
             throw new ModbusException(response.ExceptionCode!.Value, slaveId, ModbusFunction.ReadCoils);
 
-        if (response.Data == null || response.Data.Length < 1)
+        if (response.Data.IsEmpty || response.Data.Length < 1)
             throw new ModbusCommunicationException("读取线圈响应数据不足");
 
         var byteCount = response.Data[0];
@@ -71,7 +71,7 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
             throw new ModbusCommunicationException("读取线圈响应数据长度不匹配");
 
         var dataBytes = new byte[byteCount];
-        Array.Copy(response.Data, 1, dataBytes, 0, byteCount);
+        Array.Copy(response.Data.ToArray(), 1, dataBytes, 0, byteCount);
 
         return ModbusUtils.ByteArrayToBoolArray(dataBytes, quantity);
     }
@@ -85,7 +85,7 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
         if (response.IsError)
             throw new ModbusException(response.ExceptionCode!.Value, slaveId, ModbusFunction.ReadDiscreteInputs);
 
-        if (response.Data == null || response.Data.Length < 1)
+        if (response.Data.IsEmpty || response.Data.Length < 1)
             throw new ModbusCommunicationException("读取离散输入响应数据不足");
 
         var byteCount = response.Data[0];
@@ -93,7 +93,7 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
             throw new ModbusCommunicationException("读取离散输入响应数据长度不匹配");
 
         var dataBytes = new byte[byteCount];
-        Array.Copy(response.Data, 1, dataBytes, 0, byteCount);
+        Array.Copy(response.Data.ToArray(), 1, dataBytes, 0, byteCount);
 
         return ModbusUtils.ByteArrayToBoolArray(dataBytes, quantity);
     }
@@ -107,7 +107,7 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
         if (response.IsError)
             throw new ModbusException(response.ExceptionCode!.Value, slaveId, ModbusFunction.ReadHoldingRegisters);
 
-        if (response.Data == null || response.Data.Length < 1)
+        if (response.Data.IsEmpty || response.Data.Length < 1)
             throw new ModbusCommunicationException("读取保持寄存器响应数据不足");
 
         var byteCount = response.Data[0];
@@ -115,7 +115,7 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
             throw new ModbusCommunicationException("读取保持寄存器响应数据长度不匹配");
 
         var dataBytes = new byte[byteCount];
-        Array.Copy(response.Data, 1, dataBytes, 0, byteCount);
+        Array.Copy(response.Data.ToArray(), 1, dataBytes, 0, byteCount);
 
         return ModbusUtils.ByteArrayToUshortArray(dataBytes);
     }
@@ -129,7 +129,7 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
         if (response.IsError)
             throw new ModbusException(response.ExceptionCode!.Value, slaveId, ModbusFunction.ReadInputRegisters);
 
-        if (response.Data == null || response.Data.Length < 1)
+        if (response.Data.IsEmpty || response.Data.Length < 1)
             throw new ModbusCommunicationException("读取输入寄存器响应数据不足");
 
         var byteCount = response.Data[0];
@@ -137,7 +137,7 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
             throw new ModbusCommunicationException("读取输入寄存器响应数据长度不匹配");
 
         var dataBytes = new byte[byteCount];
-        Array.Copy(response.Data, 1, dataBytes, 0, byteCount);
+        Array.Copy(response.Data.ToArray(), 1, dataBytes, 0, byteCount);
 
         return ModbusUtils.ByteArrayToUshortArray(dataBytes);
     }
@@ -306,7 +306,7 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
         if (response.IsError)
             throw new ModbusException(response.ExceptionCode!.Value, slaveId, ModbusFunction.ReadWriteMultipleRegisters);
 
-        if (response.Data == null || response.Data.Length < 1)
+        if (response.Data.IsEmpty || response.Data.Length < 1)
             throw new ModbusCommunicationException("读写多个寄存器响应数据不足");
 
         var byteCount = response.Data[0];
@@ -314,7 +314,7 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
             throw new ModbusCommunicationException("读写多个寄存器响应数据长度不匹配");
 
         var dataBytes = new byte[byteCount];
-        Array.Copy(response.Data, 1, dataBytes, 0, byteCount);
+        Array.Copy(response.Data.ToArray(), 1, dataBytes, 0, byteCount);
 
         return ModbusUtils.ByteArrayToUshortArray(dataBytes);
     }

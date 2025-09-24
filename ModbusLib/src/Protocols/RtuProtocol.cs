@@ -56,10 +56,7 @@ public class RtuProtocol : IModbusProtocol
         var data = new byte[dataLength - 1]; // 减去功能码
         Array.Copy(response, 2, data, 0, data.Length);
 
-        return new ModbusResponse(slaveId, (ModbusFunction)functionCode, data)
-        {
-            RawData = response
-        };
+        return new ModbusResponse(slaveId, (ModbusFunction)functionCode, data, response);
     }
 
     public bool ValidateResponse(byte[] response)
@@ -120,7 +117,7 @@ public class RtuProtocol : IModbusProtocol
 
     private static byte[] BuildWriteSingleCoilPdu(ModbusRequest request)
     {
-        if (request.Data == null || request.Data.Length < 1)
+        if (request.Data.IsEmpty || request.Data.Length < 1)
             throw new ArgumentException("WriteSingleCoil需要数据");
 
         var value = request.Data[0] != 0 ? (ushort)0xFF00 : (ushort)0x0000;
@@ -137,7 +134,7 @@ public class RtuProtocol : IModbusProtocol
 
     private static byte[] BuildWriteSingleRegisterPdu(ModbusRequest request)
     {
-        if (request.Data == null || request.Data.Length < 2)
+        if (request.Data.IsEmpty || request.Data.Length < 2)
             throw new ArgumentException("WriteSingleRegister需要2字节数据");
 
         var value = (ushort)((request.Data[0] << 8) | request.Data[1]);
@@ -154,7 +151,7 @@ public class RtuProtocol : IModbusProtocol
 
     private static byte[] BuildWriteMultipleCoilsPdu(ModbusRequest request)
     {
-        if (request.Data == null)
+        if (request.Data.IsEmpty)
             throw new ArgumentException("WriteMultipleCoils需要数据");
 
         var byteCount = (byte)request.Data.Length;
@@ -167,14 +164,14 @@ public class RtuProtocol : IModbusProtocol
         pdu[4] = (byte)(request.Quantity & 0xFF);
         pdu[5] = byteCount;
         
-        Array.Copy(request.Data, 0, pdu, 6, byteCount);
+        Array.Copy(request.Data.ToArray(), 0, pdu, 6, byteCount);
         
         return pdu;
     }
 
     private static byte[] BuildWriteMultipleRegistersPdu(ModbusRequest request)
     {
-        if (request.Data == null)
+        if (request.Data.IsEmpty)
             throw new ArgumentException("WriteMultipleRegisters需要数据");
 
         var byteCount = (byte)request.Data.Length;
@@ -187,21 +184,21 @@ public class RtuProtocol : IModbusProtocol
         pdu[4] = (byte)(request.Quantity & 0xFF);
         pdu[5] = byteCount;
         
-        Array.Copy(request.Data, 0, pdu, 6, byteCount);
+        Array.Copy(request.Data.ToArray(), 0, pdu, 6, byteCount);
         
         return pdu;
     }
 
     private static byte[] BuildReadWriteMultipleRegistersPdu(ModbusRequest request)
     {
-        if (request.Data == null || request.Data.Length < 4)
+        if (request.Data.IsEmpty || request.Data.Length < 4)
             throw new ArgumentException("ReadWriteMultipleRegisters需要额外参数数据");
 
         // 数据格式: [写入起始地址2字节] + [写入数量2字节] + [写入数据...]
         var writeStartAddress = (ushort)((request.Data[0] << 8) | request.Data[1]);
         var writeQuantity = (ushort)((request.Data[2] << 8) | request.Data[3]);
         var writeData = new byte[request.Data.Length - 4];
-        Array.Copy(request.Data, 4, writeData, 0, writeData.Length);
+        Array.Copy(request.Data.ToArray(), 4, writeData, 0, writeData.Length);
 
         var byteCount = (byte)writeData.Length;
         var pdu = new byte[10 + byteCount];

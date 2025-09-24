@@ -7,6 +7,9 @@ namespace ModbusLib.Models;
 /// </summary>
 public class ModbusResponse
 {
+    private readonly byte[]? _data;
+    private readonly byte[]? _rawData;
+
     /// <summary>
     /// 从站地址
     /// </summary>
@@ -20,7 +23,9 @@ public class ModbusResponse
     /// <summary>
     /// 数据内容
     /// </summary>
-    public byte[]? Data { get; set; }
+    public ReadOnlySpan<byte> Data {
+        get => _data;
+    }
 
     /// <summary>
     /// 时间戳
@@ -40,17 +45,20 @@ public class ModbusResponse
     /// <summary>
     /// 响应的原始字节数据
     /// </summary>
-    public byte[]? RawData { get; set; }
+    public ReadOnlySpan<byte> RawData {
+        get => _rawData;
+    }
 
     public ModbusResponse()
     {
     }
 
-    public ModbusResponse(byte slaveId, ModbusFunction function, byte[]? data = null)
+    public ModbusResponse(byte slaveId, ModbusFunction function, byte[]? data = null, byte[]? rawData = null)
     {
         SlaveId = slaveId;
         Function = function;
-        Data = data;
+        _data = data;
+        _rawData = rawData;
     }
 
     /// <summary>

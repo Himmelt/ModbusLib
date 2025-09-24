@@ -7,6 +7,9 @@ namespace ModbusLib.Models;
 /// </summary>
 public class ModbusRequest
 {
+
+    private readonly byte[]? _data;
+
     /// <summary>
     /// 从站地址
     /// </summary>
@@ -30,7 +33,9 @@ public class ModbusRequest
     /// <summary>
     /// 数据内容
     /// </summary>
-    public byte[]? Data { get; set; }
+    public ReadOnlySpan<byte> Data {
+        get => _data;
+    }
 
     /// <summary>
     /// 时间戳
@@ -47,6 +52,6 @@ public class ModbusRequest
         Function = function;
         StartAddress = startAddress;
         Quantity = quantity;
-        Data = data;
+        _data = data;
     }
 }
