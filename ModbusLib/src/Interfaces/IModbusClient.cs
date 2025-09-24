@@ -5,7 +5,7 @@ namespace ModbusLib.Interfaces;
 /// <summary>
 /// Modbus客户端接口
 /// </summary>
-public interface IModbusClient : IDisposable {
+public interface IModbusClient : IDisposable, IAsyncDisposable {
     #region 连接管理
 
     /// <summary>

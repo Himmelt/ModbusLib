@@ -254,5 +254,26 @@ public class TcpTransport : IModbusTransport
         }
 
         _semaphore?.Dispose();
+        GC.SuppressFinalize(this);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_disposed)
+            return;
+
+        _disposed = true;
+
+        try
+        {
+            await DisconnectAsync();
+        }
+        catch
+        {
+            // 忽略释放时的异常
+        }
+
+        _semaphore?.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

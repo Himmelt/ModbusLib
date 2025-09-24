@@ -456,5 +456,30 @@ public abstract class ModbusClientBase : IModbusClient {
 
         _disposed = true;
         _transport?.Dispose();
+        GC.SuppressFinalize(this);
+    }
+
+    public virtual async ValueTask DisposeAsync() {
+        if (_disposed)
+            return;
+
+        _disposed = true;
+
+        if (_transport != null) {
+            try {
+                await DisconnectAsync();
+            } catch {
+                // 忽略断开连接时的异常
+            }
+
+            // 优先使用异步释放，回退到同步释放
+            if (_transport is IAsyncDisposable asyncDisposableTransport) {
+                await asyncDisposableTransport.DisposeAsync();
+            } else {
+                _transport.Dispose();
+            }
+        }
+
+        GC.SuppressFinalize(this);
     }
 }

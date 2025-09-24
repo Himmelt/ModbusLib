@@ -3,7 +3,7 @@ namespace ModbusLib.Interfaces;
 /// <summary>
 /// Modbus传输层接口
 /// </summary>
-public interface IModbusTransport : IDisposable
+public interface IModbusTransport : IDisposable, IAsyncDisposable
 {
     /// <summary>
     /// 异步连接
