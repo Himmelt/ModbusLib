@@ -17,7 +17,7 @@ public static class ModbusClientFactory
     /// <returns>RTU客户端</returns>
     public static IModbusClient CreateRtuClient(SerialConnectionConfig config)
     {
-        ArgumentNullException.ThrowIfNull(config);
+        ArgumentNullException.ThrowIfNull(config, nameof(config));
 
         return new ModbusRtuClient(config);
     }
@@ -49,7 +49,7 @@ public static class ModbusClientFactory
     /// <returns>TCP客户端</returns>
     public static IModbusClient CreateTcpClient(NetworkConnectionConfig config)
     {
-        ArgumentNullException.ThrowIfNull(config);
+        ArgumentNullException.ThrowIfNull(config, nameof(config));
 
         return new ModbusTcpClient(config);
     }
@@ -81,7 +81,7 @@ public static class ModbusClientFactory
     /// <returns>UDP客户端</returns>
     public static IModbusClient CreateUdpClient(NetworkConnectionConfig config)
     {
-        ArgumentNullException.ThrowIfNull(config);
+        ArgumentNullException.ThrowIfNull(config, nameof(config));
 
         return new ModbusUdpClient(config);
     }
@@ -113,7 +113,7 @@ public static class ModbusClientFactory
     /// <returns>RTU over TCP客户端</returns>
     public static IModbusClient CreateRtuOverTcpClient(NetworkConnectionConfig config)
     {
-        ArgumentNullException.ThrowIfNull(config);
+        ArgumentNullException.ThrowIfNull(config, nameof(config));
 
         return new ModbusRtuOverTcpClient(config);
     }
@@ -145,7 +145,7 @@ public static class ModbusClientFactory
     /// <returns>RTU over UDP客户端</returns>
     public static IModbusClient CreateRtuOverUdpClient(NetworkConnectionConfig config)
     {
-        ArgumentNullException.ThrowIfNull(config);
+        ArgumentNullException.ThrowIfNull(config, nameof(config));
 
         return new ModbusRtuOverUdpClient(config);
     }

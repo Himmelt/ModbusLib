@@ -116,6 +116,7 @@ public class UdpTransport(NetworkConnectionConfig config) : IModbusTransport
 
             // 发送请求
             var bytesSent = await udpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            ArgumentNullException.ThrowIfNull(request, nameof(request));
             if (bytesSent != request.Length)
             {
                 throw new ModbusCommunicationException($"UDP发送不完整，期望{request.Length}字节，实际发送{bytesSent}字节");

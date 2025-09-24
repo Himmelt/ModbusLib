@@ -15,7 +15,7 @@ public class TcpProtocol : IModbusProtocol
 
     public byte[] BuildRequest(ModbusRequest request)
     {
-        ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(request, nameof(request));
         var pdu = BuildPdu(request);
         var frame = new byte[7 + pdu.Length]; // MBAP Header (6字节) + SlaveId (1字节) + PDU
         
@@ -45,7 +45,7 @@ public class TcpProtocol : IModbusProtocol
 
     public ModbusResponse ParseResponse(byte[] response, ModbusRequest request)
     {
-        ArgumentNullException.ThrowIfNull(response);
+        ArgumentNullException.ThrowIfNull(response, nameof(response));
         if (response.Length < 6)
             throw new ModbusCommunicationException($"TCP响应长度不足: {response.Length}");
 
@@ -88,7 +88,7 @@ public class TcpProtocol : IModbusProtocol
 
     public bool ValidateResponse(byte[] response)
     {
-        ArgumentNullException.ThrowIfNull(response);
+        ArgumentNullException.ThrowIfNull(response, nameof(response));
         if (response.Length < 6)
             return false;
             
@@ -100,7 +100,7 @@ public class TcpProtocol : IModbusProtocol
 
     public int CalculateExpectedResponseLength(ModbusRequest request)
     {
-        ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(request, nameof(request));
         var pduLength = request.Function switch
         {
             ModbusFunction.ReadCoils => 2 + (request.Quantity + 7) / 8, // Function + ByteCount + Data
