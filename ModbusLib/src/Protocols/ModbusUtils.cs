@@ -12,6 +12,7 @@ public static class ModbusUtils
     /// <returns>CRC校验码</returns>
     public static ushort CalculateCrc16(byte[] data)
     {
+        ArgumentNullException.ThrowIfNull(data);
         return CalculateCrc16(data, 0, data.Length);
     }
 
@@ -24,6 +25,7 @@ public static class ModbusUtils
     /// <returns>CRC校验码</returns>
     public static ushort CalculateCrc16(byte[] data, int offset, int length)
     {
+        ArgumentNullException.ThrowIfNull(data);
         ushort crc = 0xFFFF;
         
         for (int i = offset; i < offset + length; i++)
@@ -54,6 +56,7 @@ public static class ModbusUtils
     /// <returns>是否有效</returns>
     public static bool ValidateCrc16(byte[] data)
     {
+        ArgumentNullException.ThrowIfNull(data);
         if (data.Length < 3)
             return false;
 
@@ -71,6 +74,7 @@ public static class ModbusUtils
     /// <returns>字节数组</returns>
     public static byte[] BoolArrayToByteArray(bool[] bits)
     {
+        ArgumentNullException.ThrowIfNull(bits);
         var byteCount = (bits.Length + 7) / 8;
         var bytes = new byte[byteCount];
         
@@ -95,6 +99,7 @@ public static class ModbusUtils
     /// <returns>布尔数组</returns>
     public static bool[] ByteArrayToBoolArray(byte[] bytes, int bitCount)
     {
+        ArgumentNullException.ThrowIfNull(bytes);
         var bits = new bool[bitCount];
         
         for (int i = 0; i < bitCount; i++)
@@ -118,6 +123,7 @@ public static class ModbusUtils
     /// <returns>字节数组</returns>
     public static byte[] UshortArrayToByteArray(ushort[] values)
     {
+        ArgumentNullException.ThrowIfNull(values);
         var bytes = new byte[values.Length * 2];
         
         for (int i = 0; i < values.Length; i++)
@@ -136,6 +142,7 @@ public static class ModbusUtils
     /// <returns>ushort数组</returns>
     public static ushort[] ByteArrayToUshortArray(byte[] bytes)
     {
+        ArgumentNullException.ThrowIfNull(bytes);
         var values = new ushort[bytes.Length / 2];
         
         for (int i = 0; i < values.Length; i++)

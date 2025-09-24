@@ -12,6 +12,7 @@ public class RtuProtocol : IModbusProtocol
 {
     public byte[] BuildRequest(ModbusRequest request)
     {
+        ArgumentNullException.ThrowIfNull(request);
         var pdu = BuildPdu(request);
         var frame = new byte[pdu.Length + 3]; // SlaveId + PDU + CRC
         
@@ -20,14 +21,15 @@ public class RtuProtocol : IModbusProtocol
         
         // 计算并添加CRC
         var crc = ModbusUtils.CalculateCrc16(frame, 0, frame.Length - 2);
-        frame[frame.Length - 2] = (byte)(crc & 0xFF);
-        frame[frame.Length - 1] = (byte)(crc >> 8);
+        frame[^2] = (byte)(crc & 0xFF);
+        frame[^1] = (byte)(crc >> 8);
         
         return frame;
     }
 
     public ModbusResponse ParseResponse(byte[] response, ModbusRequest request)
     {
+        ArgumentNullException.ThrowIfNull(response);
         if (response.Length < 3)
             throw new ModbusCommunicationException($"RTU响应长度不足: {response.Length}");
 
@@ -62,6 +64,7 @@ public class RtuProtocol : IModbusProtocol
 
     public bool ValidateResponse(byte[] response)
     {
+        ArgumentNullException.ThrowIfNull(response);
         if (response.Length < 3)
             return false;
             
@@ -70,6 +73,7 @@ public class RtuProtocol : IModbusProtocol
 
     public int CalculateExpectedResponseLength(ModbusRequest request)
     {
+        ArgumentNullException.ThrowIfNull(request);
         return request.Function switch
         {
             ModbusFunction.ReadCoils => 3 + 1 + (request.Quantity + 7) / 8 + 2, // SlaveId + Function + ByteCount + Data + CRC

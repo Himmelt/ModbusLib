@@ -15,3 +15,6 @@ dotnet_diagnostic.IDE0300.severity = warning
 
 # CA1513: 使用 ObjectDisposedException 引发帮助程序
 dotnet_diagnostic.CA1513.severity = warning
+
+# IDE0056: 使用索引运算符
+dotnet_diagnostic.IDE0056.severity = warning

@@ -1,8 +1,12 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace ModbusLib.Enums;
 
 /// <summary>
 /// Modbus 功能码枚举
 /// </summary>
+[SuppressMessage("Design", "CA1008:枚举应具有零值")]
+[SuppressMessage("CodeQuality", "IDE0079:请删除不必要的忽略")]
 public enum ModbusFunction 
 {
     /// <summary>
