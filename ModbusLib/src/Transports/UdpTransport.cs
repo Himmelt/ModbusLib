@@ -15,7 +15,7 @@ public class UdpTransport(NetworkConnectionConfig config) : IModbusTransport
     private IPEndPoint? _remoteEndPoint;
     private readonly NetworkConnectionConfig _config = config ?? throw new ArgumentNullException(nameof(config));
     private readonly SemaphoreSlim _semaphore = new(1, 1);
-    private bool _disposed = false;
+    private bool _disposed;
 
     public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(5);
 

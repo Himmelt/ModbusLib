@@ -15,7 +15,7 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport
     private NetworkStream? _stream;
     private readonly NetworkConnectionConfig _config = config ?? throw new ArgumentNullException(nameof(config));
     private readonly SemaphoreSlim _semaphore = new(1, 1);
-    private bool _disposed = false;
+    private bool _disposed;
 
     public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(5);
 
@@ -195,7 +195,7 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport
 
         while (totalBytesRead < count && DateTime.UtcNow < timeout)
         {
-            var bytesRead = await stream.ReadAsync(buffer, totalBytesRead, count - totalBytesRead, cancellationToken);
+            var bytesRead = await stream.ReadAsync(buffer.AsMemory(totalBytesRead, count - totalBytesRead), cancellationToken);
             if (bytesRead == 0)
             {
                 throw new ModbusCommunicationException("连接意外关闭");
@@ -216,7 +216,7 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport
 
         while (totalBytesRead < count && DateTime.UtcNow < timeout)
         {
-            var bytesRead = await stream.ReadAsync(buffer, offset + totalBytesRead, count - totalBytesRead, cancellationToken);
+            var bytesRead = await stream.ReadAsync(buffer.AsMemory(offset + totalBytesRead, count - totalBytesRead), cancellationToken);
             if (bytesRead == 0)
             {
                 throw new ModbusCommunicationException("连接意外关闭");

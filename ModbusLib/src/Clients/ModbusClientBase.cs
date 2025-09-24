@@ -11,9 +11,24 @@ namespace ModbusLib.Clients;
 /// </summary>
 public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtocol protocol) : IModbusClient {
 
-    protected bool _disposed = false;
-    protected readonly IModbusProtocol _protocol = protocol ?? throw new ArgumentNullException(nameof(protocol));
-    protected readonly IModbusTransport _transport = transport ?? throw new ArgumentNullException(nameof(transport));
+    private bool _disposed;
+    private readonly IModbusProtocol _protocol = protocol ?? throw new ArgumentNullException(nameof(protocol));
+    private readonly IModbusTransport _transport = transport ?? throw new ArgumentNullException(nameof(transport));
+
+    /// <summary>
+    /// 获取一个值，表示当前对象是否已被释放
+    /// </summary>
+    protected bool IsDisposed => _disposed;
+
+    /// <summary>
+    /// 获取Modbus协议实现
+    /// </summary>
+    protected IModbusProtocol Protocol => _protocol;
+
+    /// <summary>
+    /// 获取Modbus传输实现
+    /// </summary>
+    protected IModbusTransport Transport => _transport;
 
     public TimeSpan Timeout {
         get => _transport.Timeout;
@@ -22,7 +37,7 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
 
     public int Retries { get; set; } = 3;
 
-    public bool IsConnected => _transport.IsConnected;
+    public bool IsConnected => Transport.IsConnected;
 
     public virtual async Task<bool> ConnectAsync(CancellationToken cancellationToken = default) {
         ObjectDisposedException.ThrowIf(_disposed, this);

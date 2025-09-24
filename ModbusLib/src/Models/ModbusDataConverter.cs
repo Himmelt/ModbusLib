@@ -45,8 +45,7 @@ namespace ModbusLib.Models
         public static byte[] ToBytes<T>(T[] values, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst)
             where T : unmanaged
         {
-            if (values == null)
-                throw new ArgumentNullException(nameof(values));
+            ArgumentNullException.ThrowIfNull(values);
 
             var byteCount = Unsafe.SizeOf<T>() * values.Length;
             var buffer = ArrayPool<byte>.Shared.Rent(byteCount);
@@ -80,8 +79,7 @@ namespace ModbusLib.Models
         public static T[] FromBytes<T>(byte[] bytes, int count, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst)
             where T : unmanaged
         {
-            if (bytes == null)
-                throw new ArgumentNullException(nameof(bytes));
+            ArgumentNullException.ThrowIfNull(bytes);
             if (count < 0)
                 throw new ArgumentException("元素数量不能为负数", nameof(count));
 
