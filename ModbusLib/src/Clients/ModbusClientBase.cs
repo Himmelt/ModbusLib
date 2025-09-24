@@ -312,6 +312,102 @@ public abstract class ModbusClientBase : IModbusClient {
 
     #endregion
 
+    #region 同步连接管理
+
+    public virtual bool Connect() {
+        if (_disposed)
+            throw new ObjectDisposedException(GetType().Name);
+
+        return ConnectAsync(CancellationToken.None).GetAwaiter().GetResult();
+    }
+
+    public virtual void Disconnect() {
+        if (_disposed)
+            return;
+
+        DisconnectAsync(CancellationToken.None).GetAwaiter().GetResult();
+    }
+
+    #endregion
+
+    #region 同步读取功能
+
+    public bool[] ReadCoils(byte slaveId, ushort startAddress, ushort quantity) {
+        return ReadCoilsAsync(slaveId, startAddress, quantity, CancellationToken.None).GetAwaiter().GetResult();
+    }
+
+    public bool[] ReadDiscreteInputs(byte slaveId, ushort startAddress, ushort quantity) {
+        return ReadDiscreteInputsAsync(slaveId, startAddress, quantity, CancellationToken.None).GetAwaiter().GetResult();
+    }
+
+    public ushort[] ReadHoldingRegisters(byte slaveId, ushort startAddress, ushort quantity) {
+        return ReadHoldingRegistersAsync(slaveId, startAddress, quantity, CancellationToken.None).GetAwaiter().GetResult();
+    }
+
+    public ushort[] ReadInputRegisters(byte slaveId, ushort startAddress, ushort quantity) {
+        return ReadInputRegistersAsync(slaveId, startAddress, quantity, CancellationToken.None).GetAwaiter().GetResult();
+    }
+
+    #endregion
+
+    #region 同步写入功能
+
+    public void WriteSingleCoil(byte slaveId, ushort address, bool value) {
+        WriteSingleCoilAsync(slaveId, address, value, CancellationToken.None).GetAwaiter().GetResult();
+    }
+
+    public void WriteSingleRegister(byte slaveId, ushort address, ushort value) {
+        WriteSingleRegisterAsync(slaveId, address, value, CancellationToken.None).GetAwaiter().GetResult();
+    }
+
+    public void WriteMultipleCoils(byte slaveId, ushort startAddress, bool[] values) {
+        WriteMultipleCoilsAsync(slaveId, startAddress, values, CancellationToken.None).GetAwaiter().GetResult();
+    }
+
+    public void WriteMultipleRegisters(byte slaveId, ushort startAddress, ushort[] values) {
+        WriteMultipleRegistersAsync(slaveId, startAddress, values, CancellationToken.None).GetAwaiter().GetResult();
+    }
+
+    #endregion
+
+    #region 同步高级功能
+
+    public ushort[] ReadWriteMultipleRegisters(byte slaveId, ushort readStartAddress, ushort readQuantity,
+        ushort writeStartAddress, ushort[] writeValues) {
+        return ReadWriteMultipleRegistersAsync(slaveId, readStartAddress, readQuantity, writeStartAddress, writeValues, CancellationToken.None)
+            .GetAwaiter().GetResult();
+    }
+
+    #endregion
+
+    #region 同步泛型读取功能
+
+    public T[] ReadHoldingRegisters<T>(byte slaveId, ushort startAddress, ushort count,
+        ModbusEndianness endianness = ModbusEndianness.BigEndian) where T : unmanaged {
+        return ReadHoldingRegistersAsync<T>(slaveId, startAddress, count, endianness, CancellationToken.None).GetAwaiter().GetResult();
+    }
+
+    public T[] ReadInputRegisters<T>(byte slaveId, ushort startAddress, ushort count,
+        ModbusEndianness endianness = ModbusEndianness.BigEndian) where T : unmanaged {
+        return ReadInputRegistersAsync<T>(slaveId, startAddress, count, endianness, CancellationToken.None).GetAwaiter().GetResult();
+    }
+
+    #endregion
+
+    #region 同步泛型写入功能
+
+    public void WriteSingleRegister<T>(byte slaveId, ushort address, T value,
+        ModbusEndianness endianness = ModbusEndianness.BigEndian) where T : unmanaged {
+        WriteSingleRegisterAsync<T>(slaveId, address, value, endianness, CancellationToken.None).GetAwaiter().GetResult();
+    }
+
+    public void WriteMultipleRegisters<T>(byte slaveId, ushort startAddress, T[] values,
+        ModbusEndianness endianness = ModbusEndianness.BigEndian) where T : unmanaged {
+        WriteMultipleRegistersAsync<T>(slaveId, startAddress, values, endianness, CancellationToken.None).GetAwaiter().GetResult();
+    }
+
+    #endregion
+
     protected async Task<ModbusResponse> ExecuteRequestAsync(ModbusRequest request, CancellationToken cancellationToken) {
         if (_disposed)
             throw new ObjectDisposedException(GetType().Name);

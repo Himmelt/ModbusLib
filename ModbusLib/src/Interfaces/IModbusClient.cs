@@ -191,6 +191,167 @@ public interface IModbusClient : IDisposable {
 
     #endregion
 
+    #region 同步连接管理
+
+    /// <summary>
+    /// 同步连接到Modbus设备
+    /// </summary>
+    /// <returns>连接是否成功</returns>
+    bool Connect();
+
+    /// <summary>
+    /// 同步断开连接
+    /// </summary>
+    void Disconnect();
+
+    #endregion
+
+    #region 同步读取功能
+
+    /// <summary>
+    /// 同步读取线圈状态
+    /// </summary>
+    /// <param name="slaveId">从站地址</param>
+    /// <param name="startAddress">起始地址</param>
+    /// <param name="quantity">数量</param>
+    /// <returns>线圈状态数组</returns>
+    bool[] ReadCoils(byte slaveId, ushort startAddress, ushort quantity);
+
+    /// <summary>
+    /// 同步读取离散输入状态
+    /// </summary>
+    /// <param name="slaveId">从站地址</param>
+    /// <param name="startAddress">起始地址</param>
+    /// <param name="quantity">数量</param>
+    /// <returns>离散输入状态数组</returns>
+    bool[] ReadDiscreteInputs(byte slaveId, ushort startAddress, ushort quantity);
+
+    /// <summary>
+    /// 同步读取保持寄存器
+    /// </summary>
+    /// <param name="slaveId">从站地址</param>
+    /// <param name="startAddress">起始地址</param>
+    /// <param name="quantity">数量</param>
+    /// <returns>寄存器值数组</returns>
+    ushort[] ReadHoldingRegisters(byte slaveId, ushort startAddress, ushort quantity);
+
+    /// <summary>
+    /// 同步读取输入寄存器
+    /// </summary>
+    /// <param name="slaveId">从站地址</param>
+    /// <param name="startAddress">起始地址</param>
+    /// <param name="quantity">数量</param>
+    /// <returns>寄存器值数组</returns>
+    ushort[] ReadInputRegisters(byte slaveId, ushort startAddress, ushort quantity);
+
+    #endregion
+
+    #region 同步写入功能
+
+    /// <summary>
+    /// 同步写单个线圈
+    /// </summary>
+    /// <param name="slaveId">从站地址</param>
+    /// <param name="address">线圈地址</param>
+    /// <param name="value">线圈值</param>
+    void WriteSingleCoil(byte slaveId, ushort address, bool value);
+
+    /// <summary>
+    /// 同步写单个寄存器
+    /// </summary>
+    /// <param name="slaveId">从站地址</param>
+    /// <param name="address">寄存器地址</param>
+    /// <param name="value">寄存器值</param>
+    void WriteSingleRegister(byte slaveId, ushort address, ushort value);
+
+    /// <summary>
+    /// 同步写多个线圈
+    /// </summary>
+    /// <param name="slaveId">从站地址</param>
+    /// <param name="startAddress">起始地址</param>
+    /// <param name="values">线圈值数组</param>
+    void WriteMultipleCoils(byte slaveId, ushort startAddress, bool[] values);
+
+    /// <summary>
+    /// 同步写多个寄存器
+    /// </summary>
+    /// <param name="slaveId">从站地址</param>
+    /// <param name="startAddress">起始地址</param>
+    /// <param name="values">寄存器值数组</param>
+    void WriteMultipleRegisters(byte slaveId, ushort startAddress, ushort[] values);
+
+    #endregion
+
+    #region 同步高级功能
+
+    /// <summary>
+    /// 同步读写多个寄存器
+    /// </summary>
+    /// <param name="slaveId">从站地址</param>
+    /// <param name="readStartAddress">读取起始地址</param>
+    /// <param name="readQuantity">读取数量</param>
+    /// <param name="writeStartAddress">写入起始地址</param>
+    /// <param name="writeValues">写入值数组</param>
+    /// <returns>读取的寄存器值数组</returns>
+    ushort[] ReadWriteMultipleRegisters(byte slaveId, ushort readStartAddress, ushort readQuantity,
+        ushort writeStartAddress, ushort[] writeValues);
+
+    #endregion
+
+    #region 同步泛型读取功能
+
+    /// <summary>
+    /// 泛型同步读取保持寄存器
+    /// </summary>
+    /// <typeparam name="T">数据类型 (支持 unmanaged 类型)</typeparam>
+    /// <param name="slaveId">从站地址</param>
+    /// <param name="startAddress">起始地址</param>
+    /// <param name="count">要返回的T类型元素数量</param>
+    /// <param name="endianness">字节序模式</param>
+    /// <returns>指定类型的数组，长度为count</returns>
+    T[] ReadHoldingRegisters<T>(byte slaveId, ushort startAddress, ushort count,
+        ModbusEndianness endianness = ModbusEndianness.BigEndian) where T : unmanaged;
+
+    /// <summary>
+    /// 泛型同步读取输入寄存器
+    /// </summary>
+    /// <typeparam name="T">数据类型 (支持 unmanaged 类型)</typeparam>
+    /// <param name="slaveId">从站地址</param>
+    /// <param name="startAddress">起始地址</param>
+    /// <param name="count">要返回的T类型元素数量</param>
+    /// <param name="endianness">字节序模式</param>
+    /// <returns>指定类型的数组，长度为count</returns>
+    T[] ReadInputRegisters<T>(byte slaveId, ushort startAddress, ushort count,
+        ModbusEndianness endianness = ModbusEndianness.BigEndian) where T : unmanaged;
+
+    #endregion
+
+    #region 同步泛型写入功能
+
+    /// <summary>
+    /// 泛型同步写入单个寄存器
+    /// </summary>
+    /// <typeparam name="T">数据类型 (支持 unmanaged 类型)</typeparam>
+    /// <param name="slaveId">从站地址</param>
+    /// <param name="address">寄存器地址</param>
+    /// <param name="value">要写入的值</param>
+    /// <param name="endianness">字节序模式</param>
+    void WriteSingleRegister<T>(byte slaveId, ushort address, T value,
+        ModbusEndianness endianness = ModbusEndianness.BigEndian) where T : unmanaged;
+
+    /// <summary>
+    /// 泛型同步写入多个寄存器
+    /// </summary>
+    /// <typeparam name="T">数据类型 (支持 unmanaged 类型)</typeparam>
+    /// <param name="slaveId">从站地址</param>
+    /// <param name="startAddress">起始地址</param>
+    /// <param name="values">要写入的值数组</param>
+    /// <param name="endianness">字节序模式</param>
+    void WriteMultipleRegisters<T>(byte slaveId, ushort startAddress, T[] values,
+        ModbusEndianness endianness = ModbusEndianness.BigEndian) where T : unmanaged;
+
+    #endregion
+
     #region 配置属性
 
     /// <summary>
