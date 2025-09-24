@@ -25,19 +25,19 @@ public class UdpTransport(NetworkConnectionConfig config) : IModbusTransport
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        await _semaphore.WaitAsync(cancellationToken);
+        await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             if (IsConnected)
                 return true;
 
-            await DisconnectInternalAsync();
+            await DisconnectInternalAsync().ConfigureAwait(false);
 
             // 解析主机地址
             IPAddress? ipAddress;
             if (!IPAddress.TryParse(_config.Host, out ipAddress))
             {
-                var hostEntry = await Dns.GetHostEntryAsync(_config.Host, cancellationToken);
+                var hostEntry = await Dns.GetHostEntryAsync(_config.Host, cancellationToken).ConfigureAwait(false);
                 ipAddress = hostEntry.AddressList.FirstOrDefault(addr => addr.AddressFamily == AddressFamily.InterNetwork);
                 if (ipAddress == null)
                     throw new ModbusConnectionException($"无法解析主机地址: {_config.Host}");
@@ -59,7 +59,7 @@ public class UdpTransport(NetworkConnectionConfig config) : IModbusTransport
         }
         catch (Exception ex)
         {
-            await DisconnectInternalAsync();
+            await DisconnectInternalAsync().ConfigureAwait(false);
             throw new ModbusConnectionException($"UDP连接配置失败: {ex.Message}", ex);
         }
         finally
@@ -73,10 +73,10 @@ public class UdpTransport(NetworkConnectionConfig config) : IModbusTransport
         if (_disposed)
             return;
 
-        await _semaphore.WaitAsync(cancellationToken);
+        await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            await DisconnectInternalAsync();
+            await DisconnectInternalAsync().ConfigureAwait(false);
         }
         finally
         {
@@ -108,21 +108,21 @@ public class UdpTransport(NetworkConnectionConfig config) : IModbusTransport
         if (!IsConnected)
             throw new ModbusConnectionException("UDP连接未配置");
 
-        await _semaphore.WaitAsync(cancellationToken);
+        await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             var udpClient = _udpClient!;
             var remoteEndPoint = _remoteEndPoint!;
 
             // 发送请求
-            var bytesSent = await udpClient.SendAsync(request, cancellationToken);
+            var bytesSent = await udpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
             if (bytesSent != request.Length)
             {
                 throw new ModbusCommunicationException($"UDP发送不完整，期望{request.Length}字节，实际发送{bytesSent}字节");
             }
 
             // 接收响应
-            var response = await ReceiveResponseAsync(udpClient, cancellationToken);
+            var response = await ReceiveResponseAsync(udpClient, cancellationToken).ConfigureAwait(false);
             return response;
         }
         catch (Exception ex) when (ex is SocketException)
@@ -146,7 +146,7 @@ public class UdpTransport(NetworkConnectionConfig config) : IModbusTransport
 
         try
         {
-            var result = await udpClient.ReceiveAsync(timeoutCts.Token);
+            var result = await udpClient.ReceiveAsync(timeoutCts.Token).ConfigureAwait(false);
             return result.Buffer;
         }
         catch (OperationCanceledException) when (timeoutCts.Token.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
@@ -185,7 +185,7 @@ public class UdpTransport(NetworkConnectionConfig config) : IModbusTransport
 
     public async ValueTask DisposeAsync()
     {
-        await DisposeAsyncCore();
+        await DisposeAsyncCore().ConfigureAwait(false);
         Dispose(disposing: true);
         GC.SuppressFinalize(this);
     }
@@ -199,7 +199,7 @@ public class UdpTransport(NetworkConnectionConfig config) : IModbusTransport
 
         try
         {
-            await DisconnectAsync();
+            await DisconnectAsync().ConfigureAwait(false);
         }
         catch
         {

@@ -25,13 +25,13 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        await _semaphore.WaitAsync(cancellationToken);
+        await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             if (IsConnected)
                 return true;
 
-            await DisconnectInternalAsync();
+            await DisconnectInternalAsync().ConfigureAwait(false);
 
             _tcpClient = new TcpClient();
             
@@ -45,7 +45,7 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport
             using var connectCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             connectCts.CancelAfter(_config.ConnectTimeout);
 
-            await _tcpClient.ConnectAsync(_config.Host, _config.Port, connectCts.Token);
+            await _tcpClient.ConnectAsync(_config.Host, _config.Port, connectCts.Token).ConfigureAwait(false);
 
             // 配置Socket选项
             if (_tcpClient.Client != null)
@@ -62,7 +62,7 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport
         }
         catch (Exception ex)
         {
-            await DisconnectInternalAsync();
+            await DisconnectInternalAsync().ConfigureAwait(false);
             throw new ModbusConnectionException($"TCP连接失败: {ex.Message}", ex);
         }
         finally
@@ -76,10 +76,10 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport
         if (_disposed)
             return;
 
-        await _semaphore.WaitAsync(cancellationToken);
+        await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            await DisconnectInternalAsync();
+            await DisconnectInternalAsync().ConfigureAwait(false);
         }
         finally
         {
@@ -93,7 +93,7 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport
         {
             if (_stream != null)
             {
-                await _stream.FlushAsync();
+                await _stream.FlushAsync().ConfigureAwait(false);
                 _stream.Close();
                 _stream = null;
             }
@@ -117,22 +117,22 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport
         if (!IsConnected)
             throw new ModbusConnectionException("TCP连接未建立");
 
-        await _semaphore.WaitAsync(cancellationToken);
+        await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             var stream = _stream!;
 
             // 发送请求
-            await stream.WriteAsync(request, cancellationToken);
-            await stream.FlushAsync(cancellationToken);
+            await stream.WriteAsync(request, cancellationToken).ConfigureAwait(false);
+            await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
 
             // 接收响应
-            var response = await ReceiveResponseAsync(stream, cancellationToken);
+            var response = await ReceiveResponseAsync(stream, cancellationToken).ConfigureAwait(false);
             return response;
         }
         catch (Exception ex) when (ex is SocketException || ex is IOException)
         {
-            await DisconnectInternalAsync();
+            await DisconnectInternalAsync().ConfigureAwait(false);
             throw new ModbusCommunicationException($"TCP通信异常: {ex.Message}", ex);
         }
         catch (TimeoutException)
@@ -153,7 +153,7 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport
         try
         {
             // 读取MBAP头部
-            await ReadExactAsync(stream, headerBuffer, headerSize, cancellationToken);
+            await ReadExactAsync(stream, headerBuffer, headerSize, cancellationToken).ConfigureAwait(false);
 
             // 解析长度字段（字节4-5）
             var length = (ushort)((headerBuffer[4] << 8) | headerBuffer[5]);
@@ -170,7 +170,7 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport
                 // 读取剩余数据
                 if (remainingSize > 0)
                 {
-                    await ReadExactAsync(stream, fullBuffer, headerSize, remainingSize, cancellationToken);
+                    await ReadExactAsync(stream, fullBuffer, headerSize, remainingSize, cancellationToken).ConfigureAwait(false);
                 }
 
                 var result = new byte[headerSize + remainingSize];
@@ -195,7 +195,7 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport
 
         while (totalBytesRead < count && DateTime.UtcNow < timeout)
         {
-            var bytesRead = await stream.ReadAsync(buffer.AsMemory(totalBytesRead, count - totalBytesRead), cancellationToken);
+            var bytesRead = await stream.ReadAsync(buffer.AsMemory(totalBytesRead, count - totalBytesRead), cancellationToken).ConfigureAwait(false);
             if (bytesRead == 0)
             {
                 throw new ModbusCommunicationException("连接意外关闭");
@@ -216,7 +216,7 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport
 
         while (totalBytesRead < count && DateTime.UtcNow < timeout)
         {
-            var bytesRead = await stream.ReadAsync(buffer.AsMemory(offset + totalBytesRead, count - totalBytesRead), cancellationToken);
+            var bytesRead = await stream.ReadAsync(buffer.AsMemory(offset + totalBytesRead, count - totalBytesRead), cancellationToken).ConfigureAwait(false);
             if (bytesRead == 0)
             {
                 throw new ModbusCommunicationException("连接意外关闭");
@@ -260,7 +260,7 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport
 
     public async ValueTask DisposeAsync()
     {
-        await DisposeAsyncCore();
+        await DisposeAsyncCore().ConfigureAwait(false);
         Dispose(disposing: true);
         GC.SuppressFinalize(this);
     }
@@ -274,7 +274,7 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport
 
         try
         {
-            await DisconnectAsync();
+            await DisconnectAsync().ConfigureAwait(false);
         }
         catch
         {
