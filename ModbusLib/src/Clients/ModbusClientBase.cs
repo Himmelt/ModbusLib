@@ -457,16 +457,29 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
             throw new ArgumentException($"数量不能超过{maxQuantity}", nameof(quantity));
     }
 
-    public virtual void Dispose() {
+    public void Dispose() {
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing) {
         if (_disposed)
             return;
 
         _disposed = true;
-        _transport?.Dispose();
+
+        if (disposing) {
+            _transport?.Dispose();
+        }
+    }
+
+    public async ValueTask DisposeAsync() {
+        await DisposeAsyncCore();
+        Dispose(disposing: true);
         GC.SuppressFinalize(this);
     }
 
-    public virtual async ValueTask DisposeAsync() {
+    protected virtual async ValueTask DisposeAsyncCore() {
         if (_disposed)
             return;
 
@@ -486,7 +499,5 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
                 _transport.Dispose();
             }
         }
-
-        GC.SuppressFinalize(this);
     }
 }

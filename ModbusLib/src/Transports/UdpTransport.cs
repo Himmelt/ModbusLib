@@ -157,25 +157,40 @@ public class UdpTransport(NetworkConnectionConfig config) : IModbusTransport
 
     public void Dispose()
     {
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
         if (_disposed)
             return;
 
         _disposed = true;
 
-        try
+        if (disposing)
         {
-            DisconnectInternalAsync().Wait(1000);
-        }
-        catch
-        {
-            // 忽略释放时的异常
-        }
+            try
+            {
+                DisconnectInternalAsync().Wait(1000);
+            }
+            catch
+            {
+                // 忽略释放时的异常
+            }
 
-        _semaphore?.Dispose();
-        GC.SuppressFinalize(this);
+            _semaphore?.Dispose();
+        }
     }
 
     public async ValueTask DisposeAsync()
+    {
+        await DisposeAsyncCore();
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual async ValueTask DisposeAsyncCore()
     {
         if (_disposed)
             return;
@@ -192,6 +207,5 @@ public class UdpTransport(NetworkConnectionConfig config) : IModbusTransport
         }
 
         _semaphore?.Dispose();
-        GC.SuppressFinalize(this);
     }
 }

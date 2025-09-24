@@ -167,26 +167,41 @@ public class SerialTransport(SerialConnectionConfig config) : IModbusTransport
 
     public void Dispose()
     {
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
         if (_disposed)
             return;
 
         _disposed = true;
-        
-        try
+
+        if (disposing)
         {
-            _serialPort?.Close();
-            _serialPort?.Dispose();
+            try
+            {
+                _serialPort?.Close();
+                _serialPort?.Dispose();
+            }
+            catch
+            {
+                // 忽略释放时的异常
+            }
+            
+            _semaphore?.Dispose();
         }
-        catch
-        {
-            // 忽略释放时的异常
-        }
-        
-        _semaphore?.Dispose();
-        GC.SuppressFinalize(this);
     }
 
     public async ValueTask DisposeAsync()
+    {
+        await DisposeAsyncCore();
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual async ValueTask DisposeAsyncCore()
     {
         if (_disposed)
             return;
@@ -204,6 +219,5 @@ public class SerialTransport(SerialConnectionConfig config) : IModbusTransport
         }
         
         _semaphore?.Dispose();
-        GC.SuppressFinalize(this);
     }
 }
