@@ -1,10 +1,19 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace ModbusLib.Enums;
 
 /// <summary>
 /// Modbus 异常码枚举
 /// </summary>
-public enum ModbusExceptionCode 
+[SuppressMessage("Design", "CA1027:用 FlagsAttribute 标记枚举")]
+[SuppressMessage("CodeQuality", "IDE0079:请删除不必要的忽略")]
+public enum ModbusExceptionCode
 {
+    /// <summary>
+    /// 无异常
+    /// </summary>
+    None = 0x00,
+
     /// <summary>
     /// 非法功能码
     /// </summary>
