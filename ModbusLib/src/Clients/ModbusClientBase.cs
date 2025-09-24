@@ -138,7 +138,7 @@ public abstract class ModbusClientBase : IModbusClient {
     #region 泛型读取功能
 
     public async Task<T[]> ReadHoldingRegistersAsync<T>(byte slaveId, ushort startAddress, ushort count,
-        ModbusEndianness endianness = ModbusEndianness.BigEndian, CancellationToken cancellationToken = default) where T : unmanaged {
+        ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) where T : unmanaged {
         if (count == 0)
             throw new ArgumentException("元素数量不能为0", nameof(count));
 
@@ -151,11 +151,11 @@ public abstract class ModbusClientBase : IModbusClient {
         var bytes = ModbusUtils.UshortArrayToByteArray(registers);
 
         // 使用泛型转换器转换为目标类型
-        return ModbusDataConverter.FromBytes<T>(bytes, count, endianness);
+        return ModbusDataConverter.FromBytes<T>(bytes, count, byteOrder, wordOrder);
     }
 
     public async Task<T[]> ReadInputRegistersAsync<T>(byte slaveId, ushort startAddress, ushort count,
-        ModbusEndianness endianness = ModbusEndianness.BigEndian, CancellationToken cancellationToken = default) where T : unmanaged {
+        ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) where T : unmanaged {
         if (count == 0)
             throw new ArgumentException("元素数量不能为0", nameof(count));
 
@@ -168,7 +168,7 @@ public abstract class ModbusClientBase : IModbusClient {
         var bytes = ModbusUtils.UshortArrayToByteArray(registers);
 
         // 使用泛型转换器转换为目标类型
-        return ModbusDataConverter.FromBytes<T>(bytes, count, endianness);
+        return ModbusDataConverter.FromBytes<T>(bytes, count, byteOrder, wordOrder);
     }
 
     #endregion
@@ -228,12 +228,12 @@ public abstract class ModbusClientBase : IModbusClient {
     #region 泛型写入功能
 
     public async Task WriteSingleRegisterAsync<T>(byte slaveId, ushort address, T value,
-        ModbusEndianness endianness = ModbusEndianness.BigEndian, CancellationToken cancellationToken = default) where T : unmanaged {
+        ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) where T : unmanaged {
         var registerCount = ModbusDataConverter.GetRegisterCount<T>();
 
         if (registerCount == 1) {
             // 对于单寄存器值，直接转换
-            var bytes = ModbusDataConverter.ToBytes(new[] { value }, endianness);
+            var bytes = ModbusDataConverter.ToBytes(new[] { value }, byteOrder, wordOrder);
             if (bytes.Length >= 2) {
                 var registerValue = (ushort)((bytes[0] << 8) | bytes[1]);
                 await WriteSingleRegisterAsync(slaveId, address, registerValue, cancellationToken);
@@ -242,12 +242,12 @@ public abstract class ModbusClientBase : IModbusClient {
             }
         } else {
             // 对于多寄存器值，使用WriteMultipleRegisters
-            await WriteMultipleRegistersAsync(slaveId, address, new[] { value }, endianness, cancellationToken);
+            await WriteMultipleRegistersAsync(slaveId, address, new[] { value }, byteOrder, wordOrder, cancellationToken);
         }
     }
 
     public async Task WriteMultipleRegistersAsync<T>(byte slaveId, ushort startAddress, T[] values,
-        ModbusEndianness endianness = ModbusEndianness.BigEndian, CancellationToken cancellationToken = default) where T : unmanaged {
+        ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) where T : unmanaged {
         if (values == null || values.Length == 0)
             throw new ArgumentException("值数组不能为空", nameof(values));
 
@@ -256,7 +256,7 @@ public abstract class ModbusClientBase : IModbusClient {
             throw new ArgumentException($"所需寄存器数量({registerCount})不能超过123", nameof(values));
 
         // 将泛型数组转换为字节数组
-        var bytes = ModbusDataConverter.ToBytes(values, endianness);
+        var bytes = ModbusDataConverter.ToBytes(values, byteOrder, wordOrder);
 
         // 将字节数组转换为寄存器数组
         var registers = ModbusUtils.ByteArrayToUshortArray(bytes);
@@ -383,13 +383,13 @@ public abstract class ModbusClientBase : IModbusClient {
     #region 同步泛型读取功能
 
     public T[] ReadHoldingRegisters<T>(byte slaveId, ushort startAddress, ushort count,
-        ModbusEndianness endianness = ModbusEndianness.BigEndian) where T : unmanaged {
-        return ReadHoldingRegistersAsync<T>(slaveId, startAddress, count, endianness, CancellationToken.None).GetAwaiter().GetResult();
+        ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst) where T : unmanaged {
+        return ReadHoldingRegistersAsync<T>(slaveId, startAddress, count, byteOrder, wordOrder, CancellationToken.None).GetAwaiter().GetResult();
     }
 
     public T[] ReadInputRegisters<T>(byte slaveId, ushort startAddress, ushort count,
-        ModbusEndianness endianness = ModbusEndianness.BigEndian) where T : unmanaged {
-        return ReadInputRegistersAsync<T>(slaveId, startAddress, count, endianness, CancellationToken.None).GetAwaiter().GetResult();
+        ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst) where T : unmanaged {
+        return ReadInputRegistersAsync<T>(slaveId, startAddress, count, byteOrder, wordOrder, CancellationToken.None).GetAwaiter().GetResult();
     }
 
     #endregion
@@ -397,13 +397,13 @@ public abstract class ModbusClientBase : IModbusClient {
     #region 同步泛型写入功能
 
     public void WriteSingleRegister<T>(byte slaveId, ushort address, T value,
-        ModbusEndianness endianness = ModbusEndianness.BigEndian) where T : unmanaged {
-        WriteSingleRegisterAsync<T>(slaveId, address, value, endianness, CancellationToken.None).GetAwaiter().GetResult();
+        ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst) where T : unmanaged {
+        WriteSingleRegisterAsync<T>(slaveId, address, value, byteOrder, wordOrder, CancellationToken.None).GetAwaiter().GetResult();
     }
 
     public void WriteMultipleRegisters<T>(byte slaveId, ushort startAddress, T[] values,
-        ModbusEndianness endianness = ModbusEndianness.BigEndian) where T : unmanaged {
-        WriteMultipleRegistersAsync<T>(slaveId, startAddress, values, endianness, CancellationToken.None).GetAwaiter().GetResult();
+        ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst) where T : unmanaged {
+        WriteMultipleRegistersAsync<T>(slaveId, startAddress, values, byteOrder, wordOrder, CancellationToken.None).GetAwaiter().GetResult();
     }
 
     #endregion

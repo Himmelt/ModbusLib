@@ -39,26 +39,27 @@ namespace ModbusLib.Models
         /// </summary>
         /// <typeparam name="T">源类型</typeparam>
         /// <param name="values">源数组</param>
-        /// <param name="endianness">字节序</param>
+        /// <param name="byteOrder">字节序</param>
+        /// <param name="wordOrder">字序</param>
         /// <returns>字节数组</returns>
-        public static byte[] ToBytes<T>(T[] values, ModbusEndianness endianness = ModbusEndianness.BigEndian) 
+        public static byte[] ToBytes<T>(T[] values, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst)
             where T : unmanaged
         {
             if (values == null)
                 throw new ArgumentNullException(nameof(values));
-                
+
             var byteCount = Unsafe.SizeOf<T>() * values.Length;
             var buffer = ArrayPool<byte>.Shared.Rent(byteCount);
-            
+
             try
             {
                 var span = buffer.AsSpan(0, byteCount);
                 var sourceSpan = MemoryMarshal.Cast<T, byte>(values.AsSpan());
                 sourceSpan.CopyTo(span);
-                
-                // 根据字节序调整
-                ApplyEndianness<T>(span, endianness);
-                
+
+                // 根据字节序和字序调整
+                ApplyByteAndWordOrder<T>(span, byteOrder, wordOrder);
+
                 return span.ToArray();
             }
             finally
@@ -73,29 +74,30 @@ namespace ModbusLib.Models
         /// <typeparam name="T">目标类型</typeparam>
         /// <param name="bytes">源字节数组</param>
         /// <param name="count">元素数量</param>
-        /// <param name="endianness">字节序</param>
+        /// <param name="byteOrder">字节序</param>
+        /// <param name="wordOrder">字序</param>
         /// <returns>泛型数组</returns>
-        public static T[] FromBytes<T>(byte[] bytes, int count, ModbusEndianness endianness = ModbusEndianness.BigEndian) 
+        public static T[] FromBytes<T>(byte[] bytes, int count, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst)
             where T : unmanaged
         {
             if (bytes == null)
                 throw new ArgumentNullException(nameof(bytes));
             if (count < 0)
                 throw new ArgumentException("元素数量不能为负数", nameof(count));
-                
+
             var expectedSize = Unsafe.SizeOf<T>() * count;
             if (bytes.Length < expectedSize)
                 throw new ArgumentException($"字节数组长度不足，需要 {expectedSize} 字节，实际 {bytes.Length} 字节");
-                
+
             var workingBuffer = ArrayPool<byte>.Shared.Rent(expectedSize);
             try
             {
                 var span = workingBuffer.AsSpan(0, expectedSize);
                 bytes.AsSpan(0, expectedSize).CopyTo(span);
-                
-                // 根据字节序调整
-                ApplyEndianness<T>(span, endianness);
-                
+
+                // 根据字节序和字序调整
+                ApplyByteAndWordOrder<T>(span, byteOrder, wordOrder);
+
                 var resultSpan = MemoryMarshal.Cast<byte, T>(span);
                 return resultSpan[..count].ToArray();
             }
@@ -106,53 +108,52 @@ namespace ModbusLib.Models
         }
         
         /// <summary>
-        /// 应用字节序转换
+        /// 应用字节序和字序转换
         /// </summary>
-        private static void ApplyEndianness<T>(Span<byte> data, ModbusEndianness endianness) where T : unmanaged
+        private static void ApplyByteAndWordOrder<T>(Span<byte> data, ByteOrder byteOrder, WordOrder wordOrder) where T : unmanaged
         {
             var typeSize = Unsafe.SizeOf<T>();
-            
-            switch (endianness)
+
+            // 根据Modbus工业标准，寄存器占两个字节且是大端序的
+            // 先处理字节序（在寄存器内部）
+            if (byteOrder == ByteOrder.LittleEndian && BitConverter.IsLittleEndian)
             {
-                case ModbusEndianness.BigEndian:
-                    // Modbus标准大端序：高字节在前，低字节在后
-                    // 在小端序系统上不需要额外处理，保持原始字节顺序
-                    // 因为MemoryMarshal.Cast已经按照系统字节序处理了数据
-                    break;
-                    
-                case ModbusEndianness.LittleEndian:
-                    // 小端序：在小端序系统上需要反转字节顺序
-                    if (BitConverter.IsLittleEndian && typeSize > 1)
+                // 如果需要小端序，但系统是小端序，需要在每个寄存器（2字节）内部交换字节
+                for (int i = 0; i < data.Length; i += 2)
+                {
+                    if (i + 1 < data.Length)
                     {
-                        for (int i = 0; i < data.Length; i += typeSize)
-                        {
-                            var elementSpan = data.Slice(i, Math.Min(typeSize, data.Length - i));
-                            if (elementSpan.Length >= 2)
-                                elementSpan.Reverse();
-                        }
+                        (data[i], data[i + 1]) = (data[i + 1], data[i]);
                     }
-                    break;
-                    
-                case ModbusEndianness.MidLittleEndian:
-                    // 字内小端，字间大端
-                    ApplyMidLittleEndian(data, typeSize);
-                    break;
+                }
+            }
+
+            // 再处理字序（寄存器之间）
+            if (wordOrder == WordOrder.LowFirst && typeSize > 2)
+            {
+                // 如果需要低字在前，需要交换寄存器的顺序
+                for (int i = 0; i < data.Length; i += typeSize)
+                {
+                    var elementSpan = data.Slice(i, Math.Min(typeSize, data.Length - i));
+                    ReverseWordOrder(elementSpan);
+                }
             }
         }
-        
+
         /// <summary>
-        /// 应用中端字节序转换
+        /// 反转字序（以2字节为单位）
         /// </summary>
-        private static void ApplyMidLittleEndian(Span<byte> data, int typeSize)
+        private static void ReverseWordOrder(Span<byte> data)
         {
-            // 实现中端字节序转换逻辑
-            for (int i = 0; i < data.Length; i += 4) // 假设以32位为单位
+            var length = data.Length;
+            for (int i = 0; i < length / 2; i += 2)
             {
-                if (i + 3 < data.Length)
+                var j = length - i - 2;
+                if (j >= i + 2)
                 {
-                    // 交换字的顺序，但保持字内字节顺序
-                    (data[i], data[i + 2]) = (data[i + 2], data[i]);
-                    (data[i + 1], data[i + 3]) = (data[i + 3], data[i + 1]);
+                    // 交换两个字节作为一个整体
+                    (data[i], data[j]) = (data[j], data[i]);
+                    (data[i + 1], data[j + 1]) = (data[j + 1], data[i + 1]);
                 }
             }
         }
