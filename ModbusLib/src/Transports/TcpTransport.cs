@@ -9,11 +9,11 @@ namespace ModbusLib.Transports;
 /// <summary>
 /// TCP传输实现
 /// </summary>
-public class TcpTransport : IModbusTransport
+public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport
 {
     private TcpClient? _tcpClient;
     private NetworkStream? _stream;
-    private readonly NetworkConnectionConfig _config;
+    private readonly NetworkConnectionConfig _config = config ?? throw new ArgumentNullException(nameof(config));
     private readonly SemaphoreSlim _semaphore = new(1, 1);
     private bool _disposed = false;
 
@@ -21,15 +21,9 @@ public class TcpTransport : IModbusTransport
 
     public bool IsConnected => _tcpClient?.Connected == true && _stream != null;
 
-    public TcpTransport(NetworkConnectionConfig config)
-    {
-        _config = config ?? throw new ArgumentNullException(nameof(config));
-    }
-
     public async Task<bool> ConnectAsync(CancellationToken cancellationToken = default)
     {
-        if (_disposed)
-            throw new ObjectDisposedException(nameof(TcpTransport));
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         await _semaphore.WaitAsync(cancellationToken);
         try
@@ -118,8 +112,7 @@ public class TcpTransport : IModbusTransport
 
     public async Task<byte[]> SendReceiveAsync(byte[] request, CancellationToken cancellationToken = default)
     {
-        if (_disposed)
-            throw new ObjectDisposedException(nameof(TcpTransport));
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         if (!IsConnected)
             throw new ModbusConnectionException("TCP连接未建立");

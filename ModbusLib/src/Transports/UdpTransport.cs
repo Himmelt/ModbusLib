@@ -9,11 +9,11 @@ namespace ModbusLib.Transports;
 /// <summary>
 /// UDP传输实现
 /// </summary>
-public class UdpTransport : IModbusTransport
+public class UdpTransport(NetworkConnectionConfig config) : IModbusTransport
 {
     private UdpClient? _udpClient;
     private IPEndPoint? _remoteEndPoint;
-    private readonly NetworkConnectionConfig _config;
+    private readonly NetworkConnectionConfig _config = config ?? throw new ArgumentNullException(nameof(config));
     private readonly SemaphoreSlim _semaphore = new(1, 1);
     private bool _disposed = false;
 
@@ -21,15 +21,9 @@ public class UdpTransport : IModbusTransport
 
     public bool IsConnected => _udpClient != null && _remoteEndPoint != null;
 
-    public UdpTransport(NetworkConnectionConfig config)
-    {
-        _config = config ?? throw new ArgumentNullException(nameof(config));
-    }
-
     public async Task<bool> ConnectAsync(CancellationToken cancellationToken = default)
     {
-        if (_disposed)
-            throw new ObjectDisposedException(nameof(UdpTransport));
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         await _semaphore.WaitAsync(cancellationToken);
         try
@@ -109,8 +103,7 @@ public class UdpTransport : IModbusTransport
 
     public async Task<byte[]> SendReceiveAsync(byte[] request, CancellationToken cancellationToken = default)
     {
-        if (_disposed)
-            throw new ObjectDisposedException(nameof(UdpTransport));
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         if (!IsConnected)
             throw new ModbusConnectionException("UDP连接未配置");

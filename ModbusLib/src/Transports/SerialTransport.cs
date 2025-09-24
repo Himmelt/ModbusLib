@@ -9,10 +9,10 @@ namespace ModbusLib.Transports;
 /// <summary>
 /// 串口传输实现
 /// </summary>
-public class SerialTransport : IModbusTransport
+public class SerialTransport(SerialConnectionConfig config) : IModbusTransport
 {
     private SerialPort? _serialPort;
-    private readonly SerialConnectionConfig _config;
+    private readonly SerialConnectionConfig _config = config ?? throw new ArgumentNullException(nameof(config));
     private readonly SemaphoreSlim _semaphore = new(1, 1);
     private bool _disposed = false;
 
@@ -20,15 +20,9 @@ public class SerialTransport : IModbusTransport
 
     public bool IsConnected => _serialPort?.IsOpen == true;
 
-    public SerialTransport(SerialConnectionConfig config)
-    {
-        _config = config ?? throw new ArgumentNullException(nameof(config));
-    }
-
     public async Task<bool> ConnectAsync(CancellationToken cancellationToken = default)
     {
-        if (_disposed)
-            throw new ObjectDisposedException(nameof(SerialTransport));
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         await _semaphore.WaitAsync(cancellationToken);
         try
@@ -88,8 +82,7 @@ public class SerialTransport : IModbusTransport
 
     public async Task<byte[]> SendReceiveAsync(byte[] request, CancellationToken cancellationToken = default)
     {
-        if (_disposed)
-            throw new ObjectDisposedException(nameof(SerialTransport));
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         if (!IsConnected)
             throw new ModbusConnectionException("串口未连接");

@@ -9,11 +9,11 @@ namespace ModbusLib.Clients;
 /// <summary>
 /// Modbus客户端基类
 /// </summary>
-public abstract class ModbusClientBase : IModbusClient {
+public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtocol protocol) : IModbusClient {
 
     protected bool _disposed = false;
-    protected readonly IModbusProtocol _protocol;
-    protected readonly IModbusTransport _transport;
+    protected readonly IModbusProtocol _protocol = protocol ?? throw new ArgumentNullException(nameof(protocol));
+    protected readonly IModbusTransport _transport = transport ?? throw new ArgumentNullException(nameof(transport));
 
     public TimeSpan Timeout {
         get => _transport.Timeout;
@@ -24,14 +24,8 @@ public abstract class ModbusClientBase : IModbusClient {
 
     public bool IsConnected => _transport.IsConnected;
 
-    protected ModbusClientBase(IModbusTransport transport, IModbusProtocol protocol) {
-        _transport = transport ?? throw new ArgumentNullException(nameof(transport));
-        _protocol = protocol ?? throw new ArgumentNullException(nameof(protocol));
-    }
-
     public virtual async Task<bool> ConnectAsync(CancellationToken cancellationToken = default) {
-        if (_disposed)
-            throw new ObjectDisposedException(GetType().Name);
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         return await _transport.ConnectAsync(cancellationToken);
     }
@@ -315,8 +309,7 @@ public abstract class ModbusClientBase : IModbusClient {
     #region 同步连接管理
 
     public virtual bool Connect() {
-        if (_disposed)
-            throw new ObjectDisposedException(GetType().Name);
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         return ConnectAsync(CancellationToken.None).GetAwaiter().GetResult();
     }
@@ -409,8 +402,7 @@ public abstract class ModbusClientBase : IModbusClient {
     #endregion
 
     protected async Task<ModbusResponse> ExecuteRequestAsync(ModbusRequest request, CancellationToken cancellationToken) {
-        if (_disposed)
-            throw new ObjectDisposedException(GetType().Name);
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         if (!IsConnected)
             throw new ModbusConnectionException("客户端未连接");
