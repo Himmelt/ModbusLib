@@ -1,79 +1,67 @@
-using System.IO.Ports;
 using ModbusLib.Models;
+using System.IO.Ports;
 
 namespace ModbusLib.Factories;
 
 /// <summary>
 /// 串口连接配置构建器
 /// </summary>
-public class SerialConnectionConfigBuilder
-{
+public class SerialConnectionConfigBuilder {
     private readonly SerialConnectionConfig _config = new();
 
-    public SerialConnectionConfigBuilder PortName(string portName)
-    {
+    public SerialConnectionConfigBuilder PortName(string portName) {
         _config.PortName = portName;
         return this;
     }
 
-    public SerialConnectionConfigBuilder BaudRate(int baudRate)
-    {
+    public SerialConnectionConfigBuilder BaudRate(int baudRate) {
         _config.BaudRate = baudRate;
         return this;
     }
 
-    public SerialConnectionConfigBuilder Parity(Parity parity)
-    {
+    public SerialConnectionConfigBuilder Parity(Parity parity) {
         _config.Parity = parity;
         return this;
     }
 
-    public SerialConnectionConfigBuilder DataBits(int dataBits)
-    {
+    public SerialConnectionConfigBuilder DataBits(int dataBits) {
         _config.DataBits = dataBits;
         return this;
     }
 
-    public SerialConnectionConfigBuilder StopBits(StopBits stopBits)
-    {
+    public SerialConnectionConfigBuilder StopBits(StopBits stopBits) {
         _config.StopBits = stopBits;
         return this;
     }
 
-    public SerialConnectionConfigBuilder Handshake(Handshake handshake)
-    {
+    public SerialConnectionConfigBuilder Handshake(Handshake handshake) {
         _config.Handshake = handshake;
         return this;
     }
 
-    public SerialConnectionConfigBuilder ReadTimeout(int timeout)
-    {
+    public SerialConnectionConfigBuilder ReadTimeout(int timeout) {
         _config.ReadTimeout = timeout;
         return this;
     }
 
-    public SerialConnectionConfigBuilder WriteTimeout(int timeout)
-    {
+    public SerialConnectionConfigBuilder WriteTimeout(int timeout) {
         _config.WriteTimeout = timeout;
         return this;
     }
 
-    public SerialConnectionConfigBuilder InterCharTimeout(int timeout)
-    {
+    public SerialConnectionConfigBuilder InterCharTimeout(int timeout) {
         _config.InterCharTimeout = timeout;
         return this;
     }
 
-    public SerialConnectionConfig Build()
-    {
+    public SerialConnectionConfig Build() {
         return _config;
     }
 
     /// <summary>
     /// 创建默认RTU配置
     /// </summary>
-    public static SerialConnectionConfigBuilder DefaultRtu()
-    {
+    public static SerialConnectionConfigBuilder DefaultRtu() {
         return new SerialConnectionConfigBuilder()
             .BaudRate(9600)
             .Parity(System.IO.Ports.Parity.None)
@@ -86,74 +74,62 @@ public class SerialConnectionConfigBuilder
 /// <summary>
 /// 网络连接配置构建器
 /// </summary>
-public class NetworkConnectionConfigBuilder
-{
+public class NetworkConnectionConfigBuilder {
     private readonly NetworkConnectionConfig _config = new();
 
-    public NetworkConnectionConfigBuilder Host(string host)
-    {
+    public NetworkConnectionConfigBuilder Host(string host) {
         _config.Host = host;
         return this;
     }
 
-    public NetworkConnectionConfigBuilder Port(int port)
-    {
+    public NetworkConnectionConfigBuilder Port(int port) {
         _config.Port = port;
         return this;
     }
 
-    public NetworkConnectionConfigBuilder ConnectTimeout(int timeout)
-    {
+    public NetworkConnectionConfigBuilder ConnectTimeout(int timeout) {
         _config.ConnectTimeout = timeout;
         return this;
     }
 
-    public NetworkConnectionConfigBuilder ReceiveTimeout(int timeout)
-    {
+    public NetworkConnectionConfigBuilder ReceiveTimeout(int timeout) {
         _config.ReceiveTimeout = timeout;
         return this;
     }
 
-    public NetworkConnectionConfigBuilder SendTimeout(int timeout)
-    {
+    public NetworkConnectionConfigBuilder SendTimeout(int timeout) {
         _config.SendTimeout = timeout;
         return this;
     }
 
-    public NetworkConnectionConfigBuilder KeepAlive(bool keepAlive)
-    {
+    public NetworkConnectionConfigBuilder KeepAlive(bool keepAlive) {
         _config.KeepAlive = keepAlive;
         return this;
     }
 
-    public NetworkConnectionConfigBuilder NoDelay(bool noDelay)
-    {
+    public NetworkConnectionConfigBuilder NoDelay(bool noDelay) {
         _config.NoDelay = noDelay;
         return this;
     }
 
-    public NetworkConnectionConfigBuilder ReceiveBufferSize(int size)
-    {
+    public NetworkConnectionConfigBuilder ReceiveBufferSize(int size) {
         _config.ReceiveBufferSize = size;
         return this;
     }
 
-    public NetworkConnectionConfigBuilder SendBufferSize(int size)
-    {
+    public NetworkConnectionConfigBuilder SendBufferSize(int size) {
         _config.SendBufferSize = size;
         return this;
     }
 
-    public NetworkConnectionConfig Build()
-    {
+    public NetworkConnectionConfig Build() {
         return _config;
     }
 
     /// <summary>
     /// 创建默认TCP配置
     /// </summary>
-    public static NetworkConnectionConfigBuilder DefaultTcp()
-    {
+    public static NetworkConnectionConfigBuilder DefaultTcp() {
         return new NetworkConnectionConfigBuilder()
             .Port(502)
             .ConnectTimeout(10000)
@@ -166,8 +142,7 @@ public class NetworkConnectionConfigBuilder
     /// <summary>
     /// 创建默认UDP配置
     /// </summary>
-    public static NetworkConnectionConfigBuilder DefaultUdp()
-    {
+    public static NetworkConnectionConfigBuilder DefaultUdp() {
         return new NetworkConnectionConfigBuilder()
             .Port(502)
             .ReceiveTimeout(5000)

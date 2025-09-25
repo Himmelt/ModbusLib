@@ -5,8 +5,7 @@ namespace ModbusLib.Models;
 /// <summary>
 /// 串口连接配置
 /// </summary>
-public class SerialConnectionConfig
-{
+public class SerialConnectionConfig {
     /// <summary>
     /// 串口名称 (如 COM1, COM2)
     /// </summary>

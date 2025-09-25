@@ -3,8 +3,7 @@ namespace ModbusLib.Models;
 /// <summary>
 /// 网络连接配置
 /// </summary>
-public class NetworkConnectionConfig
-{
+public class NetworkConnectionConfig {
     /// <summary>
     /// 主机地址（IP地址或域名）
     /// </summary>

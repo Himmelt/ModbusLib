@@ -7,8 +7,7 @@ namespace ModbusLib.Enums;
 /// </summary>
 [SuppressMessage("Design", "CA1008:枚举应具有零值")]
 [SuppressMessage("CodeQuality", "IDE0079:请删除不必要的忽略")]
-public enum ModbusFunction 
-{
+public enum ModbusFunction {
     /// <summary>
     /// 读取线圈状态 (0x01)
     /// </summary>

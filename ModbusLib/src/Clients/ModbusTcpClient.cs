@@ -8,17 +8,14 @@ namespace ModbusLib.Clients;
 /// <summary>
 /// Modbus TCP客户端
 /// </summary>
-public class ModbusTcpClient : ModbusClientBase
-{
+public class ModbusTcpClient : ModbusClientBase {
     [SuppressMessage("CodeQuality", "IDE0079")]
     [SuppressMessage("Reliability", "CA2000:丢失范围之前释放对象", Justification = "在基类中统一释放")]
     public ModbusTcpClient(NetworkConnectionConfig config)
-        : base(new TcpTransport(config), new TcpProtocol())
-    {
+        : base(new TcpTransport(config), new TcpProtocol()) {
     }
 
     public ModbusTcpClient(TcpTransport transport)
-        : base(transport, new TcpProtocol())
-    {
+        : base(transport, new TcpProtocol()) {
     }
 }

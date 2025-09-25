@@ -5,8 +5,7 @@ namespace ModbusLib.Interfaces;
 /// <summary>
 /// Modbus协议处理接口
 /// </summary>
-public interface IModbusProtocol
-{
+public interface IModbusProtocol {
     /// <summary>
     /// 构建请求数据
     /// </summary>

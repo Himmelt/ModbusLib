@@ -1,12 +1,9 @@
-using System.IO.Ports;
-
 namespace ModbusLib.Enums;
 
 /// <summary>
 /// 连接类型枚举
 /// </summary>
-public enum ModbusConnectionType
-{
+public enum ModbusConnectionType {
     /// <summary>
     /// RTU 串口连接
     /// </summary>

@@ -5,8 +5,7 @@ namespace ModbusLib.Models;
 /// <summary>
 /// Modbus 响应基类
 /// </summary>
-public class ModbusResponse
-{
+public class ModbusResponse {
     private readonly byte[]? _data;
     private readonly byte[]? _rawData;
 
@@ -49,12 +48,10 @@ public class ModbusResponse
         get => _rawData;
     }
 
-    public ModbusResponse()
-    {
+    public ModbusResponse() {
     }
 
-    public ModbusResponse(byte slaveId, ModbusFunction function, byte[]? data = null, byte[]? rawData = null)
-    {
+    public ModbusResponse(byte slaveId, ModbusFunction function, byte[]? data = null, byte[]? rawData = null) {
         SlaveId = slaveId;
         Function = function;
         _data = data;
@@ -64,10 +61,8 @@ public class ModbusResponse
     /// <summary>
     /// 创建错误响应
     /// </summary>
-    public static ModbusResponse CreateError(byte slaveId, ModbusFunction function, ModbusExceptionCode exceptionCode)
-    {
-        return new ModbusResponse
-        {
+    public static ModbusResponse CreateError(byte slaveId, ModbusFunction function, ModbusExceptionCode exceptionCode) {
+        return new ModbusResponse {
             SlaveId = slaveId,
             Function = function,
             IsError = true,

@@ -5,8 +5,7 @@ namespace ModbusLib.Models;
 /// <summary>
 /// Modbus 请求基类
 /// </summary>
-public class ModbusRequest
-{
+public class ModbusRequest {
 
     private readonly byte[]? _data;
 
@@ -42,12 +41,10 @@ public class ModbusRequest
     /// </summary>
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 
-    public ModbusRequest()
-    {
+    public ModbusRequest() {
     }
 
-    public ModbusRequest(byte slaveId, ModbusFunction function, ushort startAddress, ushort quantity, byte[]? data = null)
-    {
+    public ModbusRequest(byte slaveId, ModbusFunction function, ushort startAddress, ushort quantity, byte[]? data = null) {
         SlaveId = slaveId;
         Function = function;
         StartAddress = startAddress;

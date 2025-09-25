@@ -21,3 +21,6 @@ dotnet_diagnostic.IDE0056.severity = warning
 
 # CA1031: 不捕获常规异常类型
 dotnet_diagnostic.CA1031.severity = none
+
+# IDE0305: 简化集合初始化
+dotnet_diagnostic.IDE0305.severity = warning
