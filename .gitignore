@@ -6,6 +6,7 @@
 bin/
 obj/
 out/
+nupkg/
 
 # User-specific files
 *.rsuser

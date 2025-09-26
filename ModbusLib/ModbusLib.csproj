@@ -8,6 +8,30 @@
     <AnalysisLevel>latest-all</AnalysisLevel>
   </PropertyGroup>
 
+  <!-- NuGet Package Metadata -->
+  <PropertyGroup>
+    <PackageId>ModbusLib</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Himmelt</Authors>
+    <Company>Himmelt</Company>
+    <Description>一个功能完整、高性能的Modbus客户端库，基于.NET 9平台，支持多种Modbus协议变体。</Description>
+    <Copyright>Copyright © 2024 Himmelt</Copyright>
+    <PackageProjectUrl>https://github.com/Himmelt/ModbusLib</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Himmelt/ModbusLib</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <Tags>modbus, modbus-rtu, modbus-tcp, modbus-udp, .net, dotnet, client, protocol</Tags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <!-- 包含README.md文件到NuGet包 -->
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <GenerateAssemblyInfo>True</GenerateAssemblyInfo>
   </PropertyGroup>
