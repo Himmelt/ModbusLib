@@ -6,6 +6,7 @@
 - Enums: 用于枚举类型测试
 - Exceptions: 用于异常类测试
 - Transports: 用于传输层实现测试
+- Functional: 用于功能性集成测试
 
 ### 2. 实现了完整的枚举测试
 - ModbusFunctionTests.cs: 测试Modbus功能码枚举
@@ -19,6 +20,9 @@
 - SerialTransportTests.cs: 测试串口传输实现
 - TcpTransportTests.cs: 测试TCP传输实现
 - UdpTransportTests.cs: 测试UDP传输实现
+
+### 5. 实现了功能性集成测试
+- ModbusSlaveSimulatorTests.cs: 使用NModbus库模拟从机，测试读写线圈、寄存器等功能
 
 所有测试文件都:
 1. 遵循xUnit测试框架规范
@@ -34,3 +38,4 @@
 2. 为客户端实现添加更多场景测试
 3. 添加代码覆盖率分析
 4. 实现持续集成测试流程
+5. 扩展功能性测试，覆盖更多Modbus协议功能
