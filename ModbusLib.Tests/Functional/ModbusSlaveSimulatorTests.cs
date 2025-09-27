@@ -1,8 +1,7 @@
 using System.Net;
 using System.Net.Sockets;
+using ModbusLib.Factories;
 using NModbus;
-using NModbus.Device;
-using Xunit;
 using Xunit.Abstractions;
 
 namespace ModbusLib.Tests.Functional;
@@ -222,6 +221,10 @@ public class SlaveStorage : ISlaveDataStore
     public IPointSource<ushort> InputRegisters => _inputRegisters;
     public IPointSource<bool> Coils => _coils;
     public IPointSource<bool> DiscreteInputs => _discreteInputs;
+    
+    // 实现缺失的接口成员
+    public IPointSource<bool> CoilDiscretes => _coils;
+    public IPointSource<bool> CoilInputs => _discreteInputs;
 }
 
 public class HoldingRegisters : IPointSource<ushort>

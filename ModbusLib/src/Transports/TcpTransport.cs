@@ -25,7 +25,7 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport {
 
         await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
         try {
-            if (IsConnected)
+            if (IsConnected) 
                 return true;
 
             await DisconnectInternalAsync().ConfigureAwait(false);

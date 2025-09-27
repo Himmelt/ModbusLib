@@ -71,7 +71,7 @@ public class ModbusExceptionTests
 
         // Assert
         Assert.NotNull(exception);
-        Assert.Equal(string.Empty, exception.Message);
+        Assert.Equal("Exception of type 'ModbusLib.Exceptions.ModbusException' was thrown.", exception.Message);
     }
 
     [Fact]
