@@ -25,6 +25,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ModbusLib\ModbusLib.csproj" />
+    <ProjectReference Include="..\temp\FluentModbus\src\FluentModbus\FluentModbus.csproj" />
   </ItemGroup>
 
 </Project>

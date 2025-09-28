@@ -20,6 +20,7 @@
 
 - **Functional**: 功能性集成测试
   - ModbusSlaveSimulatorTests.cs (使用NModbus模拟从机进行功能测试)
+  - FluentModbusSlaveTests.cs (使用FluentModbus作为从机进行功能测试)
 
 - **Models**: 模型类测试
   - ModbusDataConverterTests.cs
