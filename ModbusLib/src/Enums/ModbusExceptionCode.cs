@@ -36,20 +36,20 @@ public enum ModbusExceptionCode {
     /// <summary>
     /// 服务器在尝试执行请求的操作时发生不可恢复的错误。
     /// </summary>
-    [Description("从站设备故障")]
-    SlaveDeviceFailure = 0x04,
+    [Description("目标设备故障")]
+    TargetDeviceFailure = 0x04,
 
     /// <summary>
     /// 与编程命令结合使用。服务器已接受请求并正在处理，但需要较长时间才能完成。
     /// </summary>
     [Description("确认")]
-    Acknowledge = 0x05,
+    ServerAcknowledge = 0x05,
 
     /// <summary>
     /// 与编程命令结合使用。正在处理长时间运行的程序命令。
     /// </summary>
-    [Description("从站设备忙")]
-    SlaveDeviceBusy = 0x06,
+    [Description("目标设备忙")]
+    TargetDeviceBusy = 0x06,
 
     /// <summary>
     /// 负确认（无法执行编程功能）

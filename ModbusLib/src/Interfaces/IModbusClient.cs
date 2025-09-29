@@ -33,42 +33,42 @@ public interface IModbusClient : IDisposable, IAsyncDisposable {
     /// <summary>
     /// 读取线圈状态
     /// </summary>
-    /// <param name="slaveId">从站地址</param>
+    /// <param name="unitId">设备地址</param>
     /// <param name="startAddress">起始地址</param>
     /// <param name="quantity">数量</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>线圈状态数组</returns>
-    Task<bool[]> ReadCoilsAsync(byte slaveId, ushort startAddress, ushort quantity, CancellationToken cancellationToken = default);
+    Task<bool[]> ReadCoilsAsync(byte unitId, ushort startAddress, ushort quantity, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 读取离散输入状态
     /// </summary>
-    /// <param name="slaveId">从站地址</param>
+    /// <param name="unitId">设备地址</param>
     /// <param name="startAddress">起始地址</param>
     /// <param name="quantity">数量</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>离散输入状态数组</returns>
-    Task<bool[]> ReadDiscreteInputsAsync(byte slaveId, ushort startAddress, ushort quantity, CancellationToken cancellationToken = default);
+    Task<bool[]> ReadDiscreteInputsAsync(byte unitId, ushort startAddress, ushort quantity, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 读取保持寄存器
     /// </summary>
-    /// <param name="slaveId">从站地址</param>
+    /// <param name="unitId">设备地址</param>
     /// <param name="startAddress">起始地址</param>
     /// <param name="quantity">数量</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>寄存器值数组</returns>
-    Task<ushort[]> ReadHoldingRegistersAsync(byte slaveId, ushort startAddress, ushort quantity, CancellationToken cancellationToken = default);
+    Task<ushort[]> ReadHoldingRegistersAsync(byte unitId, ushort startAddress, ushort quantity, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 读取输入寄存器
     /// </summary>
-    /// <param name="slaveId">从站地址</param>
+    /// <param name="unitId">设备地址</param>
     /// <param name="startAddress">起始地址</param>
     /// <param name="quantity">数量</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>寄存器值数组</returns>
-    Task<ushort[]> ReadInputRegistersAsync(byte slaveId, ushort startAddress, ushort quantity, CancellationToken cancellationToken = default);
+    Task<ushort[]> ReadInputRegistersAsync(byte unitId, ushort startAddress, ushort quantity, CancellationToken cancellationToken = default);
 
     #endregion
 
@@ -77,38 +77,38 @@ public interface IModbusClient : IDisposable, IAsyncDisposable {
     /// <summary>
     /// 写单个线圈
     /// </summary>
-    /// <param name="slaveId">从站地址</param>
+    /// <param name="unitId">设备地址</param>
     /// <param name="address">线圈地址</param>
     /// <param name="value">线圈值</param>
     /// <param name="cancellationToken">取消令牌</param>
-    Task WriteSingleCoilAsync(byte slaveId, ushort address, bool value, CancellationToken cancellationToken = default);
+    Task WriteSingleCoilAsync(byte unitId, ushort address, bool value, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 写单个寄存器
     /// </summary>
-    /// <param name="slaveId">从站地址</param>
+    /// <param name="unitId">设备地址</param>
     /// <param name="address">寄存器地址</param>
     /// <param name="value">寄存器值</param>
     /// <param name="cancellationToken">取消令牌</param>
-    Task WriteSingleRegisterAsync(byte slaveId, ushort address, ushort value, CancellationToken cancellationToken = default);
+    Task WriteSingleRegisterAsync(byte unitId, ushort address, ushort value, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 写多个线圈
     /// </summary>
-    /// <param name="slaveId">从站地址</param>
+    /// <param name="unitId">设备地址</param>
     /// <param name="startAddress">起始地址</param>
     /// <param name="values">线圈值数组</param>
     /// <param name="cancellationToken">取消令牌</param>
-    Task WriteMultipleCoilsAsync(byte slaveId, ushort startAddress, bool[] values, CancellationToken cancellationToken = default);
+    Task WriteMultipleCoilsAsync(byte unitId, ushort startAddress, bool[] values, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 写多个寄存器
     /// </summary>
-    /// <param name="slaveId">从站地址</param>
+    /// <param name="unitId">设备地址</param>
     /// <param name="startAddress">起始地址</param>
     /// <param name="values">寄存器值数组</param>
     /// <param name="cancellationToken">取消令牌</param>
-    Task WriteMultipleRegistersAsync(byte slaveId, ushort startAddress, ushort[] values, CancellationToken cancellationToken = default);
+    Task WriteMultipleRegistersAsync(byte unitId, ushort startAddress, ushort[] values, CancellationToken cancellationToken = default);
 
     #endregion
 
@@ -117,14 +117,14 @@ public interface IModbusClient : IDisposable, IAsyncDisposable {
     /// <summary>
     /// 读写多个寄存器
     /// </summary>
-    /// <param name="slaveId">从站地址</param>
+    /// <param name="unitId">设备地址</param>
     /// <param name="readStartAddress">读取起始地址</param>
     /// <param name="readQuantity">读取数量</param>
     /// <param name="writeStartAddress">写入起始地址</param>
     /// <param name="writeValues">写入值数组</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>读取的寄存器值数组</returns>
-    Task<ushort[]> ReadWriteMultipleRegistersAsync(byte slaveId, ushort readStartAddress, ushort readQuantity,
+    Task<ushort[]> ReadWriteMultipleRegistersAsync(byte unitId, ushort readStartAddress, ushort readQuantity,
         ushort writeStartAddress, ushort[] writeValues, CancellationToken cancellationToken = default);
 
     #endregion
@@ -135,14 +135,14 @@ public interface IModbusClient : IDisposable, IAsyncDisposable {
     /// 泛型读取保持寄存器
     /// </summary>
     /// <typeparam name="T">数据类型 (支持 unmanaged 类型)</typeparam>
-    /// <param name="slaveId">从站地址</param>
+    /// <param name="unitId">设备地址</param>
     /// <param name="startAddress">起始地址</param>
     /// <param name="count">要返回的T类型元素数量 (例如: count=10且T=byte时返回10个byte值，实际需要5个寄存器)</param>
     /// <param name="byteOrder">字节序模式</param>
     /// <param name="wordOrder">字序模式</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>指定类型的数组，长度为count</returns>
-    Task<T[]> ReadHoldingRegistersAsync<T>(byte slaveId, ushort startAddress, ushort count,
+    Task<T[]> ReadHoldingRegistersAsync<T>(byte unitId, ushort startAddress, ushort count,
         ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default)
         where T : unmanaged;
 
@@ -150,14 +150,14 @@ public interface IModbusClient : IDisposable, IAsyncDisposable {
     /// 泛型读取输入寄存器
     /// </summary>
     /// <typeparam name="T">数据类型 (支持 unmanaged 类型)</typeparam>
-    /// <param name="slaveId">从站地址</param>
+    /// <param name="unitId">设备地址</param>
     /// <param name="startAddress">起始地址</param>
     /// <param name="count">要返回的T类型元素数量 (例如: count=10且T=byte时返回10个byte值，实际需要5个寄存器)</param>
     /// <param name="byteOrder">字节序模式</param>
     /// <param name="wordOrder">字序模式</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>指定类型的数组，长度为count</returns>
-    Task<T[]> ReadInputRegistersAsync<T>(byte slaveId, ushort startAddress, ushort count,
+    Task<T[]> ReadInputRegistersAsync<T>(byte unitId, ushort startAddress, ushort count,
         ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default)
         where T : unmanaged;
 
@@ -169,13 +169,13 @@ public interface IModbusClient : IDisposable, IAsyncDisposable {
     /// 泛型写入单个寄存器
     /// </summary>
     /// <typeparam name="T">数据类型 (支持 unmanaged 类型)</typeparam>
-    /// <param name="slaveId">从站地址</param>
+    /// <param name="unitId">设备地址</param>
     /// <param name="address">寄存器地址</param>
     /// <param name="value">要写入的值</param>
     /// <param name="byteOrder">字节序模式</param>
     /// <param name="wordOrder">字序模式</param>
     /// <param name="cancellationToken">取消令牌</param>
-    Task WriteSingleRegisterAsync<T>(byte slaveId, ushort address, T value,
+    Task WriteSingleRegisterAsync<T>(byte unitId, ushort address, T value,
         ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default)
         where T : unmanaged;
 
@@ -183,13 +183,13 @@ public interface IModbusClient : IDisposable, IAsyncDisposable {
     /// 泛型写入多个寄存器
     /// </summary>
     /// <typeparam name="T">数据类型 (支持 unmanaged 类型)</typeparam>
-    /// <param name="slaveId">从站地址</param>
+    /// <param name="unitId">设备地址</param>
     /// <param name="startAddress">起始地址</param>
     /// <param name="values">要写入的值数组</param>
     /// <param name="byteOrder">字节序模式</param>
     /// <param name="wordOrder">字序模式</param>
     /// <param name="cancellationToken">取消令牌</param>
-    Task WriteMultipleRegistersAsync<T>(byte slaveId, ushort startAddress, T[] values,
+    Task WriteMultipleRegistersAsync<T>(byte unitId, ushort startAddress, T[] values,
         ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default)
         where T : unmanaged;
 
@@ -215,38 +215,38 @@ public interface IModbusClient : IDisposable, IAsyncDisposable {
     /// <summary>
     /// 同步读取线圈状态
     /// </summary>
-    /// <param name="slaveId">从站地址</param>
+    /// <param name="unitId">设备地址</param>
     /// <param name="startAddress">起始地址</param>
     /// <param name="quantity">数量</param>
     /// <returns>线圈状态数组</returns>
-    bool[] ReadCoils(byte slaveId, ushort startAddress, ushort quantity);
+    bool[] ReadCoils(byte unitId, ushort startAddress, ushort quantity);
 
     /// <summary>
     /// 同步读取离散输入状态
     /// </summary>
-    /// <param name="slaveId">从站地址</param>
+    /// <param name="unitId">设备地址</param>
     /// <param name="startAddress">起始地址</param>
     /// <param name="quantity">数量</param>
     /// <returns>离散输入状态数组</returns>
-    bool[] ReadDiscreteInputs(byte slaveId, ushort startAddress, ushort quantity);
+    bool[] ReadDiscreteInputs(byte unitId, ushort startAddress, ushort quantity);
 
     /// <summary>
     /// 同步读取保持寄存器
     /// </summary>
-    /// <param name="slaveId">从站地址</param>
+    /// <param name="unitId">设备地址</param>
     /// <param name="startAddress">起始地址</param>
     /// <param name="quantity">数量</param>
     /// <returns>寄存器值数组</returns>
-    ushort[] ReadHoldingRegisters(byte slaveId, ushort startAddress, ushort quantity);
+    ushort[] ReadHoldingRegisters(byte unitId, ushort startAddress, ushort quantity);
 
     /// <summary>
     /// 同步读取输入寄存器
     /// </summary>
-    /// <param name="slaveId">从站地址</param>
+    /// <param name="unitId">设备地址</param>
     /// <param name="startAddress">起始地址</param>
     /// <param name="quantity">数量</param>
     /// <returns>寄存器值数组</returns>
-    ushort[] ReadInputRegisters(byte slaveId, ushort startAddress, ushort quantity);
+    ushort[] ReadInputRegisters(byte unitId, ushort startAddress, ushort quantity);
 
     #endregion
 
@@ -255,34 +255,34 @@ public interface IModbusClient : IDisposable, IAsyncDisposable {
     /// <summary>
     /// 同步写单个线圈
     /// </summary>
-    /// <param name="slaveId">从站地址</param>
+    /// <param name="unitId">设备地址</param>
     /// <param name="address">线圈地址</param>
     /// <param name="value">线圈值</param>
-    void WriteSingleCoil(byte slaveId, ushort address, bool value);
+    void WriteSingleCoil(byte unitId, ushort address, bool value);
 
     /// <summary>
     /// 同步写单个寄存器
     /// </summary>
-    /// <param name="slaveId">从站地址</param>
+    /// <param name="unitId">设备地址</param>
     /// <param name="address">寄存器地址</param>
     /// <param name="value">寄存器值</param>
-    void WriteSingleRegister(byte slaveId, ushort address, ushort value);
+    void WriteSingleRegister(byte unitId, ushort address, ushort value);
 
     /// <summary>
     /// 同步写多个线圈
     /// </summary>
-    /// <param name="slaveId">从站地址</param>
+    /// <param name="unitId">设备地址</param>
     /// <param name="startAddress">起始地址</param>
     /// <param name="values">线圈值数组</param>
-    void WriteMultipleCoils(byte slaveId, ushort startAddress, bool[] values);
+    void WriteMultipleCoils(byte unitId, ushort startAddress, bool[] values);
 
     /// <summary>
     /// 同步写多个寄存器
     /// </summary>
-    /// <param name="slaveId">从站地址</param>
+    /// <param name="unitId">设备地址</param>
     /// <param name="startAddress">起始地址</param>
     /// <param name="values">寄存器值数组</param>
-    void WriteMultipleRegisters(byte slaveId, ushort startAddress, ushort[] values);
+    void WriteMultipleRegisters(byte unitId, ushort startAddress, ushort[] values);
 
     #endregion
 
@@ -291,13 +291,13 @@ public interface IModbusClient : IDisposable, IAsyncDisposable {
     /// <summary>
     /// 同步读写多个寄存器
     /// </summary>
-    /// <param name="slaveId">从站地址</param>
+    /// <param name="unitId">设备地址</param>
     /// <param name="readStartAddress">读取起始地址</param>
     /// <param name="readQuantity">读取数量</param>
     /// <param name="writeStartAddress">写入起始地址</param>
     /// <param name="writeValues">写入值数组</param>
     /// <returns>读取的寄存器值数组</returns>
-    ushort[] ReadWriteMultipleRegisters(byte slaveId, ushort readStartAddress, ushort readQuantity,
+    ushort[] ReadWriteMultipleRegisters(byte unitId, ushort readStartAddress, ushort readQuantity,
         ushort writeStartAddress, ushort[] writeValues);
 
     #endregion
@@ -308,26 +308,26 @@ public interface IModbusClient : IDisposable, IAsyncDisposable {
     /// 泛型同步读取保持寄存器
     /// </summary>
     /// <typeparam name="T">数据类型 (支持 unmanaged 类型)</typeparam>
-    /// <param name="slaveId">从站地址</param>
+    /// <param name="unitId">设备地址</param>
     /// <param name="startAddress">起始地址</param>
     /// <param name="count">要返回的T类型元素数量</param>
     /// <param name="byteOrder">字节序模式</param>
     /// <param name="wordOrder">字序模式</param>
     /// <returns>指定类型的数组，长度为count</returns>
-    T[] ReadHoldingRegisters<T>(byte slaveId, ushort startAddress, ushort count,
+    T[] ReadHoldingRegisters<T>(byte unitId, ushort startAddress, ushort count,
         ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst) where T : unmanaged;
 
     /// <summary>
     /// 泛型同步读取输入寄存器
     /// </summary>
     /// <typeparam name="T">数据类型 (支持 unmanaged 类型)</typeparam>
-    /// <param name="slaveId">从站地址</param>
+    /// <param name="unitId">设备地址</param>
     /// <param name="startAddress">起始地址</param>
     /// <param name="count">要返回的T类型元素数量</param>
     /// <param name="byteOrder">字节序模式</param>
     /// <param name="wordOrder">字序模式</param>
     /// <returns>指定类型的数组，长度为count</returns>
-    T[] ReadInputRegisters<T>(byte slaveId, ushort startAddress, ushort count,
+    T[] ReadInputRegisters<T>(byte unitId, ushort startAddress, ushort count,
         ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst) where T : unmanaged;
 
     #endregion
@@ -338,24 +338,24 @@ public interface IModbusClient : IDisposable, IAsyncDisposable {
     /// 泛型同步写入单个寄存器
     /// </summary>
     /// <typeparam name="T">数据类型 (支持 unmanaged 类型)</typeparam>
-    /// <param name="slaveId">从站地址</param>
+    /// <param name="unitId">设备地址</param>
     /// <param name="address">寄存器地址</param>
     /// <param name="value">要写入的值</param>
     /// <param name="byteOrder">字节序模式</param>
     /// <param name="wordOrder">字序模式</param>
-    void WriteSingleRegister<T>(byte slaveId, ushort address, T value,
+    void WriteSingleRegister<T>(byte unitId, ushort address, T value,
         ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst) where T : unmanaged;
 
     /// <summary>
     /// 泛型同步写入多个寄存器
     /// </summary>
     /// <typeparam name="T">数据类型 (支持 unmanaged 类型)</typeparam>
-    /// <param name="slaveId">从站地址</param>
+    /// <param name="unitId">设备地址</param>
     /// <param name="startAddress">起始地址</param>
     /// <param name="values">要写入的值数组</param>
     /// <param name="byteOrder">字节序模式</param>
     /// <param name="wordOrder">字序模式</param>
-    void WriteMultipleRegisters<T>(byte slaveId, ushort startAddress, T[] values,
+    void WriteMultipleRegisters<T>(byte unitId, ushort startAddress, T[] values,
         ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst) where T : unmanaged;
 
     #endregion

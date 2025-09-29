@@ -14,7 +14,7 @@ public class ModbusSlaveSimulatorTests
 {
     private readonly ITestOutputHelper _output;
     private const int SlavePort = 503; // 使用503端口避免与系统其他服务冲突
-    private const byte SlaveId = 1;
+    private const byte UnitId = 1;
 
     public ModbusSlaveSimulatorTests(ITestOutputHelper output)
     {
@@ -29,7 +29,7 @@ public class ModbusSlaveSimulatorTests
     public async Task ModbusTcpSlave_ReadWriteCoils_Test()
     {
         // 启动从机模拟器
-        using var slaveSimulator = new ModbusSlaveSimulator(SlavePort, SlaveId);
+        using var slaveSimulator = new ModbusSlaveSimulator(SlavePort, UnitId);
         await slaveSimulator.StartAsync();
 
         // 创建主站客户端连接到从机
@@ -40,10 +40,10 @@ public class ModbusSlaveSimulatorTests
         var master = factory.CreateMaster(tcpClient);
 
         // 测试写入单个线圈
-        await master.WriteSingleCoilAsync(SlaveId, 0, true);
+        await master.WriteSingleCoilAsync(UnitId, 0, true);
         
         // 测试读取线圈
-        var coilValues = await master.ReadCoilsAsync(SlaveId, 0, 10);
+        var coilValues = await master.ReadCoilsAsync(UnitId, 0, 10);
         
         // 验证结果
         Assert.NotNull(coilValues);
@@ -60,7 +60,7 @@ public class ModbusSlaveSimulatorTests
     public async Task ModbusTcpSlave_ReadWriteRegisters_Test()
     {
         // 启动从机模拟器
-        using var slaveSimulator = new ModbusSlaveSimulator(SlavePort, SlaveId);
+        using var slaveSimulator = new ModbusSlaveSimulator(SlavePort, UnitId);
         await slaveSimulator.StartAsync();
 
         // 创建主站客户端连接到从机
@@ -71,17 +71,17 @@ public class ModbusSlaveSimulatorTests
         var master = factory.CreateMaster(tcpClient);
 
         // 测试写入单个寄存器
-        await master.WriteSingleRegisterAsync(SlaveId, 0, 12345);
+        await master.WriteSingleRegisterAsync(UnitId, 0, 12345);
         
         // 测试写入多个寄存器
         ushort[] writeValues = [100, 200, 300];
-        await master.WriteMultipleRegistersAsync(SlaveId, 10, writeValues);
+        await master.WriteMultipleRegistersAsync(UnitId, 10, writeValues);
         
         // 测试读取单个寄存器
-        var singleRegister = await master.ReadHoldingRegistersAsync(SlaveId, 0, 1);
+        var singleRegister = await master.ReadHoldingRegistersAsync(UnitId, 0, 1);
         
         // 测试读取多个寄存器
-        var multipleRegisters = await master.ReadHoldingRegistersAsync(SlaveId, 10, 3);
+        var multipleRegisters = await master.ReadHoldingRegistersAsync(UnitId, 10, 3);
         
         // 验证结果
         Assert.Equal(12345, singleRegister[0]);
@@ -98,7 +98,7 @@ public class ModbusSlaveSimulatorTests
     public async Task ModbusLibClient_ConnectToNModbusSlave_Test()
     {
         // 启动从机模拟器
-        using var slaveSimulator = new ModbusSlaveSimulator(SlavePort, SlaveId);
+        using var slaveSimulator = new ModbusSlaveSimulator(SlavePort, UnitId);
         await slaveSimulator.StartAsync();
 
         // 使用我们自己的客户端连接到从机
@@ -115,12 +115,12 @@ public class ModbusSlaveSimulatorTests
             await client.ConnectAsync();
             
             // 测试写入和读取线圈
-            await client.WriteSingleCoilAsync(SlaveId, 0, true);
-            var coilValue = await client.ReadCoilsAsync(SlaveId, 0, 1);
+            await client.WriteSingleCoilAsync(UnitId, 0, true);
+            var coilValue = await client.ReadCoilsAsync(UnitId, 0, 1);
             
             // 测试写入和读取寄存器
-            await client.WriteSingleRegisterAsync(SlaveId, 0, 54321);
-            var registerValue = await client.ReadHoldingRegistersAsync(SlaveId, 0, 1);
+            await client.WriteSingleRegisterAsync(UnitId, 0, 54321);
+            var registerValue = await client.ReadHoldingRegistersAsync(UnitId, 0, 1);
             
             // 验证结果
             Assert.True(coilValue[0]);
@@ -144,16 +144,16 @@ public class ModbusSlaveSimulatorTests
 public class ModbusSlaveSimulator : IDisposable
 {
     private readonly int _port;
-    private readonly byte _slaveId;
+    private readonly byte _unitId;
     private TcpListener? _tcpListener;
     private IModbusSlaveNetwork? _slaveNetwork;
     private Task? _listenTask;
     private CancellationTokenSource? _cancellationTokenSource;
 
-    public ModbusSlaveSimulator(int port, byte slaveId)
+    public ModbusSlaveSimulator(int port, byte unitId)
     {
         _port = port;
-        _slaveId = slaveId;
+        _unitId = unitId;
     }
 
     public async Task StartAsync()
@@ -166,7 +166,7 @@ public class ModbusSlaveSimulator : IDisposable
         
         // 创建从机数据存储
         var dataStore = new SlaveStorage();
-        var slave = factory.CreateSlave(_slaveId, dataStore);
+        var slave = factory.CreateSlave(_unitId, dataStore);
         _slaveNetwork.AddSlave(slave);
 
         // 启动监听任务

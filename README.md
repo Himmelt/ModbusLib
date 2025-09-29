@@ -44,7 +44,7 @@ var rtuClient = ModbusClientFactory.CreateRtuClient(new SerialConnectionConfig
 
 // 连接并读取数据
 await rtuClient.ConnectAsync();
-var coils = await rtuClient.ReadCoilsAsync(slaveId: 1, startAddress: 0, quantity: 10);
+var coils = await rtuClient.ReadCoilsAsync(unitId: 1, startAddress: 0, quantity: 10);
 ```
 
 ```csharp
@@ -57,7 +57,7 @@ var tcpClient = ModbusClientFactory.CreateTcpClient(new NetworkConnectionConfig
 
 // 连接并写入数据
 await tcpClient.ConnectAsync();
-await tcpClient.WriteMultipleRegistersAsync(slaveId: 1, startAddress: 0, new ushort[] { 100, 200, 300 });
+await tcpClient.WriteMultipleRegistersAsync(unitId: 1, startAddress: 0, new ushort[] { 100, 200, 300 });
 ```
 
 ## 项目结构

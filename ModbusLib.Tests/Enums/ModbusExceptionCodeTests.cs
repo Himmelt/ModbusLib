@@ -12,9 +12,9 @@ public class ModbusExceptionCodeTests
         Assert.Equal(0x01, (byte)ModbusExceptionCode.IllegalFunction);
         Assert.Equal(0x02, (byte)ModbusExceptionCode.IllegalDataAddress);
         Assert.Equal(0x03, (byte)ModbusExceptionCode.IllegalDataValue);
-        Assert.Equal(0x04, (byte)ModbusExceptionCode.SlaveDeviceFailure);
-        Assert.Equal(0x05, (byte)ModbusExceptionCode.Acknowledge);
-        Assert.Equal(0x06, (byte)ModbusExceptionCode.SlaveDeviceBusy);
+        Assert.Equal(0x04, (byte)ModbusExceptionCode.TargetDeviceFailure);
+        Assert.Equal(0x05, (byte)ModbusExceptionCode.ServerAcknowledge);
+        Assert.Equal(0x06, (byte)ModbusExceptionCode.TargetDeviceBusy);
         Assert.Equal(0x08, (byte)ModbusExceptionCode.MemoryParityError);
         Assert.Equal(0x0A, (byte)ModbusExceptionCode.GatewayPathUnavailable);
         Assert.Equal(0x0B, (byte)ModbusExceptionCode.GatewayTargetDeviceFailedToRespond);

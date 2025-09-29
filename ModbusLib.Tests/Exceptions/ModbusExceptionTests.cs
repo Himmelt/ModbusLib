@@ -6,58 +6,40 @@ namespace ModbusLib.Tests.Exceptions;
 public class ModbusExceptionTests
 {
     [Fact]
-    public void ModbusException_ConstructorWithExceptionCodeSlaveIdAndFunction_SetsProperties()
-    {
-        // Arrange
-        var exceptionCode = ModbusExceptionCode.IllegalFunction;
-        var slaveId = (byte)1;
-        var function = ModbusFunction.ReadCoils;
-
-        // Act
-        var exception = new ModbusException(exceptionCode, slaveId, function);
-
-        // Assert
-        Assert.Equal(exceptionCode, exception.ExceptionCode);
-        Assert.Equal(slaveId, exception.SlaveId);
-        Assert.Equal(function, exception.Function);
-        Assert.Equal($"Modbus异常: 从站{slaveId}, 功能码{(byte)function:X2}, 异常码{(byte)exceptionCode} (非法功能码)", exception.Message);
-    }
-
-    [Fact]
-    public void ModbusException_ConstructorWithExceptionCodeSlaveIdFunctionAndMessage_SetsProperties()
+    public void ModbusException_ConstructorWithExceptionCodeUnitIdFunctionAndMessage_SetsProperties()
     {
         // Arrange
         var exceptionCode = ModbusExceptionCode.IllegalDataAddress;
-        var slaveId = (byte)2;
+        var unitId = (byte)2;
         var function = ModbusFunction.WriteSingleCoil;
         var message = "Test message";
 
         // Act
-        var exception = new ModbusException(exceptionCode, slaveId, function, message);
+        var exception = new ModbusException(exceptionCode, unitId, function, message);
 
         // Assert
         Assert.Equal(exceptionCode, exception.ExceptionCode);
-        Assert.Equal(slaveId, exception.SlaveId);
+        Assert.Equal(unitId, exception.UnitId);
         Assert.Equal(function, exception.Function);
         Assert.Equal(message, exception.Message);
     }
 
     [Fact]
-    public void ModbusException_ConstructorWithExceptionCodeSlaveIdFunctionMessageAndInnerException_SetsProperties()
+    public void ModbusException_ConstructorWithExceptionCodeUnitIdFunctionMessageAndInnerException_SetsProperties()
     {
         // Arrange
-        var exceptionCode = ModbusExceptionCode.SlaveDeviceFailure;
-        var slaveId = (byte)3;
+        var exceptionCode = ModbusExceptionCode.TargetDeviceFailure;
+        var unitId = (byte)3;
         var function = ModbusFunction.ReadHoldingRegisters;
         var message = "Test message";
         var innerException = new Exception("Inner exception");
 
         // Act
-        var exception = new ModbusException(exceptionCode, slaveId, function, message, innerException);
+        var exception = new ModbusException(exceptionCode, unitId, function, message, innerException);
 
         // Assert
         Assert.Equal(exceptionCode, exception.ExceptionCode);
-        Assert.Equal(slaveId, exception.SlaveId);
+        Assert.Equal(unitId, exception.UnitId);
         Assert.Equal(function, exception.Function);
         Assert.Equal(message, exception.Message);
         Assert.Equal(innerException, exception.InnerException);

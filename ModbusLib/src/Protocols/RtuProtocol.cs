@@ -12,9 +12,9 @@ public class RtuProtocol : IModbusProtocol {
     public byte[] BuildRequest(ModbusRequest request) {
         ArgumentNullException.ThrowIfNull(request, nameof(request));
         var pdu = BuildPdu(request);
-        var frame = new byte[pdu.Length + 3]; // SlaveId + PDU + CRC
+        var frame = new byte[pdu.Length + 3]; // 设备地址 + PDU + CRC
 
-        frame[0] = request.SlaveId;
+        frame[0] = request.UnitId;
         Array.Copy(pdu, 0, frame, 1, pdu.Length);
 
         // 计算并添加CRC
@@ -33,7 +33,7 @@ public class RtuProtocol : IModbusProtocol {
         if (!ModbusUtils.ValidateCrc16(response))
             throw new ModbusCommunicationException("RTU响应CRC校验失败");
 
-        var slaveId = response[0];
+        var unitId = response[0];
         var functionCode = response[1];
 
         // 检查是否为异常响应
@@ -44,15 +44,15 @@ public class RtuProtocol : IModbusProtocol {
             var originalFunction = (ModbusFunction)(functionCode & 0x7F);
             var exceptionCode = (ModbusExceptionCode)response[2];
 
-            return ModbusResponse.CreateError(slaveId, originalFunction, exceptionCode);
+            return ModbusResponse.CreateError(unitId, originalFunction, exceptionCode);
         }
 
         // 解析正常响应
-        var dataLength = response.Length - 3; // 减去SlaveId + CRC(2字节)
+        var dataLength = response.Length - 3; // 减去设备地址 + CRC(2字节)
         var data = new byte[dataLength - 1]; // 减去功能码
         Array.Copy(response, 2, data, 0, data.Length);
 
-        return new ModbusResponse(slaveId, (ModbusFunction)functionCode, data, response);
+        return new ModbusResponse(unitId, (ModbusFunction)functionCode, data, response);
     }
 
     public bool ValidateResponse(byte[] response) {
@@ -66,7 +66,7 @@ public class RtuProtocol : IModbusProtocol {
     public int CalculateExpectedResponseLength(ModbusRequest request) {
         ArgumentNullException.ThrowIfNull(request, nameof(request));
         return request.Function switch {
-            ModbusFunction.ReadCoils => 3 + 1 + (request.Quantity + 7) / 8 + 2, // SlaveId + Function + ByteCount + Data + CRC
+            ModbusFunction.ReadCoils => 3 + 1 + (request.Quantity + 7) / 8 + 2, // 设备地址 + Function + ByteCount + Data + CRC
             ModbusFunction.ReadDiscreteInputs => 3 + 1 + (request.Quantity + 7) / 8 + 2,
             ModbusFunction.ReadHoldingRegisters => 3 + 1 + request.Quantity * 2 + 2,
             ModbusFunction.ReadInputRegisters => 3 + 1 + request.Quantity * 2 + 2,

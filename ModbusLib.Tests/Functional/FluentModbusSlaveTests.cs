@@ -16,7 +16,7 @@ public class FluentModbusSlaveTests : IDisposable
 {
     private readonly ITestOutputHelper _output;
     private const int SlavePort = 504; // 使用504端口避免与系统其他服务冲突
-    private const byte SlaveId = 1;
+    private const byte UnitId = 1;
     private ModbusTcpServer? _slaveServer;
     private bool _disposed;
 
@@ -71,23 +71,23 @@ public class FluentModbusSlaveTests : IDisposable
             
             // 测试写入单个线圈
             _output.WriteLine("开始写入单个线圈");
-            await client.WriteSingleCoilAsync(SlaveId, 0, true);
+            await client.WriteSingleCoilAsync(UnitId, 0, true);
             _output.WriteLine("单个线圈写入完成");
             
             // 测试写入多个线圈
             var coilValuesToWrite = new bool[] { true, false, true, true, false };
             _output.WriteLine("开始写入多个线圈");
-            await client.WriteMultipleCoilsAsync(SlaveId, 10, coilValuesToWrite);
+            await client.WriteMultipleCoilsAsync(UnitId, 10, coilValuesToWrite);
             _output.WriteLine("多个线圈写入完成");
             
             // 测试读取单个线圈
             _output.WriteLine("开始读取单个线圈");
-            var singleCoil = await client.ReadCoilsAsync(SlaveId, 0, 1);
+            var singleCoil = await client.ReadCoilsAsync(UnitId, 0, 1);
             _output.WriteLine($"单个线圈读取完成，值: {singleCoil[0]}");
             
             // 测试读取多个线圈
             _output.WriteLine("开始读取多个线圈");
-            var multipleCoils = await client.ReadCoilsAsync(SlaveId, 10, 5);
+            var multipleCoils = await client.ReadCoilsAsync(UnitId, 10, 5);
             _output.WriteLine($"多个线圈读取完成，值: {string.Join(", ", multipleCoils)}");
             
             // 验证结果
@@ -149,24 +149,24 @@ public class FluentModbusSlaveTests : IDisposable
             
             // 测试写入单个寄存器
             _output.WriteLine("开始写入单个寄存器");
-            await client.WriteSingleRegisterAsync(SlaveId, 0, 12345);
+            await client.WriteSingleRegisterAsync(UnitId, 0, 12345);
             _output.WriteLine("单个寄存器写入完成");
             
             // 测试写入多个寄存器
             ushort[] writeValues = [100, 200, 300, 400, 500];
             _output.WriteLine("开始写入多个寄存器");
             // 明确指定调用非泛型版本
-            await client.WriteMultipleRegistersAsync(SlaveId, 10, writeValues, default(CancellationToken));
+            await client.WriteMultipleRegistersAsync(UnitId, 10, writeValues, default(CancellationToken));
             _output.WriteLine("多个寄存器写入完成");
             
             // 测试读取单个寄存器
             _output.WriteLine("开始读取单个寄存器");
-            var singleRegister = await client.ReadHoldingRegistersAsync(SlaveId, 0, 1);
+            var singleRegister = await client.ReadHoldingRegistersAsync(UnitId, 0, 1);
             _output.WriteLine($"单个寄存器读取完成，值: {singleRegister[0]}");
             
             // 测试读取多个寄存器
             _output.WriteLine("开始读取多个寄存器");
-            var multipleRegisters = await client.ReadHoldingRegistersAsync(SlaveId, 10, 5);
+            var multipleRegisters = await client.ReadHoldingRegistersAsync(UnitId, 10, 5);
             _output.WriteLine($"多个寄存器读取完成，值: {string.Join(", ", multipleRegisters)}");
             
             // 验证结果
@@ -229,21 +229,21 @@ public class FluentModbusSlaveTests : IDisposable
             // 测试写入和读取浮点数数组
             _output.WriteLine("开始写入浮点数数组");
             float[] floatValues = [1.23f, 4.56f, 7.89f];
-            await client.WriteMultipleRegistersAsync<float>(SlaveId, 0, floatValues);
+            await client.WriteMultipleRegistersAsync<float>(UnitId, 0, floatValues);
             _output.WriteLine("浮点数数组写入完成");
             
             _output.WriteLine("开始读取浮点数数组");
-            var readFloatValues = await client.ReadHoldingRegistersAsync<float>(SlaveId, 0, 3);
+            var readFloatValues = await client.ReadHoldingRegistersAsync<float>(UnitId, 0, 3);
             _output.WriteLine($"浮点数数组读取完成，值: {string.Join(", ", readFloatValues)}");
             
             // 测试写入和读取双精度浮点数
             _output.WriteLine("开始写入双精度浮点数");
             double doubleValue = 123.456;
-            await client.WriteSingleRegisterAsync<double>(SlaveId, 10, doubleValue);
+            await client.WriteSingleRegisterAsync<double>(UnitId, 10, doubleValue);
             _output.WriteLine("双精度浮点数写入完成");
             
             _output.WriteLine("开始读取双精度浮点数");
-            var readDoubleValue = await client.ReadHoldingRegistersAsync<double>(SlaveId, 10, 1);
+            var readDoubleValue = await client.ReadHoldingRegistersAsync<double>(UnitId, 10, 1);
             _output.WriteLine($"双精度浮点数读取完成，值: {readDoubleValue[0]}");
             
             // 验证结果
@@ -307,7 +307,7 @@ public class FluentModbusSlaveTests : IDisposable
             _output.WriteLine("开始写入初始数据");
             ushort[] initialValues = [1000, 2000, 3000];
             // 明确指定调用非泛型版本
-            await client.WriteMultipleRegistersAsync(SlaveId, 0, initialValues, default(CancellationToken));
+            await client.WriteMultipleRegistersAsync(UnitId, 0, initialValues, default(CancellationToken));
             _output.WriteLine("初始数据写入完成");
             
             // 准备要写入的数据
@@ -315,7 +315,7 @@ public class FluentModbusSlaveTests : IDisposable
             
             // 执行读写多个寄存器操作
             _output.WriteLine("开始执行读写多个寄存器操作");
-            var readValues = await client.ReadWriteMultipleRegistersAsync(SlaveId, 0, 3, 10, writeValues);
+            var readValues = await client.ReadWriteMultipleRegistersAsync(UnitId, 0, 3, 10, writeValues);
             _output.WriteLine($"读写多个寄存器操作完成，读取值: {string.Join(", ", readValues)}");
             
             // 验证读取的数据是否正确
@@ -323,7 +323,7 @@ public class FluentModbusSlaveTests : IDisposable
             
             // 验证写入的数据是否正确
             _output.WriteLine("开始验证写入的数据");
-            var verifyValues = await client.ReadHoldingRegistersAsync(SlaveId, 10, 3);
+            var verifyValues = await client.ReadHoldingRegistersAsync(UnitId, 10, 3);
             _output.WriteLine($"验证数据读取完成，值: {string.Join(", ", verifyValues)}");
             Assert.Equal(writeValues, verifyValues);
             

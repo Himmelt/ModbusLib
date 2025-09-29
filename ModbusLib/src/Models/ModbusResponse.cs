@@ -10,9 +10,9 @@ public class ModbusResponse {
     private readonly byte[]? _rawData;
 
     /// <summary>
-    /// 从站地址
+    /// 设备地址
     /// </summary>
-    public byte SlaveId { get; set; }
+    public byte UnitId { get; set; }
 
     /// <summary>
     /// 功能码
@@ -51,8 +51,8 @@ public class ModbusResponse {
     public ModbusResponse() {
     }
 
-    public ModbusResponse(byte slaveId, ModbusFunction function, byte[]? data = null, byte[]? rawData = null) {
-        SlaveId = slaveId;
+    public ModbusResponse(byte unitId, ModbusFunction function, byte[]? data = null, byte[]? rawData = null) {
+        UnitId = unitId;
         Function = function;
         _data = data;
         _rawData = rawData;
@@ -61,9 +61,9 @@ public class ModbusResponse {
     /// <summary>
     /// 创建错误响应
     /// </summary>
-    public static ModbusResponse CreateError(byte slaveId, ModbusFunction function, ModbusExceptionCode exceptionCode) {
+    public static ModbusResponse CreateError(byte unitId, ModbusFunction function, ModbusExceptionCode exceptionCode) {
         return new ModbusResponse {
-            SlaveId = slaveId,
+            UnitId = unitId,
             Function = function,
             IsError = true,
             ExceptionCode = exceptionCode

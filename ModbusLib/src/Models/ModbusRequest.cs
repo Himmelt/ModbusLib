@@ -10,9 +10,9 @@ public class ModbusRequest {
     private readonly byte[]? _data;
 
     /// <summary>
-    /// 从站地址
+    /// 设备地址
     /// </summary>
-    public byte SlaveId { get; set; }
+    public byte UnitId { get; set; }
 
     /// <summary>
     /// 功能码
@@ -44,8 +44,8 @@ public class ModbusRequest {
     public ModbusRequest() {
     }
 
-    public ModbusRequest(byte slaveId, ModbusFunction function, ushort startAddress, ushort quantity, byte[]? data = null) {
-        SlaveId = slaveId;
+    public ModbusRequest(byte unitId, ModbusFunction function, ushort startAddress, ushort quantity, byte[]? data = null) {
+        UnitId = unitId;
         Function = function;
         StartAddress = startAddress;
         Quantity = quantity;

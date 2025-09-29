@@ -15,7 +15,7 @@ public class TcpProtocol : IModbusProtocol {
     public byte[] BuildRequest(ModbusRequest request) {
         ArgumentNullException.ThrowIfNull(request, nameof(request));
         var pdu = BuildPdu(request);
-        var frame = new byte[7 + pdu.Length]; // MBAP Header (6字节) + SlaveId (1字节) + PDU
+        var frame = new byte[7 + pdu.Length]; // MBAP Header (6字节) + 设备地址 (1字节) + PDU
 
         ushort currentTransactionId;
         lock (_transactionLock) {
@@ -31,8 +31,8 @@ public class TcpProtocol : IModbusProtocol {
         frame[4] = (byte)((pdu.Length + 1) >> 8);       // 长度高字节 (PDU长度 + 单元ID)
         frame[5] = (byte)((pdu.Length + 1) & 0xFF);     // 长度低字节
 
-        // 添加单元ID
-        frame[6] = request.SlaveId;
+        // 添加设备地址
+        frame[6] = request.UnitId;
 
         // 复制PDU
         Array.Copy(pdu, 0, frame, 7, pdu.Length);
@@ -56,7 +56,7 @@ public class TcpProtocol : IModbusProtocol {
         if (response.Length < 6 + length)
             throw new ModbusCommunicationException($"TCP响应数据不完整，期望{6 + length}字节，实际{response.Length}字节");
 
-        var slaveId = response[6];
+        var unitId = response[6];
         var functionCode = response[7];
 
         // 检查是否为异常响应
@@ -67,7 +67,7 @@ public class TcpProtocol : IModbusProtocol {
             var originalFunction = (ModbusFunction)(functionCode & 0x7F);
             var exceptionCode = (ModbusExceptionCode)response[8];
 
-            return ModbusResponse.CreateError(slaveId, originalFunction, exceptionCode);
+            return ModbusResponse.CreateError(unitId, originalFunction, exceptionCode);
         }
 
         // 解析正常响应数据
@@ -77,7 +77,7 @@ public class TcpProtocol : IModbusProtocol {
             Array.Copy(response, 8, data, 0, dataLength);
         }
 
-        return new ModbusResponse(slaveId, (ModbusFunction)functionCode, data, response);
+        return new ModbusResponse(unitId, (ModbusFunction)functionCode, data, response);
     }
 
     public bool ValidateResponse(byte[] response) {
@@ -135,7 +135,7 @@ public class TcpProtocol : IModbusProtocol {
             _ => throw new NotSupportedException($"不支持的功能码: {request.Function}")
         };
 
-        return 6 + 1 + pduLength; // MBAP Header + SlaveId + PDU
+        return 6 + 1 + pduLength; // MBAP Header + 设备地址 + PDU
     }
 
     private static byte[] BuildPdu(ModbusRequest request) {
