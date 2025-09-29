@@ -153,24 +153,4 @@ public static class ModbusClientFactory {
 
         return new ModbusRtuOverUdpClient(config);
     }
-
-    /// <summary>
-    /// 根据连接类型创建客户端
-    /// </summary>
-    /// <param name="connectionType">连接类型</param>
-    /// <param name="serialConfig">串口配置（RTU时需要）</param>
-    /// <param name="networkConfig">网络配置（网络连接时需要）</param>
-    /// <returns>Modbus客户端</returns>
-    public static IModbusClient CreateClient(ModbusConnectionType connectionType,
-        SerialConnectionConfig? serialConfig = null,
-        NetworkConnectionConfig? networkConfig = null) {
-        return connectionType switch {
-            ModbusConnectionType.Rtu => CreateRtuClient(serialConfig ?? throw new ArgumentNullException(nameof(serialConfig))),
-            ModbusConnectionType.Tcp => CreateTcpClient(networkConfig ?? throw new ArgumentNullException(nameof(networkConfig))),
-            ModbusConnectionType.Udp => CreateUdpClient(networkConfig ?? throw new ArgumentNullException(nameof(networkConfig))),
-            ModbusConnectionType.RtuOverTcp => CreateRtuOverTcpClient(networkConfig ?? throw new ArgumentNullException(nameof(networkConfig))),
-            ModbusConnectionType.RtuOverUdp => CreateRtuOverUdpClient(networkConfig ?? throw new ArgumentNullException(nameof(networkConfig))),
-            _ => throw new NotSupportedException($"不支持的连接类型: {connectionType}")
-        };
-    }
 }

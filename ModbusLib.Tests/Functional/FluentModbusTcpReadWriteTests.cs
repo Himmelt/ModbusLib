@@ -1,6 +1,7 @@
 using FluentModbus;
 using ModbusLib.Factories;
 using System.Net;
+using System.Net.Sockets;
 
 namespace ModbusLib.Tests.Functional;
 
