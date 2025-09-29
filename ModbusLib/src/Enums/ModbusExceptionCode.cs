@@ -5,8 +5,8 @@ namespace ModbusLib.Enums;
 /// <summary>
 /// Modbus 异常码枚举
 /// </summary>
-[SuppressMessage("Design", "CA1027:用 FlagsAttribute 标记枚举")]
-[SuppressMessage("CodeQuality", "IDE0079:请删除不必要的忽略")]
+[SuppressMessage("Design", "CA1027")]
+[SuppressMessage("CodeQuality", "IDE0079")]
 public enum ModbusExceptionCode {
     /// <summary>
     /// 无异常
