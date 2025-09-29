@@ -21,31 +21,28 @@ public class ModbusException : Exception {
     /// </summary>
     public ModbusFunction Function { get; }
 
-    public ModbusException(ModbusExceptionCode exceptionCode, byte slaveId, ModbusFunction function)
-        : base($"Modbus异常: 从站{slaveId}, 功能码{(byte)function:X2}, 异常码{(byte)exceptionCode}") {
-        ExceptionCode = exceptionCode;
+    public ModbusException() { }
+
+    public ModbusException(string message) : base(message) { }
+
+    public ModbusException(string message, Exception innerEx) : base(message, innerEx) { }
+
+    public ModbusException(ModbusExceptionCode exCode, byte slaveId, ModbusFunction func, string message) : base(message) {
+        ExceptionCode = exCode;
         SlaveId = slaveId;
-        Function = function;
+        Function = func;
     }
 
-    public ModbusException(ModbusExceptionCode exceptionCode, byte slaveId, ModbusFunction function, string message)
-        : base(message) {
-        ExceptionCode = exceptionCode;
+    public ModbusException(ModbusExceptionCode exCode, byte slaveId, ModbusFunction func, string message, Exception innerEx) : base(message, innerEx) {
+        ExceptionCode = exCode;
         SlaveId = slaveId;
-        Function = function;
+        Function = func;
     }
 
-    public ModbusException(ModbusExceptionCode exceptionCode, byte slaveId, ModbusFunction function, string message, Exception innerException)
-        : base(message, innerException) {
-        ExceptionCode = exceptionCode;
+    public ModbusException(ModbusExceptionCode exCode, byte slaveId, ModbusFunction func)
+        : base($"Modbus异常: 从站{slaveId}, 功能码{(byte)func:X2}, 异常码{(byte)exCode:X2}: {exCode.GetDescription()}") {
+        ExceptionCode = exCode;
         SlaveId = slaveId;
-        Function = function;
-    }
-    public ModbusException() {
-    }
-    public ModbusException(string message) : base(message) {
-    }
-
-    public ModbusException(string message, Exception innerException) : base(message, innerException) {
+        Function = func;
     }
 }

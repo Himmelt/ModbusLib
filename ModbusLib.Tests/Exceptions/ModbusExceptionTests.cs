@@ -20,7 +20,7 @@ public class ModbusExceptionTests
         Assert.Equal(exceptionCode, exception.ExceptionCode);
         Assert.Equal(slaveId, exception.SlaveId);
         Assert.Equal(function, exception.Function);
-        Assert.Equal($"Modbus异常: 从站{slaveId}, 功能码{(byte)function:X2}, 异常码{(byte)exceptionCode}", exception.Message);
+        Assert.Equal($"Modbus异常: 从站{slaveId}, 功能码{(byte)function:X2}, 异常码{(byte)exceptionCode} (非法功能码)", exception.Message);
     }
 
     [Fact]

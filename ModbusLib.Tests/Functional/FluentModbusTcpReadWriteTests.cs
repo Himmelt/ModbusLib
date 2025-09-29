@@ -1,4 +1,4 @@
-using FluentModbus;
+using ModbusLib.Enums;
 using ModbusLib.Factories;
 using System.Net;
 using System.Net.Sockets;
@@ -9,13 +9,13 @@ public class FluentModbusTcpReadWriteTests {
 
     [Fact]
     public void TestReadCoil() {
-/*        // 创建 FluentModbus 从机
-        const int port = 5001;
-        var endpoint = new IPEndPoint(IPAddress.Loopback, port);
-        // 启动服务器
-        using var server = new ModbusTcpServer();
-        server.AddUnit(1);
-        server.Start(endpoint);*/
+        /*        // 创建 FluentModbus 从机
+                const int port = 5001;
+                var endpoint = new IPEndPoint(IPAddress.Loopback, port);
+                // 启动服务器
+                using var server = new ModbusTcpServer();
+                server.AddUnit(1);
+                server.Start(endpoint);*/
 
         // 创建 ModbusTcp 客户端
         using var client = ModbusClientFactory.CreateTcpClient("localhost", 502);
@@ -37,5 +37,10 @@ public class FluentModbusTcpReadWriteTests {
         // 验证结果
         Assert.True(value[0]);
         client.Disconnect();
+    }
+
+    [Fact]
+    public void TestEnumDescrption() {
+        Assert.Equal("非法数据值", ModbusExceptionCode.IllegalDataValue.GetDescription());
     }
 }
