@@ -425,16 +425,21 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
         Exception? lastException = null;
 
         for (int attempt = 0; attempt <= Retries; attempt++) {
+            // 检查取消令牌
+            cancellationToken.ThrowIfCancellationRequested();
+
             try {
                 var requestBytes = _protocol.BuildRequest(request);
                 var responseBytes = await _transport.SendReceiveAsync(requestBytes, cancellationToken).ConfigureAwait(false);
 
                 if (!_protocol.ValidateResponse(responseBytes))
-                    throw new ModbusCommunicationException("响应数据验证失败");
+                    throw new ModbusCommunicationException($"响应数据验证失败: response length = {responseBytes?.Length ?? 0}");
 
                 return _protocol.ParseResponse(responseBytes, request);
             } catch (Exception ex) when (attempt < Retries && IsRetryableException(ex)) {
                 lastException = ex;
+                // 在重试前检查取消令牌
+                cancellationToken.ThrowIfCancellationRequested();
                 await Task.Delay(100 * (attempt + 1), cancellationToken).ConfigureAwait(false); // 递增延迟
             }
         }

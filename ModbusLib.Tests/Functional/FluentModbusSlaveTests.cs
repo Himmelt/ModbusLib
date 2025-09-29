@@ -63,7 +63,6 @@ public class FluentModbusSlaveTests : IDisposable
                     var transport = transportField.GetValue(tcpClient);
                     if (transport is TcpTransport tcpTransport)
                     {
-                        _output.WriteLine($"连接状态详情: {tcpTransport.GetConnectionStateDetails()}");
                     }
                 }
             }
@@ -142,7 +141,6 @@ public class FluentModbusSlaveTests : IDisposable
                     var transport = transportField.GetValue(tcpClient);
                     if (transport is TcpTransport tcpTransport)
                     {
-                        _output.WriteLine($"连接状态详情: {tcpTransport.GetConnectionStateDetails()}");
                     }
                 }
             }
@@ -222,7 +220,6 @@ public class FluentModbusSlaveTests : IDisposable
                     var transport = transportField.GetValue(tcpClient);
                     if (transport is TcpTransport tcpTransport)
                     {
-                        _output.WriteLine($"连接状态详情: {tcpTransport.GetConnectionStateDetails()}");
                     }
                 }
             }
@@ -300,7 +297,6 @@ public class FluentModbusSlaveTests : IDisposable
                     var transport = transportField.GetValue(tcpClient);
                     if (transport is TcpTransport tcpTransport)
                     {
-                        _output.WriteLine($"连接状态详情: {tcpTransport.GetConnectionStateDetails()}");
                     }
                 }
             }

@@ -1,6 +1,6 @@
-using ModbusLib.Clients;
 using ModbusLib.Enums;
 using ModbusLib.Factories;
+using ModbusLib.Interfaces;
 using ModbusLib.Models;
 
 namespace ModbusLib.Tests.Clients;
