@@ -184,15 +184,13 @@ public class TcpProtocol : IModbusProtocol {
         if (request.Data.IsEmpty || request.Data.Length < 2)
             throw new ArgumentException("WriteSingleRegister需要2字节数据");
 
-        var value = (ushort)((request.Data[0] << 8) | request.Data[1]);
-
         return
         [
             (byte)request.Function,
             (byte)(request.StartAddress >> 8),
             (byte)(request.StartAddress & 0xFF),
-            (byte)(value >> 8),
-            (byte)(value & 0xFF)
+            request.Data[0], // 高字节（已经是正确的Modbus大端序）
+            request.Data[1]  // 低字节（已经是正确的Modbus大端序）
         ];
     }
 
@@ -200,8 +198,9 @@ public class TcpProtocol : IModbusProtocol {
         if (request.Data.IsEmpty)
             throw new ArgumentException("WriteMultipleCoils需要数据");
 
+        // 字节计数应该等于数据的实际长度，因为线圈数据已经被打包成字节
         var byteCount = (byte)request.Data.Length;
-        var pdu = new byte[5 + byteCount];
+        var pdu = new byte[6 + byteCount]; // 功能码(1) + 地址(2) + 数量(2) + 字节计数(1) + 数据(N)
 
         pdu[0] = (byte)request.Function;
         pdu[1] = (byte)(request.StartAddress >> 8);

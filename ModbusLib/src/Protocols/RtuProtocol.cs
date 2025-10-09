@@ -125,15 +125,13 @@ public class RtuProtocol : IModbusProtocol {
         if (request.Data.IsEmpty || request.Data.Length < 2)
             throw new ArgumentException("WriteSingleRegister需要2字节数据");
 
-        var value = (ushort)((request.Data[0] << 8) | request.Data[1]);
-
         return
         [
             (byte)request.Function,
             (byte)(request.StartAddress >> 8),
             (byte)(request.StartAddress & 0xFF),
-            (byte)(value >> 8),
-            (byte)(value & 0xFF)
+            request.Data[0], // 高字节（已经是正确的Modbus大端序）
+            request.Data[1]  // 低字节（已经是正确的Modbus大端序）
         ];
     }
 
