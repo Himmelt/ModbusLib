@@ -290,8 +290,8 @@ public class FluentTcpServerTests(ITestOutputHelper output) : IDisposable {
             output.WriteLine($"双精度浮点数读取完成，值: {readDoubleValue2[0]}");
 
             // 验证结果
-            Assert.Equal(floatValues, readFloatValues);
-            Assert.Equal(floatValues2, readFloatValues2);
+            Assert.Equal(doubleValue, readDoubleValue[0]);
+            Assert.Equal(doubleValue2, readDoubleValue2[0]);
 
             #endregion
         } finally {
