@@ -202,9 +202,8 @@ public class FluentTcpServerTests(ITestOutputHelper output) : IDisposable {
             var isConnected = await client.ConnectAsync();
             Assert.True(isConnected, "客户端连接失败");
 
-            FluentModbus.ModbusClient fclient = new FluentModbus.ModbusTcpClient();
-            //fclient.Connect($"127.0.0.1:{ServerPort}");//new IPEndPoint(IPAddress.Loopback, ServerPort)
-            fclient.Connect(new IPEndPoint(IPAddress.Loopback, ServerPort));//new IPEndPoint(IPAddress.Loopback, ServerPort)
+            var fclient = new ModbusTcpClient();
+            fclient.Connect(new IPEndPoint(IPAddress.Loopback, ServerPort));
 
             #region 测试单寄存器读写
 
