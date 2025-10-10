@@ -202,6 +202,15 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
             throw new ModbusException(response.ExceptionCode!.Value, unitId, ModbusFunction.WriteSingleRegister);
     }
 
+    public async Task WriteSingleRegisterAsync(byte unitId, ushort address, short value, CancellationToken cancellationToken = default) {
+        var data = new byte[] { (byte)(value >> 8), (byte)(value & 0xFF) };
+        var request = new ModbusRequest(unitId, ModbusFunction.WriteSingleRegister, address, 1, data);
+        var response = await ExecuteRequestAsync(request, cancellationToken).ConfigureAwait(false);
+
+        if (response.IsError)
+            throw new ModbusException(response.ExceptionCode!.Value, unitId, ModbusFunction.WriteSingleRegister);
+    }
+
     public async Task WriteMultipleCoilsAsync(byte unitId, ushort startAddress, bool[] values, CancellationToken cancellationToken = default) {
         if (values == null || values.Length == 0)
             throw new ArgumentException("线圈值数组不能为空", nameof(values));
@@ -236,23 +245,20 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
 
     #region 泛型写入功能
 
-    public async Task WriteSingleRegisterAsync<T>(byte unitId, ushort address, T value,
-        ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) where T : unmanaged {
+    public async Task WriteMultipleRegistersAsync<T>(byte unitId, ushort startAddress, T value,
+    ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) where T : unmanaged {
         var registerCount = ModbusDataConverter.GetRegisterCount<T>();
+        if (registerCount > 4)
+            throw new ArgumentException($"所需寄存器数量({registerCount})不能超过4", nameof(value));
 
-        if (registerCount == 1) {
-            // 对于单寄存器值，直接转换
-            var bytes = ModbusDataConverter.ToBytes([value], byteOrder, wordOrder);
-            if (bytes.Length >= 2) {
-                var registerValue = (ushort)((bytes[0] << 8) | bytes[1]);
-                await WriteSingleRegisterAsync(unitId, address, registerValue, cancellationToken).ConfigureAwait(false);
-            } else {
-                throw new ArgumentException($"类型 {typeof(T).Name} 需要至少1个寄存器");
-            }
-        } else {
-            // 对于多寄存器值，使用WriteMultipleRegisters
-            await WriteMultipleRegistersAsync(unitId, address, [value], byteOrder, wordOrder, cancellationToken).ConfigureAwait(false);
-        }
+        // 将泛型转换为字节数组
+        var bytes = ModbusDataConverter.ToBytes([value], byteOrder, wordOrder);
+
+        // 将字节数组转换为寄存器数组
+        var registers = ModbusUtils.ByteArrayToUshortArray(bytes);
+
+        // 调用原始写入方法
+        await WriteMultipleRegistersAsync(unitId, startAddress, registers, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task WriteMultipleRegistersAsync<T>(byte unitId, ushort startAddress, T[] values,
@@ -368,6 +374,10 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
         WriteSingleRegisterAsync(unitId, address, value, CancellationToken.None).GetAwaiter().GetResult();
     }
 
+    public void WriteSingleRegister(byte unitId, ushort address, short value) {
+        WriteSingleRegisterAsync(unitId, address, value, CancellationToken.None).GetAwaiter().GetResult();
+    }
+
     public void WriteMultipleCoils(byte unitId, ushort startAddress, bool[] values) {
         WriteMultipleCoilsAsync(unitId, startAddress, values, CancellationToken.None).GetAwaiter().GetResult();
     }
@@ -403,11 +413,6 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
     #endregion
 
     #region 同步泛型写入功能
-
-    public void WriteSingleRegister<T>(byte unitId, ushort address, T value,
-        ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst) where T : unmanaged {
-        WriteSingleRegisterAsync<T>(unitId, address, value, byteOrder, wordOrder, CancellationToken.None).GetAwaiter().GetResult();
-    }
 
     public void WriteMultipleRegisters<T>(byte unitId, ushort startAddress, T[] values,
         ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst) where T : unmanaged {

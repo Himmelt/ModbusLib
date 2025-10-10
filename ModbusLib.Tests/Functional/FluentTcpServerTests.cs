@@ -190,11 +190,7 @@ public class FluentTcpServerTests(ITestOutputHelper output) : IDisposable {
     [Fact]
     public async Task ModbusTcp_GenericRegisters_Test() {
         try {
-            // 启动FluentModbus服务器
             StartFluentModbusServer();
-            output.WriteLine($"FluentModbus服务器已启动，端口: {ServerPort}");
-
-            // 使用我们自己的客户端连接到服务器
             var config = new NetworkConnectionConfig {
                 Host = "127.0.0.1",
                 Port = ServerPort,
@@ -202,40 +198,23 @@ public class FluentTcpServerTests(ITestOutputHelper output) : IDisposable {
                 ReceiveTimeout = 5000,
                 SendTimeout = 5000
             };
-
             ModbusLibClient client = ModbusClientFactory.CreateTcpClient(config);
-            output.WriteLine("ModbusLib客户端已创建");
-
             var isConnected = await client.ConnectAsync();
-            output.WriteLine($"客户端连接结果: {isConnected}");
-
             Assert.True(isConnected, "客户端连接失败");
+
+            FluentModbus.ModbusClient fclient = new FluentModbus.ModbusTcpClient();
+            //fclient.Connect($"127.0.0.1:{ServerPort}");//new IPEndPoint(IPAddress.Loopback, ServerPort)
+            fclient.Connect(new IPEndPoint(IPAddress.Loopback, ServerPort));//new IPEndPoint(IPAddress.Loopback, ServerPort)
 
             #region 测试单寄存器读写
 
-            // 测试写入单个寄存器
-            output.WriteLine("开始写入单个寄存器，地址0");
-            await client.WriteSingleRegisterAsync<ushort>(UnitId, 0, 12345);
-            output.WriteLine("单个寄存器写入完成");
+            await client.WriteSingleRegisterAsync(UnitId, 0, 12345);
+            var value1 = (await client.ReadHoldingRegistersAsync(UnitId, 0, 1))[0];
+            Assert.Equal(12345, value1);
 
-            // 测试读取单个寄存器
-            output.WriteLine("开始读取单个寄存器，地址0");
-            var singleRegister = await client.ReadHoldingRegistersAsync(UnitId, 0, 1);
-            output.WriteLine($"单个寄存器读取完成，值: {singleRegister[0]}");
-
-            // 测试写入单个寄存器
-            output.WriteLine("开始写入单个寄存器，地址345");
-            await client.WriteSingleRegisterAsync(UnitId, 345, 54321);
-            output.WriteLine("单个寄存器写入完成");
-
-            // 测试读取单个寄存器
-            output.WriteLine("开始读取单个寄存器，地址345");
-            var singleRegister2 = await client.ReadHoldingRegistersAsync(UnitId, 345, 1);
-            output.WriteLine($"单个寄存器读取完成，值: {singleRegister2[0]}");
-
-            // 验证结果
-            Assert.Equal(12345, singleRegister[0]);
-            Assert.Equal(54321, singleRegister2[0]);
+            await client.WriteSingleRegisterAsync(UnitId, 345, -5421);
+            var value2 = (await client.ReadHoldingRegistersAsync<short>(UnitId, 345, 1))[0];
+            Assert.Equal(-5421, value2);
 
             #endregion
 
@@ -272,7 +251,7 @@ public class FluentTcpServerTests(ITestOutputHelper output) : IDisposable {
             // 测试写入和读取双精度浮点数
             output.WriteLine("开始写入双精度浮点数，地址10");
             double doubleValue = 123.456;
-            await client.WriteSingleRegisterAsync<double>(UnitId, 10, doubleValue);
+            await client.WriteMultipleRegistersAsync(UnitId, 10, doubleValue);
             output.WriteLine("双精度浮点数写入完成");
 
             output.WriteLine("开始读取双精度浮点数，地址10");
@@ -282,7 +261,7 @@ public class FluentTcpServerTests(ITestOutputHelper output) : IDisposable {
             // 测试写入和读取双精度浮点数（大地址）
             output.WriteLine("开始写入双精度浮点数，地址456");
             double doubleValue2 = 654.321;
-            await client.WriteSingleRegisterAsync<double>(UnitId, 456, doubleValue2);
+            await client.WriteMultipleRegistersAsync(UnitId, 456, doubleValue2);
             output.WriteLine("双精度浮点数写入完成");
 
             output.WriteLine("开始读取双精度浮点数，地址456");
