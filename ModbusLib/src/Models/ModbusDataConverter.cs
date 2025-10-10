@@ -24,9 +24,7 @@ namespace ModbusLib.Models {
         /// <param name="count">T类型元素数量</param>
         /// <returns>所需的寄存器数量 (例如: 10个byte需要5个寄存器，5个int需要10个寄存器)</returns>
         public static int GetTotalRegisterCount<T>(int count) where T : unmanaged {
-            if (count <= 0)
-                return 0;
-
+            if (count <= 0) return 0;
             return (Unsafe.SizeOf<T>() * count + 1) / 2;
         }
 
@@ -133,6 +131,18 @@ namespace ModbusLib.Models {
                     (data[i + 1], data[j + 1]) = (data[j + 1], data[i + 1]);
                 }
             }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="registers"></param>
+        /// <param name="byteOrder"></param>
+        /// <param name="wordOrder"></param>
+        /// <returns></returns>
+        private static T[] Convert<T>(ushort[] registers, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst) where T : unmanaged {
+           
         }
     }
 }

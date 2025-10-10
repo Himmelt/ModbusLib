@@ -146,10 +146,8 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
 
     #region 泛型读取功能
 
-    public async Task<T[]> ReadHoldingRegistersAsync<T>(byte unitId, ushort startAddress, ushort count,
-        ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) where T : unmanaged {
-        if (count == 0)
-            throw new ArgumentException("元素数量不能为0", nameof(count));
+    public async Task<T[]> ReadHoldingRegistersAsync<T>(byte unitId, ushort startAddress, ushort count, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) where T : unmanaged {
+        if (count == 0) throw new ArgumentException("元素数量不能为 0", nameof(count));
 
         var registerCount = (ushort)ModbusDataConverter.GetTotalRegisterCount<T>(count);
         ValidateReadParameters(registerCount, 125);
@@ -459,12 +457,9 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
                 modbusEx.ExceptionCode == ModbusExceptionCode.TargetDeviceBusy);
     }
 
-    private static void ValidateReadParameters(ushort quantity, int maxQuantity) {
-        if (quantity == 0)
-            throw new ArgumentException("数量不能为0", nameof(quantity));
-
-        if (quantity > maxQuantity)
-            throw new ArgumentException($"数量不能超过{maxQuantity}", nameof(quantity));
+    private static void ValidateReadParameters(int quantity, int maxQuantity) {
+        if (quantity == 0) throw new ArgumentException("数量不能为0", nameof(quantity));
+        if (quantity > maxQuantity) throw new ArgumentException($"数量不能超过{maxQuantity}", nameof(quantity));
     }
 
     public void Dispose() {
