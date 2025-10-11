@@ -59,6 +59,8 @@ public interface IModbusClient : IDisposable, IAsyncDisposable {
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>寄存器值数组</returns>
     Task<ushort[]> ReadHoldingRegistersAsync(byte unitId, ushort startAddress, ushort quantity, CancellationToken cancellationToken = default);
+    
+    Task<byte[]> ReadHoldingRegistersRawAsync(byte unitId, ushort startAddress, ushort quantity, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 读取输入寄存器

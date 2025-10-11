@@ -14,3 +14,19 @@ public enum ByteOrder {
     /// </summary>
     LittleEndian = 1
 }
+
+/// <summary>
+/// ByteOrder枚举的扩展方法
+/// </summary>
+public static class ByteOrderExtensions
+{
+    /// <summary>
+    /// 判断字节序是否为小端序
+    /// </summary>
+    /// <param name="byteOrder">字节序</param>
+    /// <returns>如果是小端序则返回true，否则返回false</returns>
+    public static bool IsLittleEndian(this ByteOrder byteOrder)
+    {
+        return byteOrder == ByteOrder.LittleEndian;
+    }
+}

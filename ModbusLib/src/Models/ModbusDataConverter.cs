@@ -1,5 +1,7 @@
 using ModbusLib.Enums;
 using System.Buffers;
+using System.Buffers.Binary;
+using System.Diagnostics.Metrics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -97,10 +99,9 @@ namespace ModbusLib.Models {
         private static void ApplyByteAndWordOrder<T>(Span<byte> data, ByteOrder byteOrder, WordOrder wordOrder) where T : unmanaged {
             var typeSize = Unsafe.SizeOf<T>();
 
-            // 根据Modbus工业标准，寄存器占两个字节且是大端序的
-            // 先处理字节序（在寄存器内部）
-            if (byteOrder == ByteOrder.LittleEndian && BitConverter.IsLittleEndian) {
-                // 如果需要小端序，但系统是小端序，需要在每个寄存器（2字节）内部交换字节
+            // 先处理字节序
+            // 需要转换的条件：数据存储字节序和系统字节序不一致
+            if (byteOrder.IsLittleEndian() != BitConverter.IsLittleEndian) {
                 for (int i = 0; i < data.Length; i += 2) {
                     if (i + 1 < data.Length) {
                         (data[i], data[i + 1]) = (data[i + 1], data[i]);
@@ -108,12 +109,24 @@ namespace ModbusLib.Models {
                 }
             }
 
-            // 再处理字序（寄存器之间）
-            if (wordOrder == WordOrder.LowFirst && typeSize > 2) {
-                // 如果需要低字在前，需要交换寄存器的顺序
-                for (int i = 0; i < data.Length; i += typeSize) {
-                    var elementSpan = data.Slice(i, Math.Min(typeSize, data.Length - i));
-                    ReverseWordOrder(elementSpan);
+            // 再处理字序
+            if (wordOrder.IsLowFirst() != BitConverter.IsLittleEndian && typeSize >= 4) {
+                // 按typeSize分组，对每组内的Word进行倒序重排
+                int count = data.Length / typeSize;
+                for (int index = 0; index < count; index++) {
+                    int start = index * typeSize;
+                    Span<byte> element = data.Slice(start, typeSize);
+
+                    // 对组内的Word进行倒序重排
+                    int wordCount = typeSize / 2;
+                    for (int i = 0; i < wordCount / 2; i++) {
+                        int left = i * 2;
+                        int right = (wordCount - 1 - i) * 2;
+
+                        // 交换两个Word（各2个字节）
+                        (element[left], element[right]) = (element[right], element[left]);
+                        (element[left + 1], element[right + 1]) = (element[right + 1], element[left + 1]);
+                    }
                 }
             }
         }
@@ -133,16 +146,28 @@ namespace ModbusLib.Models {
             }
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="registers"></param>
-        /// <param name="byteOrder"></param>
-        /// <param name="wordOrder"></param>
-        /// <returns></returns>
-        private static T[] Convert<T>(ushort[] registers, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst) where T : unmanaged {
-           
+        private static T[] Convert<T>(byte[] bytes, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst) where T : unmanaged {
+            ArgumentNullException.ThrowIfNull(bytes, nameof(bytes));
+            var t_size = Unsafe.SizeOf<T>();
+            var count = bytes.Length / t_size;
+            if (count <= 0) throw new ArgumentException("可转换元素数量不能小于 1");
+            if (count * t_size != bytes.Length) {
+                throw new ArgumentException("原始字节数量不是转换数量的整数倍");
+            }
+
+            var buffer = ArrayPool<byte>.Shared.Rent(bytes.Length);
+            try {
+                var buff_span = buffer.AsSpan(0, bytes.Length);
+                bytes.AsSpan().CopyTo(buff_span);
+
+                // 根据字节序和字序调整
+                ApplyByteAndWordOrder<T>(buff_span, byteOrder, wordOrder);
+
+                var results = MemoryMarshal.Cast<byte, T>(buff_span);
+                return results[..count].ToArray();
+            } finally {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
         }
     }
 }

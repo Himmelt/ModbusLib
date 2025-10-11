@@ -190,10 +190,10 @@ public class FluentTcpServerTests(ITestOutputHelper output) : IDisposable {
     [Fact]
     public async Task ModbusTcp_GenericRegisters_Test() {
         try {
-            StartFluentModbusServer();
+            //StartFluentModbusServer();
             var config = new NetworkConnectionConfig {
                 Host = "127.0.0.1",
-                Port = ServerPort,
+                Port = 666,
                 ConnectTimeout = 5000,
                 ReceiveTimeout = 5000,
                 SendTimeout = 5000
@@ -203,7 +203,9 @@ public class FluentTcpServerTests(ITestOutputHelper output) : IDisposable {
             Assert.True(isConnected, "客户端连接失败");
 
             var fclient = new ModbusTcpClient();
-            fclient.Connect(new IPEndPoint(IPAddress.Loopback, ServerPort));
+            //fclient.Connect($"127.0.0.1:{ServerPort}");//new IPEndPoint(IPAddress.Loopback, ServerPort)
+            fclient.Connect(new IPEndPoint(IPAddress.Loopback, 666));//new IPEndPoint(IPAddress.Loopback, ServerPort)
+            Assert.True(fclient.IsConnected, "Fluent客户端连接失败");
 
             #region 测试单寄存器读写
 
@@ -213,7 +215,10 @@ public class FluentTcpServerTests(ITestOutputHelper output) : IDisposable {
 
             await client.WriteSingleRegisterAsync(UnitId, 345, -5421);
             var value2 = (await client.ReadHoldingRegistersAsync<short>(UnitId, 345, 1))[0];
+            var value3 = fclient.ReadHoldingRegisters<ushort>(UnitId, 345, 1)[0];
+
             Assert.Equal(-5421, value2);
+            Assert.Equal(-5421, value3);
 
             #endregion
 

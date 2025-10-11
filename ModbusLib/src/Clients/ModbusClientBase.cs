@@ -120,6 +120,28 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
         return ModbusUtils.ByteArrayToUshortArray(dataBytes);
     }
 
+    public async Task<byte[]> ReadHoldingRegistersRawAsync(byte unitId, ushort startAddress, ushort quantity, CancellationToken cancellationToken = default) {
+        ValidateReadParameters(quantity, 125);
+
+        var request = new ModbusRequest(unitId, ModbusFunction.ReadHoldingRegisters, startAddress, quantity);
+        var response = await ExecuteRequestAsync(request, cancellationToken).ConfigureAwait(false);
+
+        if (response.IsError)
+            throw new ModbusException(response.ExceptionCode!.Value, unitId, ModbusFunction.ReadHoldingRegisters);
+
+        if (response.Data.IsEmpty || response.Data.Length < 1)
+            throw new ModbusCommunicationException("读取保持寄存器响应数据不足");
+
+        var byteCount = response.Data[0];
+        if (response.Data.Length < 1 + byteCount || byteCount != quantity * 2)
+            throw new ModbusCommunicationException("读取保持寄存器响应数据长度不匹配");
+
+        var dataBytes = new byte[byteCount];
+        Array.Copy(response.Data.ToArray(), 1, dataBytes, 0, byteCount);
+
+        return dataBytes;
+    }
+
     public async Task<ushort[]> ReadInputRegistersAsync(byte unitId, ushort startAddress, ushort quantity, CancellationToken cancellationToken = default) {
         ValidateReadParameters(quantity, 125);
 
@@ -152,13 +174,10 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
         var registerCount = (ushort)ModbusDataConverter.GetTotalRegisterCount<T>(count);
         ValidateReadParameters(registerCount, 125);
 
-        var registers = await ReadHoldingRegistersAsync(unitId, startAddress, registerCount, cancellationToken).ConfigureAwait(false);
-
-        // 将寄存器数据转换为字节数组
-        var bytes = ModbusUtils.UshortArrayToByteArray(registers);
+        var rawBytes = await ReadHoldingRegistersRawAsync(unitId, startAddress, registerCount, cancellationToken).ConfigureAwait(false);
 
         // 使用泛型转换器转换为目标类型
-        return ModbusDataConverter.FromBytes<T>(bytes, count, byteOrder, wordOrder);
+        return ModbusDataConverter.FromBytes<T>(rawBytes, count, byteOrder, wordOrder);
     }
 
     public async Task<T[]> ReadInputRegistersAsync<T>(byte unitId, ushort startAddress, ushort count,
