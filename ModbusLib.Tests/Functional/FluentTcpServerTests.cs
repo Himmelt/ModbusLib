@@ -190,7 +190,8 @@ public class FluentTcpServerTests(ITestOutputHelper output) : IDisposable {
     [Fact]
     public async Task ModbusTcp_GenericRegisters_Test() {
         try {
-            //StartFluentModbusServer();
+            StartFluentModbusServer();
+
             var config = new NetworkConnectionConfig {
                 Host = "127.0.0.1",
                 Port = 666,
@@ -202,82 +203,57 @@ public class FluentTcpServerTests(ITestOutputHelper output) : IDisposable {
             var isConnected = await client.ConnectAsync();
             Assert.True(isConnected, "客户端连接失败");
 
-            var fclient = new ModbusTcpClient {
-                ReadTimeout = 5000
-            };
-            fclient.Connect(new IPEndPoint(IPAddress.Loopback, 666));
-            Assert.True(fclient.IsConnected, "Fluent客户端连接失败");
-
             #region 测试单寄存器读写
 
             await client.WriteSingleRegisterAsync(UnitId, 0, 12345);
             var value1 = (await client.ReadHoldingRegistersAsync(UnitId, 0, 1))[0];
-            Assert.Equal(12345, value1);
 
             await client.WriteSingleRegisterAsync(UnitId, 345, -5421);
             var value2 = (await client.ReadHoldingRegistersAsync<short>(UnitId, 345, 1))[0];
-            var value3 = (await fclient.ReadHoldingRegistersAsync<short>(UnitId, 345, 1)).Span[0];
-
-            Assert.Equal(-5421, value2);
-            Assert.Equal(-5421, value3);
 
             #endregion
 
             #region 测试浮点数数组读写
 
-            // 测试写入和读取浮点数数组
-            output.WriteLine("开始写入浮点数数组，地址0");
-            float[] floatValues = [1.23f, 4.56f, 7.89f];
-            await client.WriteMultipleRegistersAsync(UnitId, 0, floatValues);
-            output.WriteLine("浮点数数组写入完成");
+            float[] src3 = [1.23f, 4.56f, 7.89f];
+            await client.WriteMultipleRegistersAsync(UnitId, 0, src3);
+            var value3 = await client.ReadHoldingRegistersAsync<float>(UnitId, 0, 3);
 
-            output.WriteLine("开始读取浮点数数组，地址0");
-            var readFloatValues = await client.ReadHoldingRegistersAsync<float>(UnitId, 0, 3);
-            output.WriteLine($"浮点数数组读取完成，值: {string.Join(", ", readFloatValues)}");
-
-            // 测试写入和读取浮点数数组（大地址）
-            output.WriteLine("开始写入浮点数数组，地址345");
-            float[] floatValues2 = [9.87f, 6.54f, 3.21f, 1.23f];
-            await client.WriteMultipleRegistersAsync(UnitId, 345, floatValues2);
-            output.WriteLine("浮点数数组写入完成");
-
-            output.WriteLine("开始读取浮点数数组，地址345");
-            var readFloatValues2 = await client.ReadHoldingRegistersAsync<float>(UnitId, 345, 4);
-            output.WriteLine($"浮点数数组读取完成，值: {string.Join(", ", readFloatValues2)}");
-
-            // 验证结果
-            Assert.Equal(floatValues, readFloatValues);
-            Assert.Equal(floatValues2, readFloatValues2);
+            float[] src4 = [9.87f, 6.54f, 3.21f, 1.23f];
+            await client.WriteMultipleRegistersAsync(UnitId, 345, src4);
+            var value4 = await client.ReadHoldingRegistersAsync<float>(UnitId, 345, 4);
 
             #endregion
 
             #region 测试双精度浮点数读写
 
-            // 测试写入和读取双精度浮点数
-            output.WriteLine("开始写入双精度浮点数，地址10");
-            double doubleValue = 123.456;
-            await client.WriteMultipleRegistersAsync(UnitId, 10, doubleValue);
-            output.WriteLine("双精度浮点数写入完成");
+            double src5 = 123.456;
+            await client.WriteMultipleRegistersAsync(UnitId, 10, src5);
+            var value5 = await client.ReadHoldingRegistersAsync<double>(UnitId, 10, 1);
 
-            output.WriteLine("开始读取双精度浮点数，地址10");
-            var readDoubleValue = await client.ReadHoldingRegistersAsync<double>(UnitId, 10, 1);
-            output.WriteLine($"双精度浮点数读取完成，值: {readDoubleValue[0]}");
-
-            // 测试写入和读取双精度浮点数（大地址）
-            output.WriteLine("开始写入双精度浮点数，地址456");
-            double doubleValue2 = 654.321;
-            await client.WriteMultipleRegistersAsync(UnitId, 456, doubleValue2);
-            output.WriteLine("双精度浮点数写入完成");
-
-            output.WriteLine("开始读取双精度浮点数，地址456");
-            var readDoubleValue2 = await client.ReadHoldingRegistersAsync<double>(UnitId, 456, 1);
-            output.WriteLine($"双精度浮点数读取完成，值: {readDoubleValue2[0]}");
-
-            // 验证结果
-            Assert.Equal(doubleValue, readDoubleValue[0]);
-            Assert.Equal(doubleValue2, readDoubleValue2[0]);
+            double src6 = 654.321;
+            await client.WriteMultipleRegistersAsync(UnitId, 456, src6);
+            var value6 = await client.ReadHoldingRegistersAsync<double>(UnitId, 456, 1);
 
             #endregion
+
+            var fclient = new ModbusTcpClient();
+            fclient.Connect(new IPEndPoint(IPAddress.Loopback, ServerPort), ModbusEndianness.BigEndian);
+            Assert.True(fclient.IsConnected, "Fluent客户端连接失败");
+            var valuef1 = fclient.ReadHoldingRegisters(UnitId, 0, 1)[0];
+            var valuef2 = fclient.ReadHoldingRegisters<short>(UnitId, 345, 1)[0];
+
+            fclient.Disconnect();
+
+            Assert.Equal(12345, value1);
+            Assert.Equal(12345, valuef1);
+            Assert.Equal(-5421, value2);
+            Assert.Equal(-5421, valuef2);
+            Assert.Equal(src3, value3);
+            Assert.Equal(src4, value4);
+            Assert.Equal(src5, value5[0]);
+            Assert.Equal(src6, value6[0]);
+
         } finally {
             // 清理资源
         }
