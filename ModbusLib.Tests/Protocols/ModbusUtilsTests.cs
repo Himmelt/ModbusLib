@@ -28,38 +28,46 @@ public class ModbusUtilsTests {
     }
 
     [Fact]
-    public void ByteArrayToUshortArray_WithValidData_ReturnsCorrectUshortArray() {
+    public void ByteArrayToUshortArray() {
         var bytes = new byte[] { 0x12, 0x34, 0x56, 0x78 };
         var expected = new ushort[] { 0x1234, 0x5678 };
-
         var result = ModbusUtils.ByteArrayToUshortArray(bytes);
         Assert.Equal(expected, result);
     }
 
     [Fact]
-    public void UshortArrayToByteArray_WithValidData_ReturnsCorrectByteArray() {
-        // Arrange
+    public void UshortArrayToByteArray() {
         var ushorts = new ushort[] { 0x1234, 0x5678 };
         var expected = new byte[] { 0x12, 0x34, 0x56, 0x78 };
-
-        // Act
         var result = ModbusUtils.UshortArrayToByteArray(ushorts);
-
-        // Assert
         Assert.Equal(expected, result);
     }
 
     [Fact]
-    public void CalculateCrc16_WithValidData_ReturnsCorrectCrc() {
-        // Arrange
+    public void CalculateCrc16() {
         var data = new byte[] { 0x01, 0x03, 0x00, 0x00, 0x00, 0x0A };
-        // 计算正确的CRC-16/Modbus值
-        var expected = ModbusUtils.CalculateCrc16(data);
-
-        // Act
+        var expected = CalculateCRC(data);
         var result = ModbusUtils.CalculateCrc16(data);
-
-        // Assert
         Assert.Equal(expected, result);
+    }
+
+    private static ushort CalculateCRC(Memory<byte> buffer) {
+        var span = buffer.Span;
+        ushort crc = 0xFFFF;
+
+        foreach (var value in span) {
+            crc ^= value;
+
+            for (int i = 0; i < 8; i++) {
+                if ((crc & 0x0001) != 0) {
+                    crc >>= 1;
+                    crc ^= 0xA001;
+                } else {
+                    crc >>= 1;
+                }
+            }
+        }
+
+        return crc;
     }
 }

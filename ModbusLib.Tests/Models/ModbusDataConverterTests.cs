@@ -35,7 +35,7 @@ public class ModbusDataConverterTests {
 
     [Theory]
     [MemberData(nameof(GetRegisterCountTestData))]
-    public void GetRegisterCount_ReturnsCorrectCount(GetRegisterCountTestCase testCase) {
+    public void GetRegisterCount(GetRegisterCountTestCase testCase) {
         var methodInfo = typeof(ModbusDataConverter)
             .GetMethod(nameof(ModbusDataConverter.GetRegisterCount), BindingFlags.Public | BindingFlags.Static)
             ?.MakeGenericMethod(testCase.Type);
@@ -91,7 +91,7 @@ public class ModbusDataConverterTests {
 
     [Theory]
     [MemberData(nameof(GetTotalRegisterCountTestData))]
-    public void GetTotalRegisterCount_WithArray_ReturnsCorrectCount(GetTotalRegisterCountTestCase testCase) {
+    public void GetTotalRegisterCount(GetTotalRegisterCountTestCase testCase) {
         var methodInfo = typeof(ModbusDataConverter)
             .GetMethod(nameof(ModbusDataConverter.GetTotalRegisterCount), BindingFlags.Public | BindingFlags.Static)
             ?.MakeGenericMethod(testCase.Type);
