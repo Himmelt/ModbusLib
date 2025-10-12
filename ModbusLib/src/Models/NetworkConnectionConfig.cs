@@ -48,4 +48,9 @@ public class NetworkConnectionConfig {
     /// 发送缓冲区大小
     /// </summary>
     public int SendBufferSize { get; set; } = 8192;
+
+    /// <summary>
+    /// 本地端口号（可选，未指定时使用系统默认分配的端口）
+    /// </summary>
+    public int? LocalPort { get; set; }
 }

@@ -122,6 +122,11 @@ public class NetworkConnectionConfigBuilder {
         return this;
     }
 
+    public NetworkConnectionConfigBuilder LocalPort(int? localPort) {
+        _config.LocalPort = localPort;
+        return this;
+    }
+
     public NetworkConnectionConfig Build() {
         return _config;
     }

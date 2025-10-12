@@ -2,6 +2,7 @@ using ModbusLib.Exceptions;
 using ModbusLib.Interfaces;
 using ModbusLib.Models;
 using System.Buffers;
+using System.Net;
 using System.Net.Sockets;
 
 namespace ModbusLib.Transports;
@@ -30,7 +31,12 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport {
 
             await DisconnectInternalAsync().ConfigureAwait(false);
 
-            _tcpClient = new TcpClient();
+            // 如果指定了本地端口，则绑定到该端口
+            if (_config.LocalPort.HasValue) {
+                _tcpClient = new TcpClient(new IPEndPoint(IPAddress.Any, _config.LocalPort.Value));
+            } else {
+                _tcpClient = new TcpClient();
+            }
 
             // 配置TCP选项
             _tcpClient.ReceiveTimeout = _config.ReceiveTimeout;
