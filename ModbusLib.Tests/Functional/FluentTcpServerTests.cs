@@ -227,10 +227,16 @@ public class FluentTcpServerTests(ITestOutputHelper output) : IDisposable {
             float[] src3 = [1.23f, 4.56f, 7.89f];
             await client.WriteMultipleRegistersAsync(UnitId, 0, src3);
             var value3 = await client.ReadHoldingRegistersAsync<float>(UnitId, 0, 3);
+            var valuef3 = fclient.ReadHoldingRegisters<float>(UnitId, 0, 3).ToArray();
+            Assert.Equal(src3, value3);
+            Assert.Equal(src3, valuef3);
 
             float[] src4 = [9.87f, 6.54f, 3.21f, 1.23f];
             await client.WriteMultipleRegistersAsync(UnitId, 345, src4);
             var value4 = await client.ReadHoldingRegistersAsync<float>(UnitId, 345, 4);
+            var valuef4 = fclient.ReadHoldingRegisters<float>(UnitId, 345, 4).ToArray();
+            Assert.Equal(src4, value4);
+            Assert.Equal(src4, valuef4);
 
             #endregion
 
@@ -239,22 +245,21 @@ public class FluentTcpServerTests(ITestOutputHelper output) : IDisposable {
             double src5 = 123.456;
             await client.WriteMultipleRegistersAsync(UnitId, 10, src5);
             var value5 = await client.ReadHoldingRegistersAsync<double>(UnitId, 10, 1);
+            var valuef5 = fclient.ReadHoldingRegisters<double>(UnitId, 10, 1);
+            Assert.Equal(src5, value5[0]);
+            Assert.Equal(src5, valuef5[0]);
 
-            double src6 = 654.321;
+            double[] src6 = [654.321, -234.567, 1265374.234445];
             await client.WriteMultipleRegistersAsync(UnitId, 456, src6);
-            var value6 = await client.ReadHoldingRegistersAsync<double>(UnitId, 456, 1);
+            var value6 = await client.ReadHoldingRegistersAsync<double>(UnitId, 456, 3);
+            var valuef6 = fclient.ReadHoldingRegisters<double>(UnitId, 456, 3).ToArray();
+            Assert.Equal(src6, value6);
+            Assert.Equal(src6, valuef6);
 
             #endregion
 
-
             client.Disconnect();
             fclient.Disconnect();
-
-            Assert.Equal(src3, value3);
-            Assert.Equal(src4, value4);
-            Assert.Equal(src5, value5[0]);
-            Assert.Equal(src6, value6[0]);
-
         } finally {
             // 清理资源
         }
