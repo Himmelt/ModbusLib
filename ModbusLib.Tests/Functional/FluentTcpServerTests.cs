@@ -24,7 +24,7 @@ public class FluentTcpServerTests(ITestOutputHelper output) : IDisposable {
             // 使用我们自己的客户端连接到服务器
             var config = new NetworkConnectionConfig {
                 Host = "127.0.0.1",
-                Port = ServerPort,
+                RemotePort = ServerPort,
                 ConnectTimeout = 5000,
                 ReceiveTimeout = 5000,
                 SendTimeout = 5000
@@ -109,7 +109,7 @@ public class FluentTcpServerTests(ITestOutputHelper output) : IDisposable {
             // 使用我们自己的客户端连接到服务器
             var config = new NetworkConnectionConfig {
                 Host = "127.0.0.1",
-                Port = ServerPort,
+                RemotePort = ServerPort,
                 ConnectTimeout = 5000,
                 ReceiveTimeout = 5000,
                 SendTimeout = 5000
@@ -193,7 +193,7 @@ public class FluentTcpServerTests(ITestOutputHelper output) : IDisposable {
 
             var config = new NetworkConnectionConfig {
                 Host = "127.0.0.1",
-                Port = ServerPort,
+                RemotePort = ServerPort,
                 ConnectTimeout = 5000,
                 ReceiveTimeout = 5000,
                 SendTimeout = 5000
@@ -275,7 +275,7 @@ public class FluentTcpServerTests(ITestOutputHelper output) : IDisposable {
             // 使用我们自己的客户端连接到服务器
             var config = new NetworkConnectionConfig {
                 Host = "127.0.0.1",
-                Port = ServerPort,
+                RemotePort = ServerPort,
                 ConnectTimeout = 5000,
                 ReceiveTimeout = 5000,
                 SendTimeout = 5000

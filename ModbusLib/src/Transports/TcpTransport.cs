@@ -48,7 +48,7 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport {
             using var connectCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             connectCts.CancelAfter(_config.ConnectTimeout);
 
-            await _tcpClient.ConnectAsync(_config.Host, _config.Port, connectCts.Token).ConfigureAwait(false);
+            await _tcpClient.ConnectAsync(_config.Host, _config.RemotePort, connectCts.Token).ConfigureAwait(false);
 
             // 配置Socket选项
             if (_tcpClient.Client != null) {

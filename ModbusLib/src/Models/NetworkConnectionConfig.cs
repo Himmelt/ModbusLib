@@ -10,9 +10,9 @@ public class NetworkConnectionConfig {
     public string Host { get; set; } = "localhost";
 
     /// <summary>
-    /// 端口号
+    /// 远程端口号
     /// </summary>
-    public int Port { get; set; } = 502;
+    public int RemotePort { get; set; } = 502;
 
     /// <summary>
     /// 连接超时时间（毫秒）

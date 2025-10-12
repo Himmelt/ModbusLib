@@ -38,7 +38,7 @@ public class UdpTransport(NetworkConnectionConfig config) : IModbusTransport {
                     throw new ModbusConnectionException($"无法解析主机地址: {_config.Host}");
             }
 
-            _remoteEndPoint = new IPEndPoint(ipAddress, _config.Port);
+            _remoteEndPoint = new IPEndPoint(ipAddress, _config.RemotePort);
             _udpClient = new UdpClient();
 
             // 配置UDP选项

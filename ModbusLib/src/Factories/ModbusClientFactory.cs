@@ -60,7 +60,7 @@ public static class ModbusClientFactory {
 
         var config = new NetworkConnectionConfig {
             Host = host,
-            Port = port
+            RemotePort = port
         };
 
         return new ModbusTcpClient(config);
@@ -89,7 +89,7 @@ public static class ModbusClientFactory {
 
         var config = new NetworkConnectionConfig {
             Host = host,
-            Port = port
+            RemotePort = port
         };
 
         return new ModbusUdpClient(config);
@@ -118,7 +118,7 @@ public static class ModbusClientFactory {
 
         var config = new NetworkConnectionConfig {
             Host = host,
-            Port = port
+            RemotePort = port
         };
 
         return new ModbusRtuOverTcpClient(config);
@@ -147,7 +147,7 @@ public static class ModbusClientFactory {
 
         var config = new NetworkConnectionConfig {
             Host = host,
-            Port = port
+            RemotePort = port
         };
 
         return new ModbusRtuOverUdpClient(config);

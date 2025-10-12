@@ -82,8 +82,8 @@ public class NetworkConnectionConfigBuilder {
         return this;
     }
 
-    public NetworkConnectionConfigBuilder Port(int port) {
-        _config.Port = port;
+    public NetworkConnectionConfigBuilder RemotePort(int port) {
+        _config.RemotePort = port;
         return this;
     }
 
@@ -133,10 +133,11 @@ public class NetworkConnectionConfigBuilder {
 
     /// <summary>
     /// 创建默认TCP配置
+    /// 注意：如需指定远程端口，请使用RemotePort方法；如需指定本地端口，请使用LocalPort方法
     /// </summary>
     public static NetworkConnectionConfigBuilder DefaultTcp() {
         return new NetworkConnectionConfigBuilder()
-            .Port(502)
+            .RemotePort(502)
             .ConnectTimeout(10000)
             .ReceiveTimeout(5000)
             .SendTimeout(5000)
@@ -146,10 +147,11 @@ public class NetworkConnectionConfigBuilder {
 
     /// <summary>
     /// 创建默认UDP配置
+    /// 注意：如需指定远程端口，请使用RemotePort方法
     /// </summary>
     public static NetworkConnectionConfigBuilder DefaultUdp() {
         return new NetworkConnectionConfigBuilder()
-            .Port(502)
+            .RemotePort(502)
             .ReceiveTimeout(5000)
             .SendTimeout(5000);
     }
