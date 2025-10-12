@@ -127,7 +127,7 @@ public class FluentTcpServerTests(ITestOutputHelper output) : IDisposable {
 
             // 测试写入单个寄存器
             output.WriteLine("开始写入单个寄存器，地址0");
-            await client.WriteSingleRegisterAsync(UnitId, 0, 12345, default(CancellationToken));
+            await client.WriteSingleRegisterAsync(UnitId, 0, 12345);
             output.WriteLine("单个寄存器写入完成");
 
             // 测试读取单个寄存器
@@ -137,7 +137,7 @@ public class FluentTcpServerTests(ITestOutputHelper output) : IDisposable {
 
             // 测试写入单个寄存器
             output.WriteLine("开始写入单个寄存器，地址345");
-            await client.WriteSingleRegisterAsync(UnitId, 345, 54321, default(CancellationToken));
+            await client.WriteSingleRegisterAsync(UnitId, 345, 54321);
             output.WriteLine("单个寄存器写入完成");
 
             // 测试读取单个寄存器
@@ -323,7 +323,7 @@ public class FluentTcpServerTests(ITestOutputHelper output) : IDisposable {
             output.WriteLine("开始写入初始数据，地址345");
             ushort[] initialValues2 = [11000, 12000, 13000, 14000];
             // 明确指定调用非泛型版本
-            await client.WriteMultipleRegistersAsync(UnitId, 345, initialValues2, default(CancellationToken));
+            await client.WriteMultipleRegistersAsync(UnitId, 345, initialValues2, default);
             output.WriteLine("初始数据写入完成");
 
             // 准备要写入的数据（大地址）
