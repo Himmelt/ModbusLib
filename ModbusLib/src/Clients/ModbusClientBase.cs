@@ -98,9 +98,9 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
         return ModbusUtils.ByteArrayToBoolArray(dataBytes, quantity);
     }
 
-    public async Task<ushort[]> ReadHoldingRegistersAsync(byte unitId, ushort startAddress, ushort quantity, CancellationToken cancellationToken = default) {
+    public async Task<ushort[]> ReadHoldingRegistersAsync(byte unitId, ushort startAddress, ushort quantity, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) {
         var dataBytes = await ReadHoldingRegistersRawAsync(unitId, startAddress, quantity, cancellationToken).ConfigureAwait(false);
-        return ModbusDataConverter.Convert<ushort>(dataBytes);
+        return ModbusDataConverter.Convert<ushort>(dataBytes, byteOrder, wordOrder);
     }
 
     public async Task<byte[]> ReadHoldingRegistersRawAsync(byte unitId, ushort startAddress, ushort quantity, CancellationToken cancellationToken = default) {
@@ -128,9 +128,9 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
         return dataBytes;
     }
 
-    public async Task<ushort[]> ReadInputRegistersAsync(byte unitId, ushort startAddress, ushort quantity, CancellationToken cancellationToken = default) {
+    public async Task<ushort[]> ReadInputRegistersAsync(byte unitId, ushort startAddress, ushort quantity, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) {
         var dataBytes = await ReadInputRegistersRawAsync(unitId, startAddress, quantity, cancellationToken).ConfigureAwait(false);
-        return ModbusDataConverter.Convert<ushort>(dataBytes);
+        return ModbusDataConverter.Convert<ushort>(dataBytes, byteOrder, wordOrder);
     }
 
     public async Task<byte[]> ReadInputRegistersRawAsync(byte unitId, ushort startAddress, ushort quantity, CancellationToken cancellationToken = default) {
@@ -366,12 +366,12 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
         return ReadDiscreteInputsAsync(unitId, startAddress, quantity, CancellationToken.None).GetAwaiter().GetResult();
     }
 
-    public ushort[] ReadHoldingRegisters(byte unitId, ushort startAddress, ushort quantity) {
-        return ReadHoldingRegistersAsync(unitId, startAddress, quantity, CancellationToken.None).GetAwaiter().GetResult();
+    public ushort[] ReadHoldingRegisters(byte unitId, ushort startAddress, ushort quantity, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst) {
+        return ReadHoldingRegistersAsync(unitId, startAddress, quantity, byteOrder, wordOrder, CancellationToken.None).GetAwaiter().GetResult();
     }
 
-    public ushort[] ReadInputRegisters(byte unitId, ushort startAddress, ushort quantity) {
-        return ReadInputRegistersAsync(unitId, startAddress, quantity, CancellationToken.None).GetAwaiter().GetResult();
+    public ushort[] ReadInputRegisters(byte unitId, ushort startAddress, ushort quantity, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst) {
+        return ReadInputRegistersAsync(unitId, startAddress, quantity, byteOrder, wordOrder, CancellationToken.None).GetAwaiter().GetResult();
     }
 
     #endregion

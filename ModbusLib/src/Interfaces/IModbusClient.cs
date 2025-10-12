@@ -58,7 +58,7 @@ public interface IModbusClient : IDisposable, IAsyncDisposable {
     /// <param name="quantity">数量</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>寄存器值数组</returns>
-    Task<ushort[]> ReadHoldingRegistersAsync(byte unitId, ushort startAddress, ushort quantity, CancellationToken cancellationToken = default);
+    Task<ushort[]> ReadHoldingRegistersAsync(byte unitId, ushort startAddress, ushort quantity, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default);
 
     Task<byte[]> ReadHoldingRegistersRawAsync(byte unitId, ushort startAddress, ushort quantity, CancellationToken cancellationToken = default);
 
@@ -70,7 +70,7 @@ public interface IModbusClient : IDisposable, IAsyncDisposable {
     /// <param name="quantity">数量</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>寄存器值数组</returns>
-    Task<ushort[]> ReadInputRegistersAsync(byte unitId, ushort startAddress, ushort quantity, CancellationToken cancellationToken = default);
+    Task<ushort[]> ReadInputRegistersAsync(byte unitId, ushort startAddress, ushort quantity, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default);
 
     Task<byte[]> ReadInputRegistersRawAsync(byte unitId, ushort startAddress, ushort quantity, CancellationToken cancellationToken = default);
 
@@ -148,9 +148,7 @@ public interface IModbusClient : IDisposable, IAsyncDisposable {
     /// <param name="wordOrder">字序模式</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>指定类型的数组，长度为count</returns>
-    Task<T[]> ReadHoldingRegistersAsync<T>(byte unitId, ushort startAddress, ushort count,
-        ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default)
-        where T : unmanaged;
+    Task<T[]> ReadHoldingRegistersAsync<T>(byte unitId, ushort startAddress, ushort count, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) where T : unmanaged;
 
     /// <summary>
     /// 泛型读取输入寄存器
@@ -163,9 +161,7 @@ public interface IModbusClient : IDisposable, IAsyncDisposable {
     /// <param name="wordOrder">字序模式</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>指定类型的数组，长度为count</returns>
-    Task<T[]> ReadInputRegistersAsync<T>(byte unitId, ushort startAddress, ushort count,
-        ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default)
-        where T : unmanaged;
+    Task<T[]> ReadInputRegistersAsync<T>(byte unitId, ushort startAddress, ushort count, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) where T : unmanaged;
 
     #endregion
 
@@ -243,7 +239,7 @@ public interface IModbusClient : IDisposable, IAsyncDisposable {
     /// <param name="startAddress">起始地址</param>
     /// <param name="quantity">数量</param>
     /// <returns>寄存器值数组</returns>
-    ushort[] ReadHoldingRegisters(byte unitId, ushort startAddress, ushort quantity);
+    ushort[] ReadHoldingRegisters(byte unitId, ushort startAddress, ushort quantity, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst);
 
     /// <summary>
     /// 同步读取输入寄存器
@@ -252,7 +248,7 @@ public interface IModbusClient : IDisposable, IAsyncDisposable {
     /// <param name="startAddress">起始地址</param>
     /// <param name="quantity">数量</param>
     /// <returns>寄存器值数组</returns>
-    ushort[] ReadInputRegisters(byte unitId, ushort startAddress, ushort quantity);
+    ushort[] ReadInputRegisters(byte unitId, ushort startAddress, ushort quantity, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst);
 
     #endregion
 

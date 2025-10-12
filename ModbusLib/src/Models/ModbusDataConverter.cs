@@ -1,7 +1,5 @@
 using ModbusLib.Enums;
 using System.Buffers;
-using System.Buffers.Binary;
-using System.Diagnostics.Metrics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 

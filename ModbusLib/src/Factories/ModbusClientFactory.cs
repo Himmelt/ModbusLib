@@ -1,5 +1,4 @@
 using ModbusLib.Clients;
-using ModbusLib.Enums;
 using ModbusLib.Interfaces;
 using ModbusLib.Models;
 

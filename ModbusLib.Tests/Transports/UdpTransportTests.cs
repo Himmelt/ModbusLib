@@ -1,7 +1,6 @@
 using ModbusLib.Interfaces;
 using ModbusLib.Models;
 using ModbusLib.Transports;
-using Xunit;
 
 namespace ModbusLib.Tests.Transports;
 

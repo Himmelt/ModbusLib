@@ -181,7 +181,7 @@ public class ModbusDataConverterTests {
     public void Convert_Bytes_To_ShortArray() {
         // 使用正向转换测试中的数据
         var originalValues = new short[] { 0x1234, 0x5678 };
-        
+
         // 测试大端字节序，高位优先
         var bytes1 = new byte[] { 0x12, 0x34, 0x56, 0x78 };
         var result11 = ModbusDataConverter.Convert<short>(bytes1, ByteOrder.BigEndian, WordOrder.HighFirst);

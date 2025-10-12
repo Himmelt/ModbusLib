@@ -1,18 +1,14 @@
 using ModbusLib.Interfaces;
 using ModbusLib.Models;
 using ModbusLib.Transports;
-using Xunit;
 
 namespace ModbusLib.Tests.Transports;
 
-public class SerialTransportTests
-{
+public class SerialTransportTests {
     [Fact]
-    public void Constructor_WithValidConfig_ShouldInitializeProperties()
-    {
+    public void Constructor_WithValidConfig_ShouldInitializeProperties() {
         // Arrange
-        var config = new SerialConnectionConfig
-        {
+        var config = new SerialConnectionConfig {
             PortName = "COM1",
             BaudRate = 9600
         };
@@ -27,18 +23,15 @@ public class SerialTransportTests
     }
 
     [Fact]
-    public void Constructor_WithNullConfig_ShouldThrowArgumentNullException()
-    {
+    public void Constructor_WithNullConfig_ShouldThrowArgumentNullException() {
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() => new SerialTransport(null!));
     }
 
     [Fact]
-    public void IsConnected_WhenNotConnected_ShouldReturnFalse()
-    {
+    public void IsConnected_WhenNotConnected_ShouldReturnFalse() {
         // Arrange
-        var config = new SerialConnectionConfig
-        {
+        var config = new SerialConnectionConfig {
             PortName = "COM1",
             BaudRate = 9600
         };
@@ -52,11 +45,9 @@ public class SerialTransportTests
     }
 
     [Fact]
-    public void Timeout_Property_ShouldGetAndSetCorrectly()
-    {
+    public void Timeout_Property_ShouldGetAndSetCorrectly() {
         // Arrange
-        var config = new SerialConnectionConfig
-        {
+        var config = new SerialConnectionConfig {
             PortName = "COM1",
             BaudRate = 9600
         };
