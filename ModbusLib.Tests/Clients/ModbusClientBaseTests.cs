@@ -127,7 +127,7 @@ public class ModbusClientBaseTests
     {
         // Arrange
         _mockTransport.Setup(t => t.IsConnected).Returns(true);
-        _mockProtocol.Setup(p => p.BuildRequest(It.IsAny<ModbusRequest>())).Returns(new byte[] { 0x01, 0x03, 0x00, 0x00, 0x00, 0x01 });
+        _mockProtocol.Setup(p => p.BuildRequest(It.IsAny<ModbusRequest>())).Returns([0x01, 0x03, 0x00, 0x00, 0x00, 0x01]);
         _mockTransport.Setup(t => t.SendReceiveAsync(It.IsAny<byte[]>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new ModbusCommunicationException("Test exception"));
 
