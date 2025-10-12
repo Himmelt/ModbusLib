@@ -205,6 +205,24 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
             throw new ModbusException(response.ExceptionCode!.Value, unitId, ModbusFunction.WriteSingleCoil);
     }
 
+    public async Task WriteMultipleCoilsAsync(byte unitId, ushort startAddress, bool[] values, CancellationToken cancellationToken = default) {
+        if (values == null || values.Length == 0) {
+            throw new ArgumentException("线圈值数组不能为空", nameof(values));
+        }
+
+        if (values.Length > 1968) {
+            throw new ArgumentException("线圈数量不能超过1968", nameof(values));
+        }
+
+        var data = ModbusUtils.BoolArrayToByteArray(values);
+        var request = new ModbusRequest(unitId, ModbusFunction.WriteMultipleCoils, startAddress, (ushort)values.Length, data);
+        var response = await ExecuteRequestAsync(request, cancellationToken).ConfigureAwait(false);
+
+        if (response.IsError) {
+            throw new ModbusException(response.ExceptionCode!.Value, unitId, ModbusFunction.WriteMultipleCoils);
+        }
+    }
+
     public async Task WriteSingleRegisterAsync(byte unitId, ushort address, ushort value, CancellationToken cancellationToken = default) {
         var data = new byte[] { (byte)(value >> 8), (byte)(value & 0xFF) };
         var request = new ModbusRequest(unitId, ModbusFunction.WriteSingleRegister, address, 1, data);
@@ -223,34 +241,40 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
             throw new ModbusException(response.ExceptionCode!.Value, unitId, ModbusFunction.WriteSingleRegister);
     }
 
-    public async Task WriteMultipleCoilsAsync(byte unitId, ushort startAddress, bool[] values, CancellationToken cancellationToken = default) {
-        if (values == null || values.Length == 0)
-            throw new ArgumentException("线圈值数组不能为空", nameof(values));
-
-        if (values.Length > 1968)
-            throw new ArgumentException("线圈数量不能超过1968", nameof(values));
-
-        var data = ModbusUtils.BoolArrayToByteArray(values);
-        var request = new ModbusRequest(unitId, ModbusFunction.WriteMultipleCoils, startAddress, (ushort)values.Length, data);
-        var response = await ExecuteRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        if (response.IsError)
-            throw new ModbusException(response.ExceptionCode!.Value, unitId, ModbusFunction.WriteMultipleCoils);
-    }
-
     public async Task WriteMultipleRegistersAsync(byte unitId, ushort startAddress, ushort[] values, CancellationToken cancellationToken = default) {
-        if (values == null || values.Length == 0)
+        if (values == null || values.Length == 0) {
             throw new ArgumentException("寄存器值数组不能为空", nameof(values));
+        }
 
-        if (values.Length > 123)
+        if (values.Length > 123) {
             throw new ArgumentException("寄存器数量不能超过123", nameof(values));
+        }
 
         var data = ModbusUtils.UshortArrayToByteArray(values);
         var request = new ModbusRequest(unitId, ModbusFunction.WriteMultipleRegisters, startAddress, (ushort)values.Length, data);
         var response = await ExecuteRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
-        if (response.IsError)
+        if (response.IsError) {
             throw new ModbusException(response.ExceptionCode!.Value, unitId, ModbusFunction.WriteMultipleRegisters);
+        }
+    }
+
+    public async Task WriteMultipleRegistersAsync(byte unitId, ushort startAddress, short[] values, CancellationToken cancellationToken = default) {
+        if (values == null || values.Length == 0) {
+            throw new ArgumentException("寄存器值数组不能为空", nameof(values));
+        }
+
+        if (values.Length > 123) {
+            throw new ArgumentException("寄存器数量不能超过123", nameof(values));
+        }
+
+        var data = ModbusUtils.UshortArrayToByteArray(values);
+        var request = new ModbusRequest(unitId, ModbusFunction.WriteMultipleRegisters, startAddress, (ushort)values.Length, data);
+        var response = await ExecuteRequestAsync(request, cancellationToken).ConfigureAwait(false);
+
+        if (response.IsError) {
+            throw new ModbusException(response.ExceptionCode!.Value, unitId, ModbusFunction.WriteMultipleRegisters);
+        }
     }
 
     #endregion
@@ -390,6 +414,10 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
         WriteSingleCoilAsync(unitId, address, value, CancellationToken.None).GetAwaiter().GetResult();
     }
 
+    public void WriteMultipleCoils(byte unitId, ushort startAddress, bool[] values) {
+        WriteMultipleCoilsAsync(unitId, startAddress, values, CancellationToken.None).GetAwaiter().GetResult();
+    }
+
     public void WriteSingleRegister(byte unitId, ushort address, ushort value) {
         WriteSingleRegisterAsync(unitId, address, value, CancellationToken.None).GetAwaiter().GetResult();
     }
@@ -398,11 +426,11 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
         WriteSingleRegisterAsync(unitId, address, value, CancellationToken.None).GetAwaiter().GetResult();
     }
 
-    public void WriteMultipleCoils(byte unitId, ushort startAddress, bool[] values) {
-        WriteMultipleCoilsAsync(unitId, startAddress, values, CancellationToken.None).GetAwaiter().GetResult();
+    public void WriteMultipleRegisters(byte unitId, ushort startAddress, ushort[] values) {
+        WriteMultipleRegistersAsync(unitId, startAddress, values, CancellationToken.None).GetAwaiter().GetResult();
     }
 
-    public void WriteMultipleRegisters(byte unitId, ushort startAddress, ushort[] values) {
+    public void WriteMultipleRegisters(byte unitId, ushort startAddress, short[] values) {
         WriteMultipleRegistersAsync(unitId, startAddress, values, CancellationToken.None).GetAwaiter().GetResult();
     }
 
