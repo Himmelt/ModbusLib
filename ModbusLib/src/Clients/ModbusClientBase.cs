@@ -2,7 +2,7 @@ using ModbusLib.Enums;
 using ModbusLib.Exceptions;
 using ModbusLib.Interfaces;
 using ModbusLib.Models;
-using ModbusLib.Protocols;
+using ModbusLib.Utils;
 
 namespace ModbusLib.Clients;
 
@@ -73,7 +73,7 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
         var dataBytes = new byte[byteCount];
         Array.Copy(response.Data.ToArray(), 1, dataBytes, 0, byteCount);
 
-        return ModbusUtils.ByteArrayToBoolArray(dataBytes, quantity);
+        return DataConverter.ByteArrayToBoolArray(dataBytes, quantity);
     }
 
     public async Task<bool[]> ReadDiscreteInputsAsync(byte unitId, ushort startAddress, ushort quantity, CancellationToken cancellationToken = default) {
@@ -95,12 +95,12 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
         var dataBytes = new byte[byteCount];
         Array.Copy(response.Data.ToArray(), 1, dataBytes, 0, byteCount);
 
-        return ModbusUtils.ByteArrayToBoolArray(dataBytes, quantity);
+        return DataConverter.ByteArrayToBoolArray(dataBytes, quantity);
     }
 
     public async Task<ushort[]> ReadHoldingRegistersAsync(byte unitId, ushort startAddress, ushort quantity, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) {
         var dataBytes = await ReadHoldingRegistersRawAsync(unitId, startAddress, quantity, cancellationToken).ConfigureAwait(false);
-        return ModbusDataConverter.Convert<ushort>(dataBytes, byteOrder, wordOrder);
+        return DataConverter.Convert<ushort>(dataBytes, byteOrder, wordOrder);
     }
 
     public async Task<byte[]> ReadHoldingRegistersRawAsync(byte unitId, ushort startAddress, ushort quantity, CancellationToken cancellationToken = default) {
@@ -130,7 +130,7 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
 
     public async Task<ushort[]> ReadInputRegistersAsync(byte unitId, ushort startAddress, ushort quantity, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) {
         var dataBytes = await ReadInputRegistersRawAsync(unitId, startAddress, quantity, cancellationToken).ConfigureAwait(false);
-        return ModbusDataConverter.Convert<ushort>(dataBytes, byteOrder, wordOrder);
+        return DataConverter.Convert<ushort>(dataBytes, byteOrder, wordOrder);
     }
 
     public async Task<byte[]> ReadInputRegistersRawAsync(byte unitId, ushort startAddress, ushort quantity, CancellationToken cancellationToken = default) {
@@ -165,7 +165,7 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
     public async Task<T[]> ReadHoldingRegistersAsync<T>(byte unitId, ushort startAddress, ushort count, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) where T : unmanaged {
         if (count == 0) throw new ArgumentException("元素数量不能为 0", nameof(count));
 
-        var registerCount = (ushort)ModbusDataConverter.GetTotalRegisterCount<T>(count);
+        var registerCount = (ushort)DataConverter.GetTotalRegisterCount<T>(count);
         ValidateReadParameters(registerCount, 125);
 
         var rawBytes = await ReadHoldingRegistersRawAsync(unitId, startAddress, registerCount, cancellationToken).ConfigureAwait(false);
@@ -174,13 +174,13 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
             throw new ModbusCommunicationException($"响应数据长度 {rawBytes.Length} 不满足转换 {count} 个目标数据类型 {typeof(T)}");
         }
         // 使用泛型转换器转换为目标类型
-        return ModbusDataConverter.Convert<T>(rawBytes, byteOrder, wordOrder);
+        return DataConverter.Convert<T>(rawBytes, byteOrder, wordOrder);
     }
 
     public async Task<T[]> ReadInputRegistersAsync<T>(byte unitId, ushort startAddress, ushort count, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) where T : unmanaged {
         if (count == 0) throw new ArgumentException("元素数量不能为 0", nameof(count));
 
-        var registerCount = (ushort)ModbusDataConverter.GetTotalRegisterCount<T>(count);
+        var registerCount = (ushort)DataConverter.GetTotalRegisterCount<T>(count);
         ValidateReadParameters(registerCount, 125);
 
         var rawBytes = await ReadInputRegistersRawAsync(unitId, startAddress, registerCount, cancellationToken).ConfigureAwait(false);
@@ -189,7 +189,7 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
             throw new ModbusCommunicationException($"响应数据长度 {rawBytes.Length} 不满足转换 {count} 个目标数据类型 {typeof(T)}");
         }
         // 使用泛型转换器转换为目标类型
-        return ModbusDataConverter.Convert<T>(rawBytes, byteOrder, wordOrder);
+        return DataConverter.Convert<T>(rawBytes, byteOrder, wordOrder);
     }
 
     #endregion
@@ -214,7 +214,7 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
             throw new ArgumentException("写入线圈数量不能超过1968", nameof(values));
         }
 
-        var data = ModbusUtils.BoolArrayToByteArray(values);
+        var data = DataConverter.BoolArrayToByteArray(values);
         var request = new ModbusRequest(unitId, ModbusFunction.WriteMultipleCoils, startAddress, (ushort)values.Length, data);
         var response = await ExecuteRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
@@ -224,7 +224,7 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
     }
 
     public async Task WriteSingleRegisterAsync(byte unitId, ushort address, ushort value, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) {
-        var data = ModbusDataConverter.Convert([value], byteOrder, wordOrder);
+        var data = DataConverter.Convert([value], byteOrder, wordOrder);
         var request = new ModbusRequest(unitId, ModbusFunction.WriteSingleRegister, address, 1, data);
         var response = await ExecuteRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
@@ -234,7 +234,7 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
     }
 
     public async Task WriteSingleRegisterAsync(byte unitId, ushort address, short value, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) {
-        var data = ModbusDataConverter.Convert([value], byteOrder, wordOrder);
+        var data = DataConverter.Convert([value], byteOrder, wordOrder);
         var request = new ModbusRequest(unitId, ModbusFunction.WriteSingleRegister, address, 1, data);
         var response = await ExecuteRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
@@ -252,7 +252,7 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
             throw new ArgumentException("写入寄存器数量不能超过123", nameof(values));
         }
 
-        var data = ModbusDataConverter.Convert(values, byteOrder, wordOrder);
+        var data = DataConverter.Convert(values, byteOrder, wordOrder);
         var request = new ModbusRequest(unitId, ModbusFunction.WriteMultipleRegisters, startAddress, (ushort)values.Length, data);
         var response = await ExecuteRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
@@ -270,7 +270,7 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
             throw new ArgumentException("写入寄存器数量不能超过123", nameof(values));
         }
 
-        var data = ModbusDataConverter.Convert(values, byteOrder, wordOrder);
+        var data = DataConverter.Convert(values, byteOrder, wordOrder);
         var request = new ModbusRequest(unitId, ModbusFunction.WriteMultipleRegisters, startAddress, (ushort)values.Length, data);
         var response = await ExecuteRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
@@ -301,13 +301,13 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
     #region 泛型写入功能
 
     public async Task WriteMultipleRegistersAsync<T>(byte unitId, ushort startAddress, T value, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) where T : unmanaged {
-        var registerCount = ModbusDataConverter.GetRegisterCount<T>();
+        var registerCount = DataConverter.GetRegisterCount<T>();
         if (registerCount > 4) {
             throw new ArgumentException($"写入所需寄存器数量({registerCount})不能超过4", nameof(value));
         }
 
         // 将泛型转换为字节数组
-        var rawBytes = ModbusDataConverter.Convert([value], byteOrder, wordOrder);
+        var rawBytes = DataConverter.Convert([value], byteOrder, wordOrder);
 
         // 调用原始写入方法
         await WriteMultipleRegistersRawAsync(unitId, startAddress, rawBytes, cancellationToken).ConfigureAwait(false);
@@ -318,13 +318,13 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
             throw new ArgumentException("值数组不能为空", nameof(values));
         }
 
-        var registerCount = ModbusDataConverter.GetTotalRegisterCount<T>(values.Length);
+        var registerCount = DataConverter.GetTotalRegisterCount<T>(values.Length);
         if (registerCount > 123) {
             throw new ArgumentException($"写入所需寄存器数量({registerCount})不能超过123", nameof(values));
         }
 
         // 将泛型数组转换为字节数组
-        var rawBytes = ModbusDataConverter.Convert(values, byteOrder, wordOrder);
+        var rawBytes = DataConverter.Convert(values, byteOrder, wordOrder);
 
         // 调用原始写入方法
         await WriteMultipleRegistersRawAsync(unitId, startAddress, rawBytes, cancellationToken).ConfigureAwait(false);
@@ -345,7 +345,7 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
             throw new ArgumentException("写入寄存器数量不能超过121", nameof(writeValues));
         }
 
-        var writeData = ModbusDataConverter.Convert(writeValues, byteOrder, wordOrder);
+        var writeData = DataConverter.Convert(writeValues, byteOrder, wordOrder);
         var requestData = new byte[4 + writeData.Length];
 
         // 写入起始地址
@@ -376,7 +376,7 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
         var dataBytes = new byte[byteCount];
         Array.Copy(response.Data.ToArray(), 1, dataBytes, 0, byteCount);
 
-        return ModbusDataConverter.Convert<ushort>(dataBytes, byteOrder, wordOrder);
+        return DataConverter.Convert<ushort>(dataBytes, byteOrder, wordOrder);
     }
 
     #endregion

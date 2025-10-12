@@ -2,6 +2,7 @@ using ModbusLib.Enums;
 using ModbusLib.Exceptions;
 using ModbusLib.Interfaces;
 using ModbusLib.Models;
+using ModbusLib.Utils;
 
 namespace ModbusLib.Protocols;
 
@@ -18,7 +19,7 @@ public class RtuProtocol : IModbusProtocol {
         Array.Copy(pdu, 0, frame, 1, pdu.Length);
 
         // 计算并添加CRC
-        var crc = ModbusUtils.CalculateCrc16(frame, 0, frame.Length - 2);
+        var crc = Crc16Utils.CalculateCrc16(frame, 0, frame.Length - 2);
         frame[^2] = (byte)(crc & 0xFF);
         frame[^1] = (byte)(crc >> 8);
 
@@ -27,19 +28,22 @@ public class RtuProtocol : IModbusProtocol {
 
     public ModbusResponse ParseResponse(byte[] response, ModbusRequest request) {
         ArgumentNullException.ThrowIfNull(response, nameof(response));
-        if (response.Length < 3)
+        if (response.Length < 3) {
             throw new ModbusCommunicationException($"RTU响应长度不足: {response.Length}");
+        }
 
-        if (!ModbusUtils.ValidateCrc16(response))
+        if (!Crc16Utils.ValidateCrc16(response)) {
             throw new ModbusCommunicationException("RTU响应CRC校验失败");
+        }
 
         var unitId = response[0];
         var functionCode = response[1];
 
         // 检查是否为异常响应
         if ((functionCode & 0x80) != 0) {
-            if (response.Length < 5)
+            if (response.Length < 5) {
                 throw new ModbusCommunicationException("RTU异常响应长度不足");
+            }
 
             var originalFunction = (ModbusFunction)(functionCode & 0x7F);
             var exceptionCode = (ModbusExceptionCode)response[2];
@@ -57,10 +61,9 @@ public class RtuProtocol : IModbusProtocol {
 
     public bool ValidateResponse(byte[] response) {
         ArgumentNullException.ThrowIfNull(response, nameof(response));
-        if (response.Length < 3)
-            return false;
+        if (response.Length < 3) return false;
 
-        return ModbusUtils.ValidateCrc16(response);
+        return Crc16Utils.ValidateCrc16(response);
     }
 
     public int CalculateExpectedResponseLength(ModbusRequest request) {
@@ -106,8 +109,9 @@ public class RtuProtocol : IModbusProtocol {
     }
 
     private static byte[] BuildWriteSingleCoilPdu(ModbusRequest request) {
-        if (request.Data.IsEmpty || request.Data.Length < 1)
+        if (request.Data.IsEmpty || request.Data.Length < 1) {
             throw new ArgumentException("WriteSingleCoil需要数据");
+        }
 
         var value = request.Data[0] != 0 ? (ushort)0xFF00 : (ushort)0x0000;
 
@@ -122,8 +126,9 @@ public class RtuProtocol : IModbusProtocol {
     }
 
     private static byte[] BuildWriteSingleRegisterPdu(ModbusRequest request) {
-        if (request.Data.IsEmpty || request.Data.Length < 2)
+        if (request.Data.IsEmpty || request.Data.Length < 2) {
             throw new ArgumentException("WriteSingleRegister需要2字节数据");
+        }
 
         return
         [
@@ -136,8 +141,9 @@ public class RtuProtocol : IModbusProtocol {
     }
 
     private static byte[] BuildWriteMultipleCoilsPdu(ModbusRequest request) {
-        if (request.Data.IsEmpty)
+        if (request.Data.IsEmpty) {
             throw new ArgumentException("WriteMultipleCoils需要数据");
+        }
 
         var byteCount = (byte)request.Data.Length;
         var pdu = new byte[6 + byteCount];
@@ -155,8 +161,9 @@ public class RtuProtocol : IModbusProtocol {
     }
 
     private static byte[] BuildWriteMultipleRegistersPdu(ModbusRequest request) {
-        if (request.Data.IsEmpty)
+        if (request.Data.IsEmpty) {
             throw new ArgumentException("WriteMultipleRegisters需要数据");
+        }
 
         var byteCount = (byte)request.Data.Length;
         var pdu = new byte[6 + byteCount];
@@ -174,8 +181,9 @@ public class RtuProtocol : IModbusProtocol {
     }
 
     private static byte[] BuildReadWriteMultipleRegistersPdu(ModbusRequest request) {
-        if (request.Data.IsEmpty || request.Data.Length < 4)
+        if (request.Data.IsEmpty || request.Data.Length < 4) {
             throw new ArgumentException("ReadWriteMultipleRegisters需要额外参数数据");
+        }
 
         // 数据格式: [写入起始地址2字节] + [写入数量2字节] + [写入数据...]
         var writeStartAddress = (ushort)((request.Data[0] << 8) | request.Data[1]);

@@ -1,11 +1,11 @@
 using ModbusLib.Enums;
-using ModbusLib.Models;
+using ModbusLib.Utils;
 using System.Reflection;
 using Xunit.Abstractions;
 
-namespace ModbusLib.Tests.Models;
+namespace ModbusLib.Tests.Utils;
 
-public class ModbusDataConverterTests {
+public class DataConverterTests {
 
     public class GetRegisterCountTestCase : IXunitSerializable {
         public required Type Type { get; set; }
@@ -36,8 +36,8 @@ public class ModbusDataConverterTests {
     [Theory]
     [MemberData(nameof(GetRegisterCountTestData))]
     public void GetRegisterCount(GetRegisterCountTestCase testCase) {
-        var methodInfo = typeof(ModbusDataConverter)
-            .GetMethod(nameof(ModbusDataConverter.GetRegisterCount), BindingFlags.Public | BindingFlags.Static)
+        var methodInfo = typeof(DataConverter)
+            .GetMethod(nameof(DataConverter.GetRegisterCount), BindingFlags.Public | BindingFlags.Static)
             ?.MakeGenericMethod(testCase.Type);
 
         var result = methodInfo?.Invoke(null, null);
@@ -92,8 +92,8 @@ public class ModbusDataConverterTests {
     [Theory]
     [MemberData(nameof(GetTotalRegisterCountTestData))]
     public void GetTotalRegisterCount(GetTotalRegisterCountTestCase testCase) {
-        var methodInfo = typeof(ModbusDataConverter)
-            .GetMethod(nameof(ModbusDataConverter.GetTotalRegisterCount), BindingFlags.Public | BindingFlags.Static)
+        var methodInfo = typeof(DataConverter)
+            .GetMethod(nameof(DataConverter.GetTotalRegisterCount), BindingFlags.Public | BindingFlags.Static)
             ?.MakeGenericMethod(testCase.Type);
 
         var result = methodInfo?.Invoke(null, [testCase.ElementCount]);
@@ -115,18 +115,42 @@ public class ModbusDataConverterTests {
         return data;
     }
 
+    [Fact]
+    public void ByteArrayToBoolArray() {
+        var bytes = new byte[] { 0b10110001, 0b11001010 };
+        var expected = new bool[] {
+            true, false, false, false, true, true, false, true,  // 0b10110001
+            false, true, false, true, false, false, true, true   // 0b11001010
+        };
+
+        var result = DataConverter.ByteArrayToBoolArray(bytes, 16);
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void BoolArrayToByteArray() {
+        var bools = new bool[] {
+            true, false, false, false, true, true, false, true,  // 0b10110001
+            false, true, false, true, false, false, true, true   // 0b11001010
+        };
+        var expected = new byte[] { 0b10110001, 0b11001010 };
+
+        var result = DataConverter.BoolArrayToByteArray(bools);
+        Assert.Equal(expected, result);
+    }
+
     #region Convert<T>(T[] values) 方法测试
 
     [Fact]
     public void Convert_ShortArray_To_Bytes() {
         var values = new short[] { 0x1234, 0x5678 };
-        var result11 = ModbusDataConverter.Convert(values, ByteOrder.BigEndian, WordOrder.HighFirst);
-        var result12 = ModbusDataConverter.Convert(values, ByteOrder.BigEndian, WordOrder.LowFirst);
+        var result11 = DataConverter.Convert(values, ByteOrder.BigEndian, WordOrder.HighFirst);
+        var result12 = DataConverter.Convert(values, ByteOrder.BigEndian, WordOrder.LowFirst);
         Assert.Equal(new byte[] { 0x12, 0x34, 0x56, 0x78 }, result11);
         Assert.Equal(result11, result12);
 
-        var result21 = ModbusDataConverter.Convert(values, ByteOrder.LittleEndian, WordOrder.HighFirst);
-        var result22 = ModbusDataConverter.Convert(values, ByteOrder.LittleEndian, WordOrder.LowFirst);
+        var result21 = DataConverter.Convert(values, ByteOrder.LittleEndian, WordOrder.HighFirst);
+        var result22 = DataConverter.Convert(values, ByteOrder.LittleEndian, WordOrder.LowFirst);
         Assert.Equal(new byte[] { 0x34, 0x12, 0x78, 0x56 }, result21);
         Assert.Equal(result21, result22);
     }
@@ -135,13 +159,13 @@ public class ModbusDataConverterTests {
     public void Convert_IntArray_To_Bytes() {
         var values = new int[] { 0x12345678, 0x0abcdef0 };
 
-        var result1 = ModbusDataConverter.Convert(values, ByteOrder.BigEndian, WordOrder.HighFirst);
+        var result1 = DataConverter.Convert(values, ByteOrder.BigEndian, WordOrder.HighFirst);
         Assert.Equal(new byte[] { 0x12, 0x34, 0x56, 0x78, 0x0a, 0xbc, 0xde, 0xf0 }, result1);
-        var result2 = ModbusDataConverter.Convert(values, ByteOrder.BigEndian, WordOrder.LowFirst);
+        var result2 = DataConverter.Convert(values, ByteOrder.BigEndian, WordOrder.LowFirst);
         Assert.Equal(new byte[] { 0x56, 0x78, 0x12, 0x34, 0xde, 0xf0, 0x0a, 0xbc }, result2);
-        var result3 = ModbusDataConverter.Convert(values, ByteOrder.LittleEndian, WordOrder.HighFirst);
+        var result3 = DataConverter.Convert(values, ByteOrder.LittleEndian, WordOrder.HighFirst);
         Assert.Equal(new byte[] { 0x34, 0x12, 0x78, 0x56, 0xbc, 0x0a, 0xf0, 0xde }, result3);
-        var result4 = ModbusDataConverter.Convert(values, ByteOrder.LittleEndian, WordOrder.LowFirst);
+        var result4 = DataConverter.Convert(values, ByteOrder.LittleEndian, WordOrder.LowFirst);
         Assert.Equal(new byte[] { 0x78, 0x56, 0x34, 0x12, 0xf0, 0xde, 0xbc, 0x0a }, result4);
     }
 
@@ -149,13 +173,13 @@ public class ModbusDataConverterTests {
     public void Convert_FloatArray_To_Bytes() {
         var values = new float[] { 123.45f, 678.90f };
 
-        var result1 = ModbusDataConverter.Convert(values, ByteOrder.BigEndian, WordOrder.HighFirst);
+        var result1 = DataConverter.Convert(values, ByteOrder.BigEndian, WordOrder.HighFirst);
         Assert.Equal(new byte[] { 0x42, 0xF6, 0xE6, 0x66, 0x44, 0x29, 0xB9, 0x9A }, result1);
-        var result2 = ModbusDataConverter.Convert(values, ByteOrder.BigEndian, WordOrder.LowFirst);
+        var result2 = DataConverter.Convert(values, ByteOrder.BigEndian, WordOrder.LowFirst);
         Assert.Equal(new byte[] { 0xE6, 0x66, 0x42, 0xF6, 0xB9, 0x9A, 0x44, 0x29 }, result2);
-        var result3 = ModbusDataConverter.Convert(values, ByteOrder.LittleEndian, WordOrder.HighFirst);
+        var result3 = DataConverter.Convert(values, ByteOrder.LittleEndian, WordOrder.HighFirst);
         Assert.Equal(new byte[] { 0xF6, 0x42, 0x66, 0xE6, 0x29, 0x44, 0x9A, 0xB9 }, result3);
-        var result4 = ModbusDataConverter.Convert(values, ByteOrder.LittleEndian, WordOrder.LowFirst);
+        var result4 = DataConverter.Convert(values, ByteOrder.LittleEndian, WordOrder.LowFirst);
         Assert.Equal(new byte[] { 0x66, 0xE6, 0xF6, 0x42, 0x9A, 0xB9, 0x29, 0x44 }, result4);
     }
 
@@ -163,13 +187,13 @@ public class ModbusDataConverterTests {
     public void Convert_DoubleArray_To_Bytes() {
         var values = new double[] { 123.456789, 987.654321 };
 
-        var result1 = ModbusDataConverter.Convert(values, ByteOrder.BigEndian, WordOrder.HighFirst);
+        var result1 = DataConverter.Convert(values, ByteOrder.BigEndian, WordOrder.HighFirst);
         Assert.Equal(new byte[] { 0x40, 0x5E, 0xDD, 0x3C, 0x07, 0xEE, 0x0B, 0x0B, 0x40, 0x8E, 0xDD, 0x3C, 0x0C, 0xA6, 0x00, 0xB0 }, result1);
-        var result2 = ModbusDataConverter.Convert(values, ByteOrder.BigEndian, WordOrder.LowFirst);
+        var result2 = DataConverter.Convert(values, ByteOrder.BigEndian, WordOrder.LowFirst);
         Assert.Equal(new byte[] { 0x0B, 0x0B, 0x07, 0xEE, 0xDD, 0x3C, 0x40, 0x5E, 0x00, 0xB0, 0x0C, 0xA6, 0xDD, 0x3C, 0x40, 0x8E }, result2);
-        var result3 = ModbusDataConverter.Convert(values, ByteOrder.LittleEndian, WordOrder.HighFirst);
+        var result3 = DataConverter.Convert(values, ByteOrder.LittleEndian, WordOrder.HighFirst);
         Assert.Equal(new byte[] { 0x5E, 0x40, 0x3C, 0xDD, 0xEE, 0x07, 0x0B, 0x0B, 0x8E, 0x40, 0x3C, 0xDD, 0xA6, 0x0C, 0xB0, 0x00 }, result3);
-        var result4 = ModbusDataConverter.Convert(values, ByteOrder.LittleEndian, WordOrder.LowFirst);
+        var result4 = DataConverter.Convert(values, ByteOrder.LittleEndian, WordOrder.LowFirst);
         Assert.Equal(new byte[] { 0x0B, 0x0B, 0xEE, 0x07, 0x3C, 0xDD, 0x5E, 0x40, 0xB0, 0x00, 0xA6, 0x0C, 0x3C, 0xDD, 0x8E, 0x40 }, result4);
     }
 
@@ -184,15 +208,15 @@ public class ModbusDataConverterTests {
 
         // 测试大端字节序，高位优先
         var bytes1 = new byte[] { 0x12, 0x34, 0x56, 0x78 };
-        var result11 = ModbusDataConverter.Convert<short>(bytes1, ByteOrder.BigEndian, WordOrder.HighFirst);
-        var result12 = ModbusDataConverter.Convert<short>(bytes1, ByteOrder.BigEndian, WordOrder.LowFirst);
+        var result11 = DataConverter.Convert<short>(bytes1, ByteOrder.BigEndian, WordOrder.HighFirst);
+        var result12 = DataConverter.Convert<short>(bytes1, ByteOrder.BigEndian, WordOrder.LowFirst);
         Assert.Equal(originalValues, result11);
         Assert.Equal(result11, result12);
 
         // 测试小端字节序，高位优先
         var bytes2 = new byte[] { 0x34, 0x12, 0x78, 0x56 };
-        var result21 = ModbusDataConverter.Convert<short>(bytes2, ByteOrder.LittleEndian, WordOrder.HighFirst);
-        var result22 = ModbusDataConverter.Convert<short>(bytes2, ByteOrder.LittleEndian, WordOrder.LowFirst);
+        var result21 = DataConverter.Convert<short>(bytes2, ByteOrder.LittleEndian, WordOrder.HighFirst);
+        var result22 = DataConverter.Convert<short>(bytes2, ByteOrder.LittleEndian, WordOrder.LowFirst);
         Assert.Equal(originalValues, result21);
         Assert.Equal(result21, result22);
     }
@@ -204,22 +228,22 @@ public class ModbusDataConverterTests {
 
         // 测试大端字节序，高位优先
         var bytes1 = new byte[] { 0x12, 0x34, 0x56, 0x78, 0x0a, 0xbc, 0xde, 0xf0 };
-        var result1 = ModbusDataConverter.Convert<int>(bytes1, ByteOrder.BigEndian, WordOrder.HighFirst);
+        var result1 = DataConverter.Convert<int>(bytes1, ByteOrder.BigEndian, WordOrder.HighFirst);
         Assert.Equal(originalValues, result1);
 
         // 测试大端字节序，低位优先
         var bytes2 = new byte[] { 0x56, 0x78, 0x12, 0x34, 0xde, 0xf0, 0x0a, 0xbc };
-        var result2 = ModbusDataConverter.Convert<int>(bytes2, ByteOrder.BigEndian, WordOrder.LowFirst);
+        var result2 = DataConverter.Convert<int>(bytes2, ByteOrder.BigEndian, WordOrder.LowFirst);
         Assert.Equal(originalValues, result2);
 
         // 测试小端字节序，高位优先
         var bytes3 = new byte[] { 0x34, 0x12, 0x78, 0x56, 0xbc, 0x0a, 0xf0, 0xde };
-        var result3 = ModbusDataConverter.Convert<int>(bytes3, ByteOrder.LittleEndian, WordOrder.HighFirst);
+        var result3 = DataConverter.Convert<int>(bytes3, ByteOrder.LittleEndian, WordOrder.HighFirst);
         Assert.Equal(originalValues, result3);
 
         // 测试小端字节序，低位优先
         var bytes4 = new byte[] { 0x78, 0x56, 0x34, 0x12, 0xf0, 0xde, 0xbc, 0x0a };
-        var result4 = ModbusDataConverter.Convert<int>(bytes4, ByteOrder.LittleEndian, WordOrder.LowFirst);
+        var result4 = DataConverter.Convert<int>(bytes4, ByteOrder.LittleEndian, WordOrder.LowFirst);
         Assert.Equal(originalValues, result4);
     }
 
@@ -230,22 +254,22 @@ public class ModbusDataConverterTests {
 
         // 测试大端字节序，高位优先
         var bytes1 = new byte[] { 0x42, 0xF6, 0xE6, 0x66, 0x44, 0x29, 0xB9, 0x9A };
-        var result1 = ModbusDataConverter.Convert<float>(bytes1, ByteOrder.BigEndian, WordOrder.HighFirst);
+        var result1 = DataConverter.Convert<float>(bytes1, ByteOrder.BigEndian, WordOrder.HighFirst);
         Assert.Equal(originalValues, result1);
 
         // 测试大端字节序，低位优先
         var bytes2 = new byte[] { 0xE6, 0x66, 0x42, 0xF6, 0xB9, 0x9A, 0x44, 0x29 };
-        var result2 = ModbusDataConverter.Convert<float>(bytes2, ByteOrder.BigEndian, WordOrder.LowFirst);
+        var result2 = DataConverter.Convert<float>(bytes2, ByteOrder.BigEndian, WordOrder.LowFirst);
         Assert.Equal(originalValues, result2);
 
         // 测试小端字节序，高位优先
         var bytes3 = new byte[] { 0xF6, 0x42, 0x66, 0xE6, 0x29, 0x44, 0x9A, 0xB9 };
-        var result3 = ModbusDataConverter.Convert<float>(bytes3, ByteOrder.LittleEndian, WordOrder.HighFirst);
+        var result3 = DataConverter.Convert<float>(bytes3, ByteOrder.LittleEndian, WordOrder.HighFirst);
         Assert.Equal(originalValues, result3);
 
         // 测试小端字节序，低位优先
         var bytes4 = new byte[] { 0x66, 0xE6, 0xF6, 0x42, 0x9A, 0xB9, 0x29, 0x44 };
-        var result4 = ModbusDataConverter.Convert<float>(bytes4, ByteOrder.LittleEndian, WordOrder.LowFirst);
+        var result4 = DataConverter.Convert<float>(bytes4, ByteOrder.LittleEndian, WordOrder.LowFirst);
         Assert.Equal(originalValues, result4);
     }
 
@@ -256,35 +280,35 @@ public class ModbusDataConverterTests {
 
         // 测试大端字节序，高位优先
         var bytes1 = new byte[] { 0x40, 0x5E, 0xDD, 0x3C, 0x07, 0xEE, 0x0B, 0x0B, 0x40, 0x8E, 0xDD, 0x3C, 0x0C, 0xA6, 0x00, 0xB0 };
-        var result1 = ModbusDataConverter.Convert<double>(bytes1, ByteOrder.BigEndian, WordOrder.HighFirst);
+        var result1 = DataConverter.Convert<double>(bytes1, ByteOrder.BigEndian, WordOrder.HighFirst);
         Assert.Equal(originalValues, result1);
 
         // 测试大端字节序，低位优先
         var bytes2 = new byte[] { 0x0B, 0x0B, 0x07, 0xEE, 0xDD, 0x3C, 0x40, 0x5E, 0x00, 0xB0, 0x0C, 0xA6, 0xDD, 0x3C, 0x40, 0x8E };
-        var result2 = ModbusDataConverter.Convert<double>(bytes2, ByteOrder.BigEndian, WordOrder.LowFirst);
+        var result2 = DataConverter.Convert<double>(bytes2, ByteOrder.BigEndian, WordOrder.LowFirst);
         Assert.Equal(originalValues, result2);
 
         // 测试小端字节序，高位优先
         var bytes3 = new byte[] { 0x5E, 0x40, 0x3C, 0xDD, 0xEE, 0x07, 0x0B, 0x0B, 0x8E, 0x40, 0x3C, 0xDD, 0xA6, 0x0C, 0xB0, 0x00 };
-        var result3 = ModbusDataConverter.Convert<double>(bytes3, ByteOrder.LittleEndian, WordOrder.HighFirst);
+        var result3 = DataConverter.Convert<double>(bytes3, ByteOrder.LittleEndian, WordOrder.HighFirst);
         Assert.Equal(originalValues, result3);
 
         // 测试小端字节序，低位优先
         var bytes4 = new byte[] { 0x0B, 0x0B, 0xEE, 0x07, 0x3C, 0xDD, 0x5E, 0x40, 0xB0, 0x00, 0xA6, 0x0C, 0x3C, 0xDD, 0x8E, 0x40 };
-        var result4 = ModbusDataConverter.Convert<double>(bytes4, ByteOrder.LittleEndian, WordOrder.LowFirst);
+        var result4 = DataConverter.Convert<double>(bytes4, ByteOrder.LittleEndian, WordOrder.LowFirst);
         Assert.Equal(originalValues, result4);
     }
 
     [Fact]
     public void Convert_Bytes_To_IntArray_ThrowsArgumentException() {
         var bytes = new byte[] { 0x12, 0x34, 0x56 };
-        Assert.Throws<ArgumentException>(() => ModbusDataConverter.Convert<int>(bytes));
+        Assert.Throws<ArgumentException>(() => DataConverter.Convert<int>(bytes));
     }
 
     [Fact]
     public void Convert_EmptyBytes_To_IntArray_ThrowsArgumentException() {
         var bytes = Array.Empty<byte>();
-        Assert.Throws<ArgumentException>(() => ModbusDataConverter.Convert<int>(bytes));
+        Assert.Throws<ArgumentException>(() => DataConverter.Convert<int>(bytes));
     }
 
     #endregion

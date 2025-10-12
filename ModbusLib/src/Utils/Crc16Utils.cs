@@ -1,9 +1,9 @@
-namespace ModbusLib.Protocols;
+namespace ModbusLib.Utils;
 
 /// <summary>
-/// Modbus工具类
+/// Modbus CRC16 工具类
 /// </summary>
-public static class ModbusUtils {
+public static class Crc16Utils {
     /// <summary>
     /// 计算CRC-16/Modbus校验码
     /// </summary>
@@ -53,51 +53,8 @@ public static class ModbusUtils {
 
         var dataLength = data.Length - 2;
         var expectedCrc = CalculateCrc16(data, 0, dataLength);
-        var actualCrc = (ushort)(data[dataLength] | (data[dataLength + 1] << 8));
+        var actualCrc = (ushort)(data[dataLength] | data[dataLength + 1] << 8);
 
         return expectedCrc == actualCrc;
-    }
-
-    /// <summary>
-    /// 将布尔数组转换为字节数组（用于线圈数据）
-    /// </summary>
-    /// <param name="bits">布尔数组</param>
-    /// <returns>字节数组</returns>
-    public static byte[] BoolArrayToByteArray(bool[] bits) {
-        ArgumentNullException.ThrowIfNull(bits, nameof(bits));
-        var byteCount = (bits.Length + 7) / 8;
-        var bytes = new byte[byteCount];
-
-        for (int i = 0; i < bits.Length; i++) {
-            if (bits[i]) {
-                var byteIndex = i / 8;
-                var bitIndex = i % 8;
-                bytes[byteIndex] |= (byte)(1 << bitIndex);
-            }
-        }
-
-        return bytes;
-    }
-
-    /// <summary>
-    /// 将字节数组转换为布尔数组（用于线圈数据）
-    /// </summary>
-    /// <param name="bytes">字节数组</param>
-    /// <param name="bitCount">位数</param>
-    /// <returns>布尔数组</returns>
-    public static bool[] ByteArrayToBoolArray(byte[] bytes, int bitCount) {
-        ArgumentNullException.ThrowIfNull(bytes, nameof(bytes));
-        var bits = new bool[bitCount];
-
-        for (int i = 0; i < bitCount; i++) {
-            var byteIndex = i / 8;
-            var bitIndex = i % 8;
-
-            if (byteIndex < bytes.Length) {
-                bits[i] = (bytes[byteIndex] & (1 << bitIndex)) != 0;
-            }
-        }
-
-        return bits;
     }
 }
