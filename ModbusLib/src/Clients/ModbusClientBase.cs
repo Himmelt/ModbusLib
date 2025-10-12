@@ -370,8 +370,16 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
         return ReadHoldingRegistersAsync(unitId, startAddress, quantity, byteOrder, wordOrder, CancellationToken.None).GetAwaiter().GetResult();
     }
 
+    public byte[] ReadHoldingRegistersRaw(byte unitId, ushort startAddress, ushort quantity) {
+        return ReadHoldingRegistersRawAsync(unitId, startAddress, quantity, CancellationToken.None).GetAwaiter().GetResult();
+    }
+
     public ushort[] ReadInputRegisters(byte unitId, ushort startAddress, ushort quantity, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst) {
         return ReadInputRegistersAsync(unitId, startAddress, quantity, byteOrder, wordOrder, CancellationToken.None).GetAwaiter().GetResult();
+    }
+
+    public byte[] ReadInputRegistersRaw(byte unitId, ushort startAddress, ushort quantity) {
+        return ReadInputRegistersRawAsync(unitId, startAddress, quantity, CancellationToken.None).GetAwaiter().GetResult();
     }
 
     #endregion
@@ -425,6 +433,10 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
     #endregion
 
     #region 同步泛型写入功能
+
+    public void WriteMultipleRegisters<T>(byte unitId, ushort startAddress, T value, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst) where T : unmanaged {
+        WriteMultipleRegistersAsync(unitId, startAddress, value, byteOrder, wordOrder, CancellationToken.None).GetAwaiter().GetResult();
+    }
 
     public void WriteMultipleRegisters<T>(byte unitId, ushort startAddress, T[] values,
         ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst) where T : unmanaged {

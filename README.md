@@ -15,6 +15,7 @@
 ## 功能特性
 
 - 异步编程模型，提供卓越的性能
+- 同步方法支持，便于传统应用集成
 - 支持所有标准Modbus功能码
 - 灵活的配置选项
 - 完整的错误处理和重试机制
@@ -30,6 +31,8 @@ dotnet add package ModbusLib
 ```
 
 ### 基本用法
+
+#### 异步方法使用示例
 
 ```csharp
 // 创建RTU客户端
@@ -58,6 +61,37 @@ var tcpClient = ModbusClientFactory.CreateTcpClient(new NetworkConnectionConfig
 // 连接并写入数据
 await tcpClient.ConnectAsync();
 await tcpClient.WriteMultipleRegistersAsync(unitId: 1, startAddress: 0, new ushort[] { 100, 200, 300 });
+```
+
+#### 同步方法使用示例
+
+```csharp
+// 创建RTU客户端
+var rtuClient = ModbusClientFactory.CreateRtuClient(new SerialConnectionConfig
+{
+    PortName = "COM1",
+    BaudRate = 9600,
+    Parity = Parity.None,
+    DataBits = 8,
+    StopBits = StopBits.One
+});
+
+// 连接并读取数据
+rtuClient.Connect();
+var coils = rtuClient.ReadCoils(unitId: 1, startAddress: 0, quantity: 10);
+```
+
+```csharp
+// 创建TCP客户端
+var tcpClient = ModbusClientFactory.CreateTcpClient(new NetworkConnectionConfig
+{
+    Host = "192.168.1.100",
+    Port = 502
+});
+
+// 连接并写入数据
+tcpClient.Connect();
+tcpClient.WriteMultipleRegisters(unitId: 1, startAddress: 0, new ushort[] { 100, 200, 300 });
 ```
 
 ## 项目结构

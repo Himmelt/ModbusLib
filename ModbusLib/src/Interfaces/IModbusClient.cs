@@ -60,6 +60,14 @@ public interface IModbusClient : IDisposable, IAsyncDisposable {
     /// <returns>寄存器值数组</returns>
     Task<ushort[]> ReadHoldingRegistersAsync(byte unitId, ushort startAddress, ushort quantity, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// 读取保持寄存器原始字节数据
+    /// </summary>
+    /// <param name="unitId">设备地址</param>
+    /// <param name="startAddress">起始地址</param>
+    /// <param name="quantity">数量</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>寄存器原始字节数据数组</returns>
     Task<byte[]> ReadHoldingRegistersRawAsync(byte unitId, ushort startAddress, ushort quantity, CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -72,6 +80,14 @@ public interface IModbusClient : IDisposable, IAsyncDisposable {
     /// <returns>寄存器值数组</returns>
     Task<ushort[]> ReadInputRegistersAsync(byte unitId, ushort startAddress, ushort quantity, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// 读取输入寄存器原始字节数据
+    /// </summary>
+    /// <param name="unitId">设备地址</param>
+    /// <param name="startAddress">起始地址</param>
+    /// <param name="quantity">数量</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>寄存器原始字节数据数组</returns>
     Task<byte[]> ReadInputRegistersRawAsync(byte unitId, ushort startAddress, ushort quantity, CancellationToken cancellationToken = default);
 
     #endregion
@@ -96,6 +112,13 @@ public interface IModbusClient : IDisposable, IAsyncDisposable {
     /// <param name="cancellationToken">取消令牌</param>
     Task WriteSingleRegisterAsync(byte unitId, ushort address, ushort value, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// 写单个寄存器
+    /// </summary>
+    /// <param name="unitId">设备地址</param>
+    /// <param name="address">寄存器地址</param>
+    /// <param name="value">寄存器值</param>
+    /// <param name="cancellationToken">取消令牌</param>
     Task WriteSingleRegisterAsync(byte unitId, ushort address, short value, CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -167,7 +190,7 @@ public interface IModbusClient : IDisposable, IAsyncDisposable {
     #region 泛型写入功能
 
     /// <summary>
-    /// 泛型写入多个寄存器
+    /// 泛型写入单个值到多个寄存器
     /// </summary>
     /// <typeparam name="T">数据类型 (支持 unmanaged 类型)</typeparam>
     /// <param name="unitId">设备地址</param>
@@ -179,7 +202,7 @@ public interface IModbusClient : IDisposable, IAsyncDisposable {
     Task WriteMultipleRegistersAsync<T>(byte unitId, ushort startAddress, T value, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) where T : unmanaged;
 
     /// <summary>
-    /// 泛型写入多个寄存器
+    /// 泛型写入值数组到多个寄存器
     /// </summary>
     /// <typeparam name="T">数据类型 (支持 unmanaged 类型)</typeparam>
     /// <param name="unitId">设备地址</param>
@@ -237,6 +260,15 @@ public interface IModbusClient : IDisposable, IAsyncDisposable {
     ushort[] ReadHoldingRegisters(byte unitId, ushort startAddress, ushort quantity, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst);
 
     /// <summary>
+    /// 同步读取保持寄存器原始字节数据
+    /// </summary>
+    /// <param name="unitId">设备地址</param>
+    /// <param name="startAddress">起始地址</param>
+    /// <param name="quantity">数量</param>
+    /// <returns>寄存器原始字节数据数组</returns>
+    byte[] ReadHoldingRegistersRaw(byte unitId, ushort startAddress, ushort quantity);
+
+    /// <summary>
     /// 同步读取输入寄存器
     /// </summary>
     /// <param name="unitId">设备地址</param>
@@ -244,6 +276,15 @@ public interface IModbusClient : IDisposable, IAsyncDisposable {
     /// <param name="quantity">数量</param>
     /// <returns>寄存器值数组</returns>
     ushort[] ReadInputRegisters(byte unitId, ushort startAddress, ushort quantity, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst);
+
+    /// <summary>
+    /// 同步读取输入寄存器原始字节数据
+    /// </summary>
+    /// <param name="unitId">设备地址</param>
+    /// <param name="startAddress">起始地址</param>
+    /// <param name="quantity">数量</param>
+    /// <returns>寄存器原始字节数据数组</returns>
+    byte[] ReadInputRegistersRaw(byte unitId, ushort startAddress, ushort quantity);
 
     #endregion
 
@@ -309,12 +350,24 @@ public interface IModbusClient : IDisposable, IAsyncDisposable {
     #region 同步泛型读取功能
 
     /// <summary>
+    /// 泛型同步读取保持寄存器
+    /// </summary>
+    /// <typeparam name="T">数据类型 (支持 unmanaged 类型)</typeparam>
+    /// <param name="unitId">设备地址</param>
+    /// <param name="startAddress">起始地址</param>
+    /// <param name="count">要返回的T类型元素数量 (例如: count=10且T=byte时返回10个byte值，实际需要5个寄存器)</param>
+    /// <param name="byteOrder">字节序模式</param>
+    /// <param name="wordOrder">字序模式</param>
+    /// <returns>指定类型的数组，长度为count</returns>
+    T[] ReadHoldingRegisters<T>(byte unitId, ushort startAddress, ushort count, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst) where T : unmanaged;
+
+    /// <summary>
     /// 泛型同步读取输入寄存器
     /// </summary>
     /// <typeparam name="T">数据类型 (支持 unmanaged 类型)</typeparam>
     /// <param name="unitId">设备地址</param>
     /// <param name="startAddress">起始地址</param>
-    /// <param name="count">要返回的T类型元素数量</param>
+    /// <param name="count">要返回的T类型元素数量 (例如: count=10且T=byte时返回10个byte值，实际需要5个寄存器)</param>
     /// <param name="byteOrder">字节序模式</param>
     /// <param name="wordOrder">字序模式</param>
     /// <returns>指定类型的数组，长度为count</returns>
@@ -325,7 +378,18 @@ public interface IModbusClient : IDisposable, IAsyncDisposable {
     #region 同步泛型写入功能
 
     /// <summary>
-    /// 泛型同步写入多个寄存器
+    /// 泛型同步写入单个值到多个寄存器
+    /// </summary>
+    /// <typeparam name="T">数据类型 (支持 unmanaged 类型)</typeparam>
+    /// <param name="unitId">设备地址</param>
+    /// <param name="startAddress">起始地址</param>
+    /// <param name="value">要写入的值</param>
+    /// <param name="byteOrder">字节序模式</param>
+    /// <param name="wordOrder">字序模式</param>
+    void WriteMultipleRegisters<T>(byte unitId, ushort startAddress, T value, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst) where T : unmanaged;
+
+    /// <summary>
+    /// 泛型同步写入值数组到多个寄存器
     /// </summary>
     /// <typeparam name="T">数据类型 (支持 unmanaged 类型)</typeparam>
     /// <param name="unitId">设备地址</param>
