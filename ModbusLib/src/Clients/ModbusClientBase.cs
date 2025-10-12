@@ -99,25 +99,8 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
     }
 
     public async Task<ushort[]> ReadHoldingRegistersAsync(byte unitId, ushort startAddress, ushort quantity, CancellationToken cancellationToken = default) {
-        ValidateReadParameters(quantity, 125);
-
-        var request = new ModbusRequest(unitId, ModbusFunction.ReadHoldingRegisters, startAddress, quantity);
-        var response = await ExecuteRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        if (response.IsError)
-            throw new ModbusException(response.ExceptionCode!.Value, unitId, ModbusFunction.ReadHoldingRegisters);
-
-        if (response.Data.IsEmpty || response.Data.Length < 1)
-            throw new ModbusCommunicationException("读取保持寄存器响应数据不足");
-
-        var byteCount = response.Data[0];
-        if (response.Data.Length < 1 + byteCount || byteCount != quantity * 2)
-            throw new ModbusCommunicationException("读取保持寄存器响应数据长度不匹配");
-
-        var dataBytes = new byte[byteCount];
-        Array.Copy(response.Data.ToArray(), 1, dataBytes, 0, byteCount);
-
-        return ModbusUtils.ByteArrayToUshortArray(dataBytes);
+        var dataBytes = await ReadHoldingRegistersRawAsync(unitId, startAddress, quantity, cancellationToken).ConfigureAwait(false);
+        return ModbusDataConverter.Convert<ushort>(dataBytes);
     }
 
     public async Task<byte[]> ReadHoldingRegistersRawAsync(byte unitId, ushort startAddress, ushort quantity, CancellationToken cancellationToken = default) {
@@ -146,25 +129,8 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
     }
 
     public async Task<ushort[]> ReadInputRegistersAsync(byte unitId, ushort startAddress, ushort quantity, CancellationToken cancellationToken = default) {
-        ValidateReadParameters(quantity, 125);
-
-        var request = new ModbusRequest(unitId, ModbusFunction.ReadInputRegisters, startAddress, quantity);
-        var response = await ExecuteRequestAsync(request, cancellationToken).ConfigureAwait(false);
-
-        if (response.IsError)
-            throw new ModbusException(response.ExceptionCode!.Value, unitId, ModbusFunction.ReadInputRegisters);
-
-        if (response.Data.IsEmpty || response.Data.Length < 1)
-            throw new ModbusCommunicationException("读取输入寄存器响应数据不足");
-
-        var byteCount = response.Data[0];
-        if (response.Data.Length < 1 + byteCount || byteCount != quantity * 2)
-            throw new ModbusCommunicationException("读取输入寄存器响应数据长度不匹配");
-
-        var dataBytes = new byte[byteCount];
-        Array.Copy(response.Data.ToArray(), 1, dataBytes, 0, byteCount);
-
-        return ModbusUtils.ByteArrayToUshortArray(dataBytes);
+        var dataBytes = await ReadInputRegistersRawAsync(unitId, startAddress, quantity, cancellationToken).ConfigureAwait(false);
+        return ModbusDataConverter.Convert<ushort>(dataBytes);
     }
 
     public async Task<byte[]> ReadInputRegistersRawAsync(byte unitId, ushort startAddress, ushort quantity, CancellationToken cancellationToken = default) {
