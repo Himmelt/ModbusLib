@@ -211,7 +211,7 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
         }
 
         if (values.Length > 1968) {
-            throw new ArgumentException("线圈数量不能超过1968", nameof(values));
+            throw new ArgumentException("写入线圈数量不能超过1968", nameof(values));
         }
 
         var data = ModbusUtils.BoolArrayToByteArray(values);
@@ -247,7 +247,7 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
         }
 
         if (values.Length > 123) {
-            throw new ArgumentException("寄存器数量不能超过123", nameof(values));
+            throw new ArgumentException("写入寄存器数量不能超过123", nameof(values));
         }
 
         var data = ModbusUtils.UshortArrayToByteArray(values);
@@ -265,7 +265,7 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
         }
 
         if (values.Length > 123) {
-            throw new ArgumentException("寄存器数量不能超过123", nameof(values));
+            throw new ArgumentException("写入寄存器数量不能超过123", nameof(values));
         }
 
         var data = ModbusUtils.UshortArrayToByteArray(values);
@@ -281,11 +281,10 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
 
     #region 泛型写入功能
 
-    public async Task WriteMultipleRegistersAsync<T>(byte unitId, ushort startAddress, T value,
-    ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) where T : unmanaged {
+    public async Task WriteMultipleRegistersAsync<T>(byte unitId, ushort startAddress, T value, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) where T : unmanaged {
         var registerCount = ModbusDataConverter.GetRegisterCount<T>();
         if (registerCount > 4)
-            throw new ArgumentException($"所需寄存器数量({registerCount})不能超过4", nameof(value));
+            throw new ArgumentException($"写入所需寄存器数量({registerCount})不能超过4", nameof(value));
 
         // 将泛型转换为字节数组
         var bytes = ModbusDataConverter.Convert([value], byteOrder, wordOrder);
@@ -304,7 +303,7 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
 
         var registerCount = ModbusDataConverter.GetTotalRegisterCount<T>(values.Length);
         if (registerCount > 123)
-            throw new ArgumentException($"所需寄存器数量({registerCount})不能超过123", nameof(values));
+            throw new ArgumentException($"写入所需寄存器数量({registerCount})不能超过123", nameof(values));
 
         // 将泛型数组转换为字节数组
         var bytes = ModbusDataConverter.Convert(values, byteOrder, wordOrder);
@@ -512,8 +511,8 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
     }
 
     private static void ValidateReadParameters(int quantity, int maxQuantity) {
-        if (quantity == 0) throw new ArgumentException("数量不能为0", nameof(quantity));
-        if (quantity > maxQuantity) throw new ArgumentException($"数量不能超过{maxQuantity}", nameof(quantity));
+        if (quantity == 0) throw new ArgumentException("读取数量不能为0", nameof(quantity));
+        if (quantity > maxQuantity) throw new ArgumentException($"读取数量不能超过{maxQuantity}", nameof(quantity));
     }
 
     public void Dispose() {
