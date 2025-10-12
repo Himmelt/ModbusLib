@@ -224,21 +224,23 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
     }
 
     public async Task WriteSingleRegisterAsync(byte unitId, ushort address, ushort value, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) {
-        var data = ModbusDataConverter.Convert(new ushort[] { value }, byteOrder, wordOrder);
+        var data = ModbusDataConverter.Convert([value], byteOrder, wordOrder);
         var request = new ModbusRequest(unitId, ModbusFunction.WriteSingleRegister, address, 1, data);
         var response = await ExecuteRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
-        if (response.IsError)
+        if (response.IsError) {
             throw new ModbusException(response.ExceptionCode!.Value, unitId, ModbusFunction.WriteSingleRegister);
+        }
     }
 
     public async Task WriteSingleRegisterAsync(byte unitId, ushort address, short value, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) {
-        var data = ModbusDataConverter.Convert(new short[] { value }, byteOrder, wordOrder);
+        var data = ModbusDataConverter.Convert([value], byteOrder, wordOrder);
         var request = new ModbusRequest(unitId, ModbusFunction.WriteSingleRegister, address, 1, data);
         var response = await ExecuteRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
-        if (response.IsError)
+        if (response.IsError) {
             throw new ModbusException(response.ExceptionCode!.Value, unitId, ModbusFunction.WriteSingleRegister);
+        }
     }
 
     public async Task WriteMultipleRegistersAsync(byte unitId, ushort startAddress, ushort[] values, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) {
@@ -277,57 +279,71 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
         }
     }
 
+    public async Task WriteMultipleRegistersRawAsync(byte unitId, ushort startAddress, byte[] rawBytes, CancellationToken cancellationToken = default) {
+        if (rawBytes == null || rawBytes.Length == 0) {
+            throw new ArgumentException("原始字节数组不能为空", nameof(rawBytes));
+        }
+
+        if (rawBytes.Length > 246) {
+            throw new ArgumentException("写入寄存器字节数量不能超过246（123个寄存器）", nameof(rawBytes));
+        }
+
+        var request = new ModbusRequest(unitId, ModbusFunction.WriteMultipleRegisters, startAddress, (ushort)(rawBytes.Length / 2), rawBytes);
+        var response = await ExecuteRequestAsync(request, cancellationToken).ConfigureAwait(false);
+
+        if (response.IsError) {
+            throw new ModbusException(response.ExceptionCode!.Value, unitId, ModbusFunction.WriteMultipleRegisters);
+        }
+    }
+
     #endregion
 
     #region 泛型写入功能
 
     public async Task WriteMultipleRegistersAsync<T>(byte unitId, ushort startAddress, T value, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) where T : unmanaged {
         var registerCount = ModbusDataConverter.GetRegisterCount<T>();
-        if (registerCount > 4)
+        if (registerCount > 4) {
             throw new ArgumentException($"写入所需寄存器数量({registerCount})不能超过4", nameof(value));
+        }
 
         // 将泛型转换为字节数组
-        var bytes = ModbusDataConverter.Convert([value], byteOrder, wordOrder);
-
-        // 将字节数组转换为寄存器数组
-        var registers = ModbusUtils.ByteArrayToUshortArray(bytes);
+        var rawBytes = ModbusDataConverter.Convert([value], byteOrder, wordOrder);
 
         // 调用原始写入方法
-        await WriteMultipleRegistersAsync(unitId, startAddress, registers, byteOrder, wordOrder, cancellationToken).ConfigureAwait(false);
+        await WriteMultipleRegistersRawAsync(unitId, startAddress, rawBytes, cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task WriteMultipleRegistersAsync<T>(byte unitId, ushort startAddress, T[] values,
-        ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) where T : unmanaged {
-        if (values == null || values.Length == 0)
+    public async Task WriteMultipleRegistersAsync<T>(byte unitId, ushort startAddress, T[] values, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) where T : unmanaged {
+        if (values == null || values.Length == 0) {
             throw new ArgumentException("值数组不能为空", nameof(values));
+        }
 
         var registerCount = ModbusDataConverter.GetTotalRegisterCount<T>(values.Length);
-        if (registerCount > 123)
+        if (registerCount > 123) {
             throw new ArgumentException($"写入所需寄存器数量({registerCount})不能超过123", nameof(values));
+        }
 
         // 将泛型数组转换为字节数组
-        var bytes = ModbusDataConverter.Convert(values, byteOrder, wordOrder);
-
-        // 将字节数组转换为寄存器数组
-        var registers = ModbusUtils.ByteArrayToUshortArray(bytes);
+        var rawBytes = ModbusDataConverter.Convert(values, byteOrder, wordOrder);
 
         // 调用原始写入方法
-        await WriteMultipleRegistersAsync(unitId, startAddress, registers, byteOrder, wordOrder, cancellationToken).ConfigureAwait(false);
+        await WriteMultipleRegistersRawAsync(unitId, startAddress, rawBytes, cancellationToken).ConfigureAwait(false);
     }
 
     #endregion
 
     #region 高级功能
 
-    public async Task<ushort[]> ReadWriteMultipleRegistersAsync(byte unitId, ushort readStartAddress, ushort readQuantity,
-        ushort writeStartAddress, ushort[] writeValues, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) {
+    public async Task<ushort[]> ReadWriteMultipleRegistersAsync(byte unitId, ushort readStartAddress, ushort readQuantity, ushort writeStartAddress, ushort[] writeValues, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) {
         ValidateReadParameters(readQuantity, 125);
 
-        if (writeValues == null || writeValues.Length == 0)
+        if (writeValues == null || writeValues.Length == 0) {
             throw new ArgumentException("写入寄存器值数组不能为空", nameof(writeValues));
+        }
 
-        if (writeValues.Length > 121)
+        if (writeValues.Length > 121) {
             throw new ArgumentException("写入寄存器数量不能超过121", nameof(writeValues));
+        }
 
         var writeData = ModbusDataConverter.Convert(writeValues, byteOrder, wordOrder);
         var requestData = new byte[4 + writeData.Length];
@@ -344,15 +360,18 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
         var request = new ModbusRequest(unitId, ModbusFunction.ReadWriteMultipleRegisters, readStartAddress, readQuantity, requestData);
         var response = await ExecuteRequestAsync(request, cancellationToken).ConfigureAwait(false);
 
-        if (response.IsError)
+        if (response.IsError) {
             throw new ModbusException(response.ExceptionCode!.Value, unitId, ModbusFunction.ReadWriteMultipleRegisters);
+        }
 
-        if (response.Data.IsEmpty || response.Data.Length < 1)
+        if (response.Data.IsEmpty || response.Data.Length < 1) {
             throw new ModbusCommunicationException("读写多个寄存器响应数据不足");
+        }
 
         var byteCount = response.Data[0];
-        if (response.Data.Length < 1 + byteCount || byteCount != readQuantity * 2)
+        if (response.Data.Length < 1 + byteCount || byteCount != readQuantity * 2) {
             throw new ModbusCommunicationException("读写多个寄存器响应数据长度不匹配");
+        }
 
         var dataBytes = new byte[byteCount];
         Array.Copy(response.Data.ToArray(), 1, dataBytes, 0, byteCount);
@@ -446,13 +465,11 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
 
     #region 同步泛型读取功能
 
-    public T[] ReadHoldingRegisters<T>(byte unitId, ushort startAddress, ushort count,
-        ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst) where T : unmanaged {
+    public T[] ReadHoldingRegisters<T>(byte unitId, ushort startAddress, ushort count, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst) where T : unmanaged {
         return ReadHoldingRegistersAsync<T>(unitId, startAddress, count, byteOrder, wordOrder, CancellationToken.None).GetAwaiter().GetResult();
     }
 
-    public T[] ReadInputRegisters<T>(byte unitId, ushort startAddress, ushort count,
-        ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst) where T : unmanaged {
+    public T[] ReadInputRegisters<T>(byte unitId, ushort startAddress, ushort count, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst) where T : unmanaged {
         return ReadInputRegistersAsync<T>(unitId, startAddress, count, byteOrder, wordOrder, CancellationToken.None).GetAwaiter().GetResult();
     }
 
@@ -464,9 +481,8 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
         WriteMultipleRegistersAsync(unitId, startAddress, value, byteOrder, wordOrder, CancellationToken.None).GetAwaiter().GetResult();
     }
 
-    public void WriteMultipleRegisters<T>(byte unitId, ushort startAddress, T[] values,
-        ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst) where T : unmanaged {
-        WriteMultipleRegistersAsync<T>(unitId, startAddress, values, byteOrder, wordOrder, CancellationToken.None).GetAwaiter().GetResult();
+    public void WriteMultipleRegisters<T>(byte unitId, ushort startAddress, T[] values, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst) where T : unmanaged {
+        WriteMultipleRegistersAsync(unitId, startAddress, values, byteOrder, wordOrder, CancellationToken.None).GetAwaiter().GetResult();
     }
 
     #endregion

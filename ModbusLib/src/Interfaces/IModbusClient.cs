@@ -160,6 +160,17 @@ public interface IModbusClient : IDisposable, IAsyncDisposable {
     /// <param name="cancellationToken">取消令牌</param>
     Task WriteMultipleRegistersAsync(byte unitId, ushort startAddress, short[] values, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// 写多个寄存器原始字节数据
+    /// </summary>
+    /// <param name="unitId">设备地址</param>
+    /// <param name="startAddress">起始地址</param>
+    /// <param name="rawBytes">原始字节数组</param>
+    /// <param name="byteOrder">字节序模式</param>
+    /// <param name="wordOrder">字序模式</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    Task WriteMultipleRegistersRawAsync(byte unitId, ushort startAddress, byte[] rawBytes, CancellationToken cancellationToken = default);
+
     #endregion
 
     #region 高级功能
