@@ -10,7 +10,7 @@
 
   <!-- NuGet Package Metadata -->
   <PropertyGroup>
-    <PackageId>ModbusLib</PackageId>
+    <PackageId>Himmelt.ModbusLib</PackageId>
     <Version>1.0.0</Version>
     <Authors>Himmelt</Authors>
     <Company>Himmelt</Company>
@@ -26,6 +26,8 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <Title>ModbusLib</Title>
+    <PackageTags>modbus;modbusrtu;modbustcp;modbusudp;.net</PackageTags>
+    <PackageReleaseNotes>完善接口及功能后的首次发布</PackageReleaseNotes>
   </PropertyGroup>
 
   <!-- 包含README.md文件到NuGet包 -->
