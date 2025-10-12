@@ -147,10 +147,30 @@ public class ModbusDataConverterTests {
 
     [Fact]
     public void Convert_FloatArray_To_Bytes() {
+        var values = new float[] { 123.45f, 678.90f };
+
+        var result1 = ModbusDataConverter.Convert(values, ByteOrder.BigEndian, WordOrder.HighFirst);
+        Assert.Equal(new byte[] { 0x42, 0xF6, 0xE6, 0x66, 0x44, 0x29, 0xB9, 0x9A }, result1);
+        var result2 = ModbusDataConverter.Convert(values, ByteOrder.BigEndian, WordOrder.LowFirst);
+        Assert.Equal(new byte[] { 0xE6, 0x66, 0x42, 0xF6, 0xB9, 0x9A, 0x44, 0x29 }, result2);
+        var result3 = ModbusDataConverter.Convert(values, ByteOrder.LittleEndian, WordOrder.HighFirst);
+        Assert.Equal(new byte[] { 0xF6, 0x42, 0x66, 0xE6, 0x29, 0x44, 0x9A, 0xB9 }, result3);
+        var result4 = ModbusDataConverter.Convert(values, ByteOrder.LittleEndian, WordOrder.LowFirst);
+        Assert.Equal(new byte[] { 0x66, 0xE6, 0xF6, 0x42, 0x9A, 0xB9, 0x29, 0x44 }, result4);
     }
 
     [Fact]
     public void Convert_DoubleArray_To_Bytes() {
+        var values = new double[] { 123.456789, 987.654321 };
+
+        var result1 = ModbusDataConverter.Convert(values, ByteOrder.BigEndian, WordOrder.HighFirst);
+        Assert.Equal(new byte[] { 0x40, 0x5E, 0xDD, 0x3C, 0x07, 0xEE, 0x0B, 0x0B, 0x40, 0x8E, 0xDD, 0x3C, 0x0C, 0xA6, 0x00, 0xB0 }, result1);
+        var result2 = ModbusDataConverter.Convert(values, ByteOrder.BigEndian, WordOrder.LowFirst);
+        Assert.Equal(new byte[] { 0x0B, 0x0B, 0x07, 0xEE, 0xDD, 0x3C, 0x40, 0x5E, 0x00, 0xB0, 0x0C, 0xA6, 0xDD, 0x3C, 0x40, 0x8E }, result2);
+        var result3 = ModbusDataConverter.Convert(values, ByteOrder.LittleEndian, WordOrder.HighFirst);
+        Assert.Equal(new byte[] { 0x5E, 0x40, 0x3C, 0xDD, 0xEE, 0x07, 0x0B, 0x0B, 0x8E, 0x40, 0x3C, 0xDD, 0xA6, 0x0C, 0xB0, 0x00 }, result3);
+        var result4 = ModbusDataConverter.Convert(values, ByteOrder.LittleEndian, WordOrder.LowFirst);
+        Assert.Equal(new byte[] { 0x0B, 0x0B, 0xEE, 0x07, 0x3C, 0xDD, 0x5E, 0x40, 0xB0, 0x00, 0xA6, 0x0C, 0x3C, 0xDD, 0x8E, 0x40 }, result4);
     }
 
     #endregion
