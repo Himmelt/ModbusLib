@@ -20,7 +20,6 @@ public class FluentTcpServerTests(ITestOutputHelper output) : IDisposable {
         try {
             // 启动FluentModbus服务器
             StartFluentModbusServer();
-            output.WriteLine($"FluentModbus服务器已启动，端口: {ServerPort}");
 
             // 使用我们自己的客户端连接到服务器
             var config = new NetworkConnectionConfig {
@@ -194,7 +193,7 @@ public class FluentTcpServerTests(ITestOutputHelper output) : IDisposable {
 
             var config = new NetworkConnectionConfig {
                 Host = "127.0.0.1",
-                Port = 666,
+                Port = ServerPort,
                 ConnectTimeout = 5000,
                 ReceiveTimeout = 5000,
                 SendTimeout = 5000
@@ -203,13 +202,23 @@ public class FluentTcpServerTests(ITestOutputHelper output) : IDisposable {
             var isConnected = await client.ConnectAsync();
             Assert.True(isConnected, "客户端连接失败");
 
+            var fclient = new ModbusTcpClient();
+            fclient.Connect(new IPEndPoint(IPAddress.Loopback, ServerPort), ModbusEndianness.BigEndian);
+            Assert.True(fclient.IsConnected, "Fluent客户端连接失败");
+
             #region 测试单寄存器读写
 
             await client.WriteSingleRegisterAsync(UnitId, 0, 12345);
             var value1 = (await client.ReadHoldingRegistersAsync(UnitId, 0, 1))[0];
+            var valuef1 = fclient.ReadHoldingRegisters<ushort>(UnitId, 0, 1)[0];
+            Assert.Equal(12345, value1);
+            Assert.Equal(12345, valuef1);
 
             await client.WriteSingleRegisterAsync(UnitId, 345, -5421);
             var value2 = (await client.ReadHoldingRegistersAsync<short>(UnitId, 345, 1))[0];
+            var valuef2 = fclient.ReadHoldingRegisters<short>(UnitId, 345, 1)[0];
+            Assert.Equal(-5421, value2);
+            Assert.Equal(-5421, valuef2);
 
             #endregion
 
@@ -237,18 +246,10 @@ public class FluentTcpServerTests(ITestOutputHelper output) : IDisposable {
 
             #endregion
 
-            var fclient = new ModbusTcpClient();
-            fclient.Connect(new IPEndPoint(IPAddress.Loopback, ServerPort), ModbusEndianness.BigEndian);
-            Assert.True(fclient.IsConnected, "Fluent客户端连接失败");
-            var valuef1 = fclient.ReadHoldingRegisters(UnitId, 0, 1)[0];
-            var valuef2 = fclient.ReadHoldingRegisters<short>(UnitId, 345, 1)[0];
 
+            client.Disconnect();
             fclient.Disconnect();
 
-            Assert.Equal(12345, value1);
-            Assert.Equal(12345, valuef1);
-            Assert.Equal(-5421, value2);
-            Assert.Equal(-5421, valuef2);
             Assert.Equal(src3, value3);
             Assert.Equal(src4, value4);
             Assert.Equal(src5, value5[0]);

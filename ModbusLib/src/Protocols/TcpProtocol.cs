@@ -84,38 +84,17 @@ public class TcpProtocol : IModbusProtocol {
         ArgumentNullException.ThrowIfNull(response, nameof(response));
 
         // 基本长度检查
-        if (response.Length < 9) {
-            System.Diagnostics.Debug.WriteLine($"响应数据长度不足: {response.Length}");
-            return false;
-        }
+        if (response.Length < 9) return false;
 
         // 解析MBAP头部
         var protocolId = (ushort)((response[2] << 8) | response[3]);
         var length = (ushort)((response[4] << 8) | response[5]);
 
         // 验证协议ID
-        if (protocolId != 0) {
-            System.Diagnostics.Debug.WriteLine($"无效的协议ID: {protocolId}");
-            return false;
-        }
+        if (protocolId != 0) return false;
 
         // 验证长度字段
-        if (response.Length < 6 + length) {
-            System.Diagnostics.Debug.WriteLine($"响应数据不完整，期望{6 + length}字节，实际{response.Length}字节");
-            return false;
-        }
-
-        // 获取功能码和单元ID
-        var unitId = response[6];
-        var functionCode = response[7];
-
-        // 检查是否为异常响应
-        var isException = (functionCode & 0x80) != 0;
-
-        // 记录详细的响应信息
-        System.Diagnostics.Debug.WriteLine($"响应验证 - 协议ID: {protocolId}, 长度字段: {length}, 实际长度: {response.Length}");
-        System.Diagnostics.Debug.WriteLine($"响应详情 - 单元ID: {unitId}, 功能码: 0x{functionCode:X2}, 是否异常: {isException}");
-        System.Diagnostics.Debug.WriteLine($"响应数据: [{string.Join(", ", response.Select(b => $"0x{b:X2}"))}]");
+        if (response.Length < 6 + length) return false;
 
         return true;
     }

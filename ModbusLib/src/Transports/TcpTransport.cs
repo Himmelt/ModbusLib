@@ -154,11 +154,6 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport {
                 var result = new byte[headerSize + remainingSize];
                 Array.Copy(fullBuffer, 0, result, 0, result.Length);
 
-                // 添加调试信息
-                System.Diagnostics.Debug.WriteLine($"ReceiveResponseAsync: header bytes = {string.Join(" ", headerBuffer.Take(headerSize).Select(b => b.ToString("X2")))}");
-                System.Diagnostics.Debug.WriteLine($"ReceiveResponseAsync: data bytes = {string.Join(" ", fullBuffer.Skip(headerSize).Take(remainingSize).Select(b => b.ToString("X2")))}");
-                System.Diagnostics.Debug.WriteLine($"ReceiveResponseAsync: response bytes = {string.Join(" ", result.Select(b => b.ToString("X2")))}");
-
                 return result;
             } finally {
                 ArrayPool<byte>.Shared.Return(fullBuffer);
