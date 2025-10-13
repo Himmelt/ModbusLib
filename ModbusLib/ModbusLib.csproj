@@ -11,7 +11,7 @@
   <!-- NuGet Package Metadata -->
   <PropertyGroup>
     <PackageId>Himmelt.ModbusLib</PackageId>
-    <Version>1.0.0-beta01</Version>
+    <Version>1.0.0-beta1</Version>
     <Authors>Himmelt</Authors>
     <Company>Himmelt</Company>
     <Description>一个功能完整、高性能的Modbus客户端库，基于.NET 9平台，支持多种Modbus协议变体。</Description>
@@ -27,7 +27,7 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <Title>ModbusLib</Title>
     <PackageTags>modbus;modbus-rtu;modbus-tcp;modbus-udp;.net;dotnet;client;protocol</PackageTags>
-    <PackageReleaseNotes>实现接口和功能</PackageReleaseNotes>
+    <PackageReleaseNotes>实现各项接口和功能</PackageReleaseNotes>
     <PackageIcon>nuget_logo.png</PackageIcon>
   </PropertyGroup>
 

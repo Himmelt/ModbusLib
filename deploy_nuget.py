@@ -128,16 +128,17 @@ async def update_csproj_file(csproj_path: str, version: str, release_notes: str)
     print("项目文件更新完成。")
 
 
-async def run_command(command: str, arguments: str, working_directory: str = ".") -> int:
+async def run_command(command: str) -> int:
     """运行命令并返回退出码"""
     try:
+        # 输出即将执行的命令
+        print(f"执行命令: {command}")
+        
         # 创建子进程
-        process = await asyncio.create_subprocess_exec(
+        process = await asyncio.create_subprocess_shell(
             command,
-            *arguments.split(),
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
-            cwd=os.path.abspath(working_directory)
         )
 
         # 获取输出
@@ -161,35 +162,35 @@ async def build_test_pack_and_publish(version: str) -> int:
     print("开始执行构建、测试、打包和发布流程...")
 
     # 设置工作目录为解决方案根目录
-    solution_root = "."
+    solution_root = os.path.dirname(os.path.abspath(__file__))
 
     # 1. 清理之前的构建
     print("1. 清理之前的构建...")
-    if await run_command("dotnet", "clean --configuration Release", solution_root) != 0:
+    if await run_command("dotnet clean --configuration Release") != 0:
         print("清理失败!")
         return 1
 
     # 2. 恢复依赖项
     print("2. 恢复依赖项...")
-    if await run_command("dotnet", "restore", solution_root) != 0:
+    if await run_command("dotnet restore") != 0:
         print("依赖项恢复失败!")
         return 1
 
     # 3. 运行测试
     print("3. 运行测试...")
-    if await run_command("dotnet", "test", solution_root) != 0:
+    if await run_command("dotnet test") != 0:
         print("测试失败!")
         return 1
 
     # 4. 构建项目
     print("4. 构建项目...")
-    if await run_command("dotnet", "build ModbusLib/ModbusLib.csproj --configuration Release", solution_root) != 0:
+    if await run_command("dotnet build ModbusLib/ModbusLib.csproj --configuration Release") != 0:
         print("构建失败!")
         return 1
 
     # 5. 打包项目
     print("5. 打包项目...")
-    if await run_command("dotnet", "pack ModbusLib/ModbusLib.csproj --configuration Release --output nupkg --no-build", solution_root) != 0:
+    if await run_command("dotnet pack ModbusLib/ModbusLib.csproj --configuration Release --output nupkg --no-build") != 0:
         print("打包失败!")
         return 1
 
@@ -230,26 +231,15 @@ async def build_test_pack_and_publish(version: str) -> int:
         print("错误: 未设置 NuGet API 密钥环境变量 NUGET_API_KEY。")
         return 1
 
-    # 发布主包
-    print("发布主包...")
-    result = await run_command("dotnet", f"nuget push \"{package_file}\" --api-key {api_key} --source {nuget_source}", solution_root)
+    # 发布包
+    print("发布包...")
+    result = await run_command(f"dotnet nuget push \"{package_file}\" --api-key {api_key} --source {nuget_source}")
 
     if result != 0:
-        print("NuGet 主包发布失败!")
+        print("NuGet 包发布失败!")
         return result
 
-    print(f"NuGet 主包 {version} 发布成功!")
-
-    # 如果存在符号包，则发布符号包
-    if symbol_package_file:
-        print("发布符号包...")
-        result = await run_command("dotnet", f"nuget push \"{symbol_package_file}\" --api-key {api_key} --source {nuget_source}", solution_root)
-
-        if result != 0:
-            print("NuGet 符号包发布失败!")
-            return result
-
-        print(f"NuGet 符号包 {version} 发布成功!")
+    print(f"NuGet 包 {version} 发布成功!")
 
     return result
 
@@ -260,7 +250,8 @@ async def main():
     print("=== ModbusLib NuGet 包发布工具 ===")
 
     # 先读取当前版本号
-    csproj_path = "ModbusLib/ModbusLib.csproj"
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    csproj_path = os.path.join(script_dir, "ModbusLib/ModbusLib.csproj")
     current_version, success = await get_current_version(csproj_path)
     print(f"当前版本号: {current_version}")
     
@@ -299,12 +290,12 @@ async def main():
     print(f"版本描述: {release_notes}")
 
     # 显示将要发布的文件路径
-    solution_root = "."
-    nupkg_directory = os.path.join(solution_root, "nupkg")
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    nupkg_directory = os.path.join(script_dir, "nupkg")
     package_file_name = f"Himmelt.ModbusLib.{version}.nupkg"
     symbol_package_file_name = f"Himmelt.ModbusLib.{version}.snupkg"
-    package_file_path = os.path.join(nupkg_directory, package_file_name)
-    symbol_package_file_path = os.path.join(nupkg_directory, symbol_package_file_name)
+    package_file_path = os.path.abspath(os.path.join(nupkg_directory, package_file_name))
+    symbol_package_file_path = os.path.abspath(os.path.join(nupkg_directory, symbol_package_file_name))
     print(f"主包文件路径: {package_file_path}")
     print(f"符号包文件路径: {symbol_package_file_path}")
 
