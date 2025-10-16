@@ -39,7 +39,7 @@ public class UdpTransport(NetworkConnectionConfig config) : IModbusTransport {
             }
 
             _remoteEndPoint = new IPEndPoint(ipAddress, _config.RemotePort);
-            
+
             // 如果指定了本地端口，则绑定到该端口
             if (_config.LocalPort.HasValue) {
                 _udpClient = new UdpClient(new IPEndPoint(IPAddress.Any, _config.LocalPort.Value));

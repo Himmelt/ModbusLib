@@ -134,38 +134,53 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport {
     }
 
     private async Task<byte[]> ReceiveResponseAsync(NetworkStream stream, CancellationToken cancellationToken) {
-        const int headerSize = 6; // MBAP header size
-        var headerBuffer = ArrayPool<byte>.Shared.Rent(headerSize);
+        // 创建一个足够大的缓冲区来接收数据
+        // 对于大多数Modbus响应来说，512字节已经足够
+        var buffer = ArrayPool<byte>.Shared.Rent(512);
 
         try {
-            // 读取MBAP头部
-            await ReadExactAsync(stream, headerBuffer, headerSize, cancellationToken).ConfigureAwait(false);
+            // 读取响应数据
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            cts.CancelAfter(Timeout);
 
-            // 解析长度字段（字节4-5）
-            var length = (ushort)((headerBuffer[4] << 8) | headerBuffer[5]);
+            var totalBytesRead = 0;
+            var bytesRead = 0;
 
-            // 读取剩余数据
-            var remainingSize = length;// - 1; // 减去单元ID字节
-            var fullBuffer = ArrayPool<byte>.Shared.Rent(headerSize + remainingSize);
-
-            try {
-                // 复制头部数据
-                Array.Copy(headerBuffer, 0, fullBuffer, 0, headerSize);
-
-                // 读取剩余数据
-                if (remainingSize > 0) {
-                    await ReadExactAsync(stream, fullBuffer, headerSize, remainingSize, cancellationToken).ConfigureAwait(false);
+            // 先读取前几个字节来确定响应长度
+            while (totalBytesRead < 6 && !cts.Token.IsCancellationRequested) {
+                bytesRead = await stream.ReadAsync(buffer.AsMemory(totalBytesRead, 6 - totalBytesRead), cts.Token).ConfigureAwait(false);
+                if (bytesRead == 0) {
+                    throw new ModbusCommunicationException("连接意外关闭");
                 }
-
-                var result = new byte[headerSize + remainingSize];
-                Array.Copy(fullBuffer, 0, result, 0, result.Length);
-
-                return result;
-            } finally {
-                ArrayPool<byte>.Shared.Return(fullBuffer);
+                totalBytesRead += bytesRead;
             }
+
+            // 根据协议类型确定完整的响应长度
+            // 这里我们先尝试读取更多数据，直到没有更多数据或超时
+            try {
+                while (totalBytesRead < buffer.Length && !cancellationToken.IsCancellationRequested) {
+                    // 设置一个较短的超时时间来检测数据结束
+                    using var quickCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                    quickCts.CancelAfter(100); // 100ms超时
+
+                    bytesRead = await stream.ReadAsync(buffer.AsMemory(totalBytesRead, buffer.Length - totalBytesRead), quickCts.Token).ConfigureAwait(false);
+                    if (bytesRead == 0) {
+                        break; // 没有更多数据
+                    }
+                    totalBytesRead += bytesRead;
+                }
+            } catch (OperationCanceledException) {
+                // 正常情况，表示没有更多数据
+            }
+
+            // 返回实际读取的数据
+            var result = new byte[totalBytesRead];
+            Array.Copy(buffer, 0, result, 0, totalBytesRead);
+            return result;
+        } catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
+            throw new ModbusTimeoutException($"读取响应超时");
         } finally {
-            ArrayPool<byte>.Shared.Return(headerBuffer);
+            ArrayPool<byte>.Shared.Return(buffer);
         }
     }
 
