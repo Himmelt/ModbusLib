@@ -70,8 +70,9 @@ public class SerialTransport(SerialConnectionConfig config) : IModbusTransport {
     public async Task<byte[]> SendReceiveAsync(byte[] request, CancellationToken cancellationToken = default) {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (!IsConnected)
-            throw new ModbusConnectionException("串口未连接");
+        if (!IsConnected) {
+            throw new ModbusConnectionException($"串口 {_serialPort} 未连接");
+        }
 
         await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
         try {
@@ -87,9 +88,9 @@ public class SerialTransport(SerialConnectionConfig config) : IModbusTransport {
             var response = await ReceiveResponseAsync(serialPort, cancellationToken).ConfigureAwait(false);
             return response;
         } catch (TimeoutException) {
-            throw new ModbusTimeoutException("串口通信超时");
+            throw new ModbusTimeoutException($"串口 {_serialPort} 通信超时");
         } catch (Exception ex) {
-            throw new ModbusCommunicationException($"串口通信异常: {ex.Message}", ex);
+            throw new ModbusCommunicationException($"串口 {_serialPort} 通信异常: {ex.Message}", ex);
         } finally {
             _semaphore.Release();
         }

@@ -121,11 +121,11 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport {
             return response;
         } catch (Exception ex) when (ex is SocketException || ex is IOException) {
             await DisconnectInternalAsync().ConfigureAwait(false);
-            throw new ModbusCommunicationException($"TCP通信异常: {ex.Message}", ex);
+            throw new ModbusCommunicationException($"TCP [{_config.Host}:{_config.RemotePort}] 通信异常: {ex.Message}", ex);
         } catch (OperationCanceledException) when (cts.Token.IsCancellationRequested) {
-            throw new ModbusTimeoutException("TCP通信超时");
+            throw new ModbusTimeoutException($"TCP [{_config.Host}:{_config.RemotePort}] 通信超时，取消");
         } catch (TimeoutException) {
-            throw new ModbusTimeoutException("TCP通信超时");
+            throw new ModbusTimeoutException($"TCP [{_config.Host}:{_config.RemotePort}] 通信超时");
         } finally {
             if (_semaphore.CurrentCount == 0) {  // 防止重复释放
                 _semaphore.Release();
