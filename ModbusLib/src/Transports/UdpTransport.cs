@@ -16,7 +16,7 @@ public class UdpTransport(NetworkConnectionConfig config) : IModbusTransport {
     private readonly SemaphoreSlim _semaphore = new(1, 1);
     private bool _disposed;
 
-    public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(5);
+    public int Timeout { get; set; } = 5000; // 默认5秒超时（5000毫秒）
 
     public bool IsConnected => _udpClient != null && _remoteEndPoint != null;
 
@@ -122,7 +122,9 @@ public class UdpTransport(NetworkConnectionConfig config) : IModbusTransport {
 
     private async Task<byte[]> ReceiveResponseAsync(UdpClient udpClient, CancellationToken cancellationToken) {
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeoutCts.CancelAfter(Timeout);
+        if (Timeout >= 0) {
+            timeoutCts.CancelAfter(Timeout);
+        }
 
         try {
             var result = await udpClient.ReceiveAsync(timeoutCts.Token).ConfigureAwait(false);

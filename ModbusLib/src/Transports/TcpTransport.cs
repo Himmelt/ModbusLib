@@ -17,7 +17,7 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport {
     private readonly SemaphoreSlim _semaphore = new(1, 1);
     private bool _disposed;
 
-    public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(5);
+    public int Timeout { get; set; } = 5000; // 默认5秒超时（5000毫秒）
 
     public bool IsConnected => _tcpClient?.Connected == true && _stream != null;
 
@@ -106,7 +106,9 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport {
 
         // 使用超时取消令牌
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        cts.CancelAfter(Timeout);
+        if (Timeout >= 0) {
+            cts.CancelAfter(Timeout);
+        }
 
         await _semaphore.WaitAsync(cts.Token).ConfigureAwait(false);
         try {
@@ -141,7 +143,9 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport {
         try {
             // 读取响应数据
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            cts.CancelAfter(Timeout);
+            if (Timeout >= 0) {
+                cts.CancelAfter(Timeout);
+            }
 
             var totalBytesRead = 0;
             var bytesRead = 0;
@@ -181,48 +185,6 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport {
             throw new ModbusTimeoutException($"读取响应超时");
         } finally {
             ArrayPool<byte>.Shared.Return(buffer);
-        }
-    }
-
-    private async Task ReadExactAsync(NetworkStream stream, byte[] buffer, int count, CancellationToken cancellationToken) {
-        var totalBytesRead = 0;
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        cts.CancelAfter(Timeout);
-
-        while (totalBytesRead < count) {
-            // 检查取消令牌
-            cts.Token.ThrowIfCancellationRequested();
-
-            try {
-                var bytesRead = await stream.ReadAsync(buffer.AsMemory(totalBytesRead, count - totalBytesRead), cts.Token).ConfigureAwait(false);
-                if (bytesRead == 0) {
-                    throw new ModbusCommunicationException("连接意外关闭");
-                }
-                totalBytesRead += bytesRead;
-            } catch (OperationCanceledException) when (cts.Token.IsCancellationRequested) {
-                throw new ModbusTimeoutException($"读取超时，期望{count}字节，实际读取{totalBytesRead}字节");
-            }
-        }
-    }
-
-    private async Task ReadExactAsync(NetworkStream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken) {
-        var totalBytesRead = 0;
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        cts.CancelAfter(Timeout);
-
-        while (totalBytesRead < count) {
-            // 检查取消令牌
-            cts.Token.ThrowIfCancellationRequested();
-
-            try {
-                var bytesRead = await stream.ReadAsync(buffer.AsMemory(offset + totalBytesRead, count - totalBytesRead), cts.Token).ConfigureAwait(false);
-                if (bytesRead == 0) {
-                    throw new ModbusCommunicationException("连接意外关闭");
-                }
-                totalBytesRead += bytesRead;
-            } catch (OperationCanceledException) when (cts.Token.IsCancellationRequested) {
-                throw new ModbusTimeoutException($"读取超时，期望{count}字节，实际读取{totalBytesRead}字节");
-            }
         }
     }
 

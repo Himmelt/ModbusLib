@@ -460,9 +460,10 @@ public interface IModbusClient : IDisposable, IAsyncDisposable {
     #region 配置属性
 
     /// <summary>
-    /// 超时时间
+    /// 超时时间（单位：毫秒，ms）
+    /// 小于0表示忽略超时时间设置
     /// </summary>
-    TimeSpan Timeout { get; set; }
+    int Timeout { get; set; }
 
     /// <summary>
     /// 重试次数

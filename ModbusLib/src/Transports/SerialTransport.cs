@@ -15,7 +15,7 @@ public class SerialTransport(SerialConnectionConfig config) : IModbusTransport {
     private readonly SemaphoreSlim _semaphore = new(1, 1);
     private bool _disposed;
 
-    public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(5);
+    public int Timeout { get; set; } = 5000; // 默认5秒超时（5000毫秒）
 
     public bool IsConnected => _serialPort?.IsOpen == true;
 
@@ -102,7 +102,7 @@ public class SerialTransport(SerialConnectionConfig config) : IModbusTransport {
         var responseList = new List<byte>();
 
         try {
-            var timeout = DateTime.UtcNow.Add(Timeout);
+            var timeout = Timeout >= 0 ? DateTime.UtcNow.AddMilliseconds(Timeout) : DateTime.MaxValue;
             var lastReceiveTime = DateTime.UtcNow;
 
             while (DateTime.UtcNow < timeout && !cancellationToken.IsCancellationRequested) {

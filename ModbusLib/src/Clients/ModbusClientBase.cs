@@ -30,7 +30,7 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
     /// </summary>
     protected IModbusTransport Transport => _transport;
 
-    public TimeSpan Timeout {
+    public int Timeout {
         get => _transport.Timeout;
         set => _transport.Timeout = value;
     }
