@@ -130,7 +130,7 @@ public class UdpTransport(NetworkConnectionConfig config) : IModbusTransport {
             var result = await udpClient.ReceiveAsync(timeoutCts.Token).ConfigureAwait(false);
             return result.Buffer;
         } catch (OperationCanceledException) when (timeoutCts.Token.IsCancellationRequested && !cancellationToken.IsCancellationRequested) {
-            throw new ModbusTimeoutException("UDP接收超时");
+            throw new ModbusTimeoutException("UDP接收超时，操作已取消");
         }
     }
 

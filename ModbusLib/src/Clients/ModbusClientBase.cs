@@ -490,27 +490,27 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
     protected async Task<ModbusResponse> ExecuteRequestAsync(ModbusRequest request, CancellationToken cancellationToken) {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (!IsConnected)
-            throw new ModbusConnectionException("客户端未连接");
+        if (!IsConnected) throw new ModbusConnectionException("客户端未连接");
 
         Exception? lastException = null;
 
         for (int attempt = 0; attempt <= Retries; attempt++) {
             // 检查取消令牌
-            cancellationToken.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancelRequestCN();
 
             try {
                 var requestBytes = _protocol.BuildRequest(request);
                 var responseBytes = await _transport.SendReceiveAsync(requestBytes, cancellationToken).ConfigureAwait(false);
 
-                if (!_protocol.ValidateResponse(responseBytes))
-                    throw new ModbusCommunicationException($"响应数据验证失败: response length = {responseBytes?.Length ?? 0}");
+                if (!_protocol.ValidateResponse(responseBytes)) {
+                    throw new ModbusCommunicationException($"响应数据验证失败: 响应长度 = {responseBytes?.Length ?? 0}");
+                }
 
                 return _protocol.ParseResponse(responseBytes, request);
             } catch (Exception ex) when (attempt < Retries && IsRetryableException(ex)) {
                 lastException = ex;
                 // 在重试前检查取消令牌
-                cancellationToken.ThrowIfCancellationRequested();
+                cancellationToken.ThrowIfCancelRequestCN();
                 await Task.Delay(100 * (attempt + 1), cancellationToken).ConfigureAwait(false); // 递增延迟
             }
         }
@@ -526,8 +526,8 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
     }
 
     private static void ValidateReadParameters(int quantity, int maxQuantity) {
-        if (quantity == 0) throw new ArgumentException("读取数量不能为0", nameof(quantity));
-        if (quantity > maxQuantity) throw new ArgumentException($"读取数量不能超过{maxQuantity}", nameof(quantity));
+        if (quantity == 0) throw new ArgumentException("读取数量不能为 0", nameof(quantity));
+        if (quantity > maxQuantity) throw new ArgumentException($"读取数量不能超过 {maxQuantity}", nameof(quantity));
     }
 
     public void Dispose() {

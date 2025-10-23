@@ -89,6 +89,8 @@ public class SerialTransport(SerialConnectionConfig config) : IModbusTransport {
             return response;
         } catch (TimeoutException) {
             throw new ModbusTimeoutException($"串口 {_serialPort} 通信超时");
+        } catch (OperationCanceledException) {
+            throw new OperationCanceledException($"串口 {_serialPort} 通信操作已取消");
         } catch (Exception ex) {
             throw new ModbusCommunicationException($"串口 {_serialPort} 通信异常: {ex.Message}", ex);
         } finally {
@@ -127,7 +129,7 @@ public class SerialTransport(SerialConnectionConfig config) : IModbusTransport {
             }
 
             if (responseList.Count == 0)
-                throw new ModbusTimeoutException("未收到响应数据");
+                throw new ModbusTimeoutException("未收到响应数据，操作已取消");
 
             return [.. responseList];
         } finally {

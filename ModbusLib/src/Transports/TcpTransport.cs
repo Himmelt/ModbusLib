@@ -26,8 +26,7 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport {
 
         await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
         try {
-            if (IsConnected)
-                return true;
+            if (IsConnected) return true;
 
             await DisconnectInternalAsync().ConfigureAwait(false);
 
@@ -125,7 +124,7 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport {
             await DisconnectInternalAsync().ConfigureAwait(false);
             throw new ModbusCommunicationException($"TCP [{_config.Host}:{_config.RemotePort}] 通信异常: {ex.Message}", ex);
         } catch (OperationCanceledException) when (cts.Token.IsCancellationRequested) {
-            throw new ModbusTimeoutException($"TCP [{_config.Host}:{_config.RemotePort}] 通信超时，取消");
+            throw new ModbusTimeoutException($"TCP [{_config.Host}:{_config.RemotePort}] 通信超时，操作已取消");
         } catch (TimeoutException) {
             throw new ModbusTimeoutException($"TCP [{_config.Host}:{_config.RemotePort}] 通信超时");
         } finally {
@@ -182,7 +181,7 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport {
             Array.Copy(buffer, 0, result, 0, totalBytesRead);
             return result;
         } catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
-            throw new ModbusTimeoutException($"读取响应超时");
+            throw new ModbusTimeoutException("读取响应超时，操作已取消");
         } finally {
             ArrayPool<byte>.Shared.Return(buffer);
         }
