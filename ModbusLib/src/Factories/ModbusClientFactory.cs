@@ -1,6 +1,8 @@
 using ModbusLib.Clients;
 using ModbusLib.Interfaces;
 using ModbusLib.Models;
+using ModbusLib.Protocols;
+using System.IO.Pipelines;
 
 namespace ModbusLib.Factories;
 
@@ -151,5 +153,35 @@ public static class ModbusClientFactory {
         };
 
         return new ModbusRtuOverUdpClient(config);
+    }
+
+    /// <summary>
+    /// 创建基于Pipe的Modbus客户端
+    /// </summary>
+    /// <param name="pipeIn">输入Pipe</param>
+    /// <param name="pipeOut">输出Pipe</param>
+    /// <param name="timeout">超时时间（毫秒）</param>
+    /// <returns>Modbus客户端</returns>
+    public static IModbusClient CreatePipeClient(Pipe pipeIn, Pipe pipeOut, int timeout = 5000) {
+        ArgumentNullException.ThrowIfNull(pipeIn, nameof(pipeIn));
+        ArgumentNullException.ThrowIfNull(pipeOut, nameof(pipeOut));
+
+        return new ModbusPipeClient(pipeIn, pipeOut, new TcpProtocol(), timeout);
+    }
+
+    /// <summary>
+    /// 创建基于Pipe的Modbus客户端
+    /// </summary>
+    /// <param name="pipeIn">输入Pipe</param>
+    /// <param name="pipeOut">输出Pipe</param>
+    /// <param name="protocol">Modbus协议处理器</param>
+    /// <param name="timeout">超时时间（毫秒）</param>
+    /// <returns>Modbus客户端</returns>
+    public static IModbusClient CreatePipeClient(Pipe pipeIn, Pipe pipeOut, IModbusProtocol protocol, int timeout = 5000) {
+        ArgumentNullException.ThrowIfNull(pipeIn, nameof(pipeIn));
+        ArgumentNullException.ThrowIfNull(pipeOut, nameof(pipeOut));
+        ArgumentNullException.ThrowIfNull(protocol, nameof(protocol));
+
+        return new ModbusPipeClient(pipeIn, pipeOut, protocol, timeout);
     }
 }
