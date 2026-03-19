@@ -1,6 +1,5 @@
 using ModbusLib.Exceptions;
 using ModbusLib.Interfaces;
-using System.Buffers;
 using System.IO.Pipelines;
 
 namespace ModbusLib.Transports;
@@ -26,7 +25,7 @@ public class PipeTransport : IModbusTransport {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         if (!IsConnected) {
-            throw new ModbusConnectionException("Stream不可用或未连接");
+            throw new ModbusConnectionException("Pipe 不可用或未连接");
         }
 
         return Task.FromResult(true);
@@ -59,9 +58,7 @@ public class PipeTransport : IModbusTransport {
         } catch (OperationCanceledException) when (cts.Token.IsCancellationRequested) {
             throw new ModbusTimeoutException("Pipe 通信超时，操作已取消");
         } finally {
-            if (_semaphore.CurrentCount == 0) {
-                _semaphore.Release();
-            }
+            _semaphore.Release();
         }
     }
 
@@ -73,13 +70,9 @@ public class PipeTransport : IModbusTransport {
 
         using var memoryStream = new MemoryStream();
 
-        while (!timeoutCts.Token.IsCancellationRequested) {
+        try {
             var result = await inPipe.Reader.ReadAsync(timeoutCts.Token).ConfigureAwait(false);
             var data = result.Buffer;
-
-            if (data.IsEmpty && result.IsCompleted) {
-                break;
-            }
 
             if (!data.IsEmpty) {
                 foreach (var segment in data) {
@@ -87,10 +80,7 @@ public class PipeTransport : IModbusTransport {
                 }
                 inPipe.Reader.AdvanceTo(data.End);
             }
-
-            if (result.IsCompleted) {
-                break;
-            }
+        } catch (OperationCanceledException) when (timeoutCts.Token.IsCancellationRequested && !cancellationToken.IsCancellationRequested) {
         }
 
         var response = memoryStream.ToArray();
