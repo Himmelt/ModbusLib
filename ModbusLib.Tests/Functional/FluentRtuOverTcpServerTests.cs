@@ -103,7 +103,7 @@ public class FluentRtuOverTcpServerTests(ITestOutputHelper output) : IDisposable
     public async Task ModbusRtuOverTcp_Registers_Test() {
         try {
             // 启动FluentModbus服务器
-            // StartFluentModbusServer();
+            StartFluentModbusServer();
             output.WriteLine($"FluentModbus服务器已启动，端口: {ServerPort}");
 
             // 使用我们自己的RTU over TCP客户端连接到服务器
@@ -189,7 +189,8 @@ public class FluentRtuOverTcpServerTests(ITestOutputHelper output) : IDisposable
     [Fact]
     public async Task ModbusRtuOverTcp_GenericRegisters_Test() {
         try {
-            //StartFluentModbusServer();
+            // 启动FluentModbus服务器
+            StartFluentModbusServer();
 
             var config = new NetworkConnectionConfig {
                 Host = "127.0.0.1",
