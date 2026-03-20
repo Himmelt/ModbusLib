@@ -1,7 +1,6 @@
+using ModbusLib.Enums;
 using System.Buffers;
 using System.IO.Pipelines;
-using ModbusLib.Enums;
-using ModbusLib.Protocols;
 
 namespace ModbusLib.Tests.Mocks;
 

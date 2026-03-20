@@ -1,4 +1,3 @@
-using System.IO.Pipelines;
 using ModbusLib.Clients;
 using ModbusLib.Interfaces;
 using ModbusLib.Tests.Mocks;

@@ -1,7 +1,5 @@
 using System.Buffers;
 using System.IO.Pipelines;
-using System.Linq;
-using Xunit;
 using Xunit.Abstractions;
 
 namespace ModbusLib.Tests.Functional;

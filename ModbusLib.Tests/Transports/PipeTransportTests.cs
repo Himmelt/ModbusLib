@@ -1,7 +1,5 @@
-using System.IO.Pipelines;
-using ModbusLib.Exceptions;
-using ModbusLib.Protocols;
 using ModbusLib.Transports;
+using System.IO.Pipelines;
 
 namespace ModbusLib.Tests.Transports;
 

@@ -1,9 +1,7 @@
-using System.IO.Pipelines;
 using ModbusLib.Clients;
-using ModbusLib.Exceptions;
-using ModbusLib.Interfaces;
 using ModbusLib.Protocols;
 using ModbusLib.Transports;
+using System.IO.Pipelines;
 
 namespace ModbusLib.Tests.Clients;
 

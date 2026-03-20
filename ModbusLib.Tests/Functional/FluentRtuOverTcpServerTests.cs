@@ -12,14 +12,14 @@ public class FluentRtuOverTcpServerTests(ITestOutputHelper output) : IDisposable
     // 使用505端口避免与系统其他服务冲突
     private const int ServerPort = 505;
     private const byte UnitId = 3;
-    private ModbusTcpServer? _mbus_erver;
+    private ModbusRtuOverTcpServer? _mbus_erver;
     private bool _disposed;
 
     [Fact]
     public async Task ModbusRtuOverTcp_Coils_Test() {
         try {
             // 启动FluentModbus服务器
-            // StartFluentModbusServer();
+            StartFluentModbusServer();
 
             // 使用我们自己的RTU over TCP客户端连接到服务器
             var config = new NetworkConnectionConfig {
@@ -355,7 +355,7 @@ public class FluentRtuOverTcpServerTests(ITestOutputHelper output) : IDisposable
             _mbus_erver.Dispose();
         }
 
-        _mbus_erver = new ModbusTcpServer();
+        _mbus_erver = new ModbusRtuOverTcpServer();
         _mbus_erver.Start(new IPEndPoint(IPAddress.Loopback, ServerPort));
         _mbus_erver.AddUnit(UnitId);
 
