@@ -22,7 +22,7 @@
     <Tags>modbus, modbus-rtu, modbus-tcp, modbus-udp, .net, dotnet, client, protocol</Tags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <Title>ModbusLib</Title>
