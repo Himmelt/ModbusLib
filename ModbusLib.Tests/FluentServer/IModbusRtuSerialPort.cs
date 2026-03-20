@@ -1,4 +1,4 @@
-namespace FluentModbus;
+namespace ModbusLib.Tests.FluentServer;
 
 public interface IModbusRtuSerialPort {
     int Read(byte[] buffer, int offset, int count);

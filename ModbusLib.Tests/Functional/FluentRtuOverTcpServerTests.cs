@@ -1,6 +1,6 @@
-using FluentModbus;
 using ModbusLib.Factories;
 using ModbusLib.Models;
+using ModbusLib.Tests.FluentServer;
 using System.Net;
 using Xunit.Abstractions;
 using ModbusLibClient = ModbusLib.Interfaces.IModbusClient;

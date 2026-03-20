@@ -1,7 +1,8 @@
+using FluentModbus;
 using Microsoft.Extensions.Logging;
 using System.Net.Sockets;
 
-namespace FluentModbus;
+namespace ModbusLib.Tests.FluentServer;
 
 internal class ModbusRtuOverTcpRequestHandler : ModbusRequestHandler, IDisposable {
     #region Fields

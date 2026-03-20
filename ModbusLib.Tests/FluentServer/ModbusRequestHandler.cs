@@ -1,7 +1,8 @@
+using FluentModbus;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace FluentModbus;
+namespace ModbusLib.Tests.FluentServer;
 
 internal abstract class ModbusRequestHandler : IDisposable {
     private CancellationTokenSource _cts;
@@ -369,7 +370,7 @@ internal abstract class ModbusRequestHandler : IDisposable {
                 if (ModbusServer.IsAsynchronous) {
                     CancelToken();
 
-                    try { _task?.Wait(); } catch (Exception ex) when (ex.InnerException.GetType() == typeof(TaskCanceledException)) { }
+                    try { _task?.Wait(); } catch (Exception ex) when (ex.InnerException is TaskCanceledException) { }
                 }
 
                 FrameBuffer.Dispose();

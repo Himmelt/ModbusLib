@@ -1,9 +1,10 @@
+using FluentModbus;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Net;
 using System.Net.Sockets;
 
-namespace FluentModbus;
+namespace ModbusLib.Tests.FluentServer;
 
 public class ModbusRtuOverTcpServer : ModbusServer, IDisposable {
     #region Fields
@@ -159,7 +160,10 @@ public class ModbusRtuOverTcpServer : ModbusServer, IDisposable {
         } catch (OperationCanceledException) { }
     }
 
-    public new void Dispose() => Stop();
+    public new void Dispose() {
+        Stop();
+        GC.SuppressFinalize(this);
+    }
 
     #endregion
 }

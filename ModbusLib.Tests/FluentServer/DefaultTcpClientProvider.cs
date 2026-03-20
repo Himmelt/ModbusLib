@@ -1,7 +1,8 @@
+using FluentModbus;
 using System.Net;
 using System.Net.Sockets;
 
-namespace FluentModbus;
+namespace ModbusLib.Tests.FluentServer;
 
 internal class DefaultTcpClientProvider : ITcpClientProvider {
     #region Fields

@@ -1,6 +1,6 @@
 using System.Net.Sockets;
 
-namespace FluentModbus;
+namespace ModbusLib.Tests.FluentServer;
 
 /// <summary>
 /// A small adapter that exposes a TcpClient/NetworkStream as an RTU "serial port"
@@ -100,7 +100,7 @@ public class NetworkStreamRtuSerialPort : IModbusRtuSerialPort, IDisposable {
     /// <param name="offset">The offset in the buffer to start writing.</param>
     /// <param name="count">The number of bytes to write.</param>
     public void Write(byte[] buffer, int offset, int count) {
-        if (_disposed) throw new ObjectDisposedException(nameof(NetworkStreamRtuSerialPort));
+        ObjectDisposedException.ThrowIf(_disposed, nameof(NetworkStreamRtuSerialPort));
         try {
             _stream.WriteTimeout = WriteTimeout;
             _stream.Write(buffer, offset, count);
@@ -119,6 +119,7 @@ public class NetworkStreamRtuSerialPort : IModbusRtuSerialPort, IDisposable {
         _disposed = true;
         try { _stream.Dispose(); } catch { }
         try { _client.Dispose(); } catch { }
+        GC.SuppressFinalize(this);
     }
 
     /// <summary>

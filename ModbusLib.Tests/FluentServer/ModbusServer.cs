@@ -1,7 +1,8 @@
+using FluentModbus;
 using Microsoft.Extensions.Logging;
 using System.Runtime.InteropServices;
 
-namespace FluentModbus;
+namespace ModbusLib.Tests.FluentServer;
 
 public readonly struct RequestValidatorArgs {
     public byte UnitIdentifier { get; init; }
@@ -156,5 +157,6 @@ public abstract class ModbusServer : IDisposable {
     public void Dispose() {
         Stop();
         CTS.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

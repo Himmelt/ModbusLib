@@ -1,4 +1,4 @@
-namespace FluentModbus;
+namespace ModbusLib.Tests.FluentServer;
 
 internal static class ModbusUtils {
     public static ushort CalculateCRC(Memory<byte> buffer) {

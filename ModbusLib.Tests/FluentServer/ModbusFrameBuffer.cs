@@ -1,6 +1,7 @@
+using FluentModbus;
 using System.Buffers;
 
-namespace FluentModbus;
+namespace ModbusLib.Tests.FluentServer;
 
 internal class ModbusFrameBuffer : IDisposable {
     public ModbusFrameBuffer(int size) {
