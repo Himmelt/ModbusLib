@@ -4,22 +4,15 @@ using System.IO.Pipelines;
 
 namespace ModbusLib.Transports;
 
-public class PipeTransport : IModbusTransport {
+public class PipeTransport(Pipe serverToClient, Pipe clientToServer, int timeout = 5000) : IModbusTransport {
 
-    private readonly Pipe _in;
-    private readonly Pipe _out;
-    private readonly SemaphoreSlim _semaphore = new(1, 1);
     private bool _disposed;
+    private readonly SemaphoreSlim _semaphore = new(1, 1);
+    private readonly Pipe serverToClient = serverToClient ?? throw new ArgumentNullException(nameof(serverToClient));
+    private readonly Pipe clientToServer = clientToServer ?? throw new ArgumentNullException(nameof(clientToServer));
 
-    public int Timeout { get; set; } = 5000;
-
-    public bool IsConnected => !_disposed && _in != null && _out != null;
-
-    public PipeTransport(Pipe pipeIn, Pipe pipeOut, int timeout = 5000) {
-        _in = pipeIn ?? throw new ArgumentNullException(nameof(pipeIn));
-        _out = pipeOut ?? throw new ArgumentNullException(nameof(pipeOut));
-        Timeout = timeout;
-    }
+    public int Timeout { get; set; } = timeout;
+    public bool IsConnected => !_disposed && serverToClient != null && clientToServer != null;
 
     public Task<bool> ConnectAsync(CancellationToken cancellationToken = default) {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -48,10 +41,10 @@ public class PipeTransport : IModbusTransport {
 
         await _semaphore.WaitAsync(cts.Token).ConfigureAwait(false);
         try {
-            await _out.Writer.WriteAsync(request, cts.Token).ConfigureAwait(false);
-            await _out.Writer.FlushAsync(cts.Token).ConfigureAwait(false);
+            await clientToServer.Writer.WriteAsync(request, cts.Token).ConfigureAwait(false);
+            await clientToServer.Writer.FlushAsync(cts.Token).ConfigureAwait(false);
 
-            var response = await ReceiveResponseAsync(_in, cts.Token).ConfigureAwait(false);
+            var response = await ReceiveResponseAsync(serverToClient, cts.Token).ConfigureAwait(false);
             return response;
         } catch (Exception ex) when (ex is IOException || ex is ObjectDisposedException) {
             throw new ModbusCommunicationException($"Pipe 通信异常: {ex.Message}", ex);

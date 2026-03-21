@@ -1,22 +1,20 @@
 using ModbusLib.Clients;
 using ModbusLib.Protocols;
-using ModbusLib.Transports;
 using System.IO.Pipelines;
 
 namespace ModbusLib.Tests.Clients;
 
 public class ModbusPipeClientTests : IDisposable {
+
+    private bool _disposed;
     private readonly Pipe _pipeIn;
     private readonly Pipe _pipeOut;
-    private readonly PipeTransport _transport;
     private readonly ModbusPipeClient _client;
-    private bool _disposed;
 
     public ModbusPipeClientTests() {
         _pipeIn = new Pipe();
         _pipeOut = new Pipe();
-        _transport = new PipeTransport(_pipeIn, _pipeOut, 5000);
-        _client = new ModbusPipeClient(_pipeIn, _pipeOut, new TcpProtocol(), _transport);
+        _client = new ModbusPipeClient(_pipeIn, _pipeOut, new TcpProtocol());
     }
 
     public void Dispose() {
@@ -59,7 +57,6 @@ public class ModbusPipeClientTests : IDisposable {
     public void Timeout_SetValue_ReflectsInTransport() {
         _client.Timeout = 3000;
         Assert.Equal(3000, _client.Timeout);
-        Assert.Equal(3000, _transport.Timeout);
     }
 
     [Fact]
@@ -67,8 +64,7 @@ public class ModbusPipeClientTests : IDisposable {
         var protocol = new TcpProtocol();
         var pipeIn = new Pipe();
         var pipeOut = new Pipe();
-        using var transport = new PipeTransport(pipeIn, pipeOut, 2000);
-        using var client = new ModbusPipeClient(pipeIn, pipeOut, protocol, transport);
+        using var client = new ModbusPipeClient(pipeIn, pipeOut, protocol, 2000);
 
         Assert.True(client.IsConnected);
         Assert.Equal(2000, client.Timeout);
