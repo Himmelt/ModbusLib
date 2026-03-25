@@ -194,33 +194,35 @@ async def build_test_pack_and_publish(version: str) -> int:
         print("打包失败!")
         return 1
 
-    # 6. 查找生成的包文件
-    print("6. 查找生成的包文件...")
+    # 7. 根据版本号查找生成的包文件
+    print("7. 根据版本号查找生成的包文件...")
     nupkg_directory = os.path.join(solution_root, "nupkg")
     if not os.path.exists(nupkg_directory):
         print("错误: 未找到 nupkg 目录。")
         return 1
 
-    # 查找 .nupkg 文件（排除 .snupkg 文件）
-    package_files = [f for f in os.listdir(nupkg_directory) 
-                    if f.endswith('.nupkg') and not f.endswith('.snupkg')]
+    # 查找与版本号匹配的主包文件
+    package_file = None
+    for f in os.listdir(nupkg_directory):
+        if f.endswith('.nupkg') and not f.endswith('.snupkg') and version in f:
+            package_file = os.path.join(nupkg_directory, f)
+            print(f"找到主包文件: {package_file}")
+            break
 
-    if not package_files:
-        print("错误: 未找到生成的 NuGet 包文件。")
+    if not package_file:
+        print(f"错误: 未找到版本 {version} 对应的 NuGet 包文件。")
         return 1
 
-    package_file = os.path.join(nupkg_directory, package_files[0])
-    print(f"找到主包文件: {package_file}")
-
-    # 查找 .snupkg symbol 包文件
-    symbol_package_files = [f for f in os.listdir(nupkg_directory) if f.endswith('.snupkg')]
-
+    # 查找与版本号匹配的符号包文件
     symbol_package_file = None
-    if symbol_package_files:
-        symbol_package_file = os.path.join(nupkg_directory, symbol_package_files[0])
-        print(f"找到符号包文件: {symbol_package_file}")
-    else:
-        print("警告: 未找到生成的符号包文件。")
+    for f in os.listdir(nupkg_directory):
+        if f.endswith('.snupkg') and version in f:
+            symbol_package_file = os.path.join(nupkg_directory, f)
+            print(f"找到符号包文件: {symbol_package_file}")
+            break
+
+    if not symbol_package_file:
+        print("警告: 未找到版本 {version} 对应的符号包文件。")
 
     # 7. 发布到 NuGet
     print("7. 发布到 NuGet...")
