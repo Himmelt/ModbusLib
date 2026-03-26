@@ -1,4 +1,3 @@
-using FluentModbus;
 using Microsoft.Extensions.Logging;
 using System.Net.Sockets;
 
