@@ -17,7 +17,7 @@ public class TcpTransport(NetworkConfig config) : IModbusTransport {
     private readonly SemaphoreSlim _semaphore = new(1, 1);
     private bool _disposed;
 
-    public int Timeout { get; set; } = 5000; // 默认5秒超时（5000毫秒）
+    public int Timeout { get; set; } = -1;
 
     public bool IsConnected => _tcpClient?.Connected == true && _stream != null;
 
@@ -105,9 +105,7 @@ public class TcpTransport(NetworkConfig config) : IModbusTransport {
 
         // 使用超时取消令牌
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
-        if (Timeout >= 0) {
-            cts.CancelAfter(Timeout);
-        }
+        cts.CancelAfter(Timeout);
 
         await _semaphore.WaitAsync(cts.Token).ConfigureAwait(false);
         try {
@@ -142,9 +140,7 @@ public class TcpTransport(NetworkConfig config) : IModbusTransport {
         try {
             // 读取响应数据
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
-            if (Timeout >= 0) {
-                cts.CancelAfter(Timeout);
-            }
+            cts.CancelAfter(Timeout);
 
             var totalBytesRead = 0;
             var bytesRead = 0;

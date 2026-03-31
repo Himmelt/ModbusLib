@@ -25,7 +25,7 @@ public class ChannelTransportTests : IDisposable {
         var session = new ChannelSession();
         var transport = new ChannelTransport(session);
 
-        Assert.Equal(3000, transport.Timeout);
+        Assert.Equal(-1, transport.Timeout);
         Assert.True(transport.IsConnected);
 
         transport.Dispose();

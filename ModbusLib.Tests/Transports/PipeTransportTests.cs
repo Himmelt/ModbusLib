@@ -27,7 +27,7 @@ public class PipeTransportTests : IDisposable {
 
         var transport = new PipeTransport(_session);
 
-        Assert.Equal(3000, transport.Timeout);
+        Assert.Equal(-1, transport.Timeout);
         Assert.True(transport.IsConnected);
 
         transport.Dispose();

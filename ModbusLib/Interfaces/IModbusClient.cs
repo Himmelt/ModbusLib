@@ -464,5 +464,7 @@ public interface IModbusClient : IDisposable, IAsyncDisposable {
     /// </summary>
     int Retries { get; set; }
 
+    int Timeout { get; set; }
+
     #endregion
 }

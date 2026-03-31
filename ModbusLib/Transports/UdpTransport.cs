@@ -16,7 +16,7 @@ public class UdpTransport(NetworkConfig config) : IModbusTransport {
     private readonly SemaphoreSlim _semaphore = new(1, 1);
     private bool _disposed;
 
-    public int Timeout { get; set; } = 5000; // 默认5秒超时（5000毫秒）
+    public int Timeout { get; set; } = -1;
 
     public bool IsConnected => _udpClient != null && _remoteEndPoint != null;
 
@@ -121,15 +121,13 @@ public class UdpTransport(NetworkConfig config) : IModbusTransport {
     }
 
     private async Task<byte[]> ReceiveResponseAsync(UdpClient udpClient, CancellationToken cancelToken) {
-        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
-        if (Timeout >= 0) {
-            timeoutCts.CancelAfter(Timeout);
-        }
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
+        cts.CancelAfter(Timeout);
 
         try {
-            var result = await udpClient.ReceiveAsync(timeoutCts.Token).ConfigureAwait(false);
+            var result = await udpClient.ReceiveAsync(cts.Token).ConfigureAwait(false);
             return result.Buffer;
-        } catch (OperationCanceledException) when (timeoutCts.Token.IsCancellationRequested && !cancelToken.IsCancellationRequested) {
+        } catch (OperationCanceledException) when (cts.Token.IsCancellationRequested && !cancelToken.IsCancellationRequested) {
             throw new ModbusTimeoutException("UDP接收超时，操作已取消");
         }
     }

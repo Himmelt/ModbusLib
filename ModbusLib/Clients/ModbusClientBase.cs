@@ -20,6 +20,11 @@ public abstract class ModbusClientBase : IModbusClient {
 
     public int Retries { get; set; }
 
+    public int Timeout {
+        get => Transport.Timeout;
+        set => Transport.Timeout = value;
+    }
+
     public bool IsConnected => Transport.IsConnected;
     /// <summary>
     /// 获取Modbus协议实现

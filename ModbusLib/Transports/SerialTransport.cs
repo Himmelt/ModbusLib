@@ -15,7 +15,7 @@ public class SerialTransport(SerialConfig config) : IModbusTransport {
     private readonly SemaphoreSlim _semaphore = new(1, 1);
     private bool _disposed;
 
-    public int Timeout { get; set; } = 5000; // 默认5秒超时（5000毫秒）
+    public int Timeout { get; set; } = -1;
 
     public bool IsConnected => _serialPort?.IsOpen == true;
 

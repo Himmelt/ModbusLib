@@ -11,7 +11,7 @@ public class ChannelTransport(ChannelSession session) : IModbusTransport {
     private readonly SemaphoreSlim _semaphore = new(1, 1);
     private readonly ChannelSession _session = session;
 
-    public int Timeout { get; set; } = 2000;
+    public int Timeout { get; set; } = -1;
     public bool IsConnected => !_disposed;
 
     public Task<bool> ConnectAsync(CancellationToken cancelToken = default) {
@@ -35,9 +35,7 @@ public class ChannelTransport(ChannelSession session) : IModbusTransport {
         if (!IsConnected) throw new ModbusConnectionException("Channel 不可用");
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
-        if (Timeout >= 0) {
-            cts.CancelAfter(Timeout);
-        }
+        cts.CancelAfter(Timeout);
 
         await _semaphore.WaitAsync(cts.Token).ConfigureAwait(false);
         try {
@@ -55,20 +53,18 @@ public class ChannelTransport(ChannelSession session) : IModbusTransport {
     }
 
     private async Task<byte[]> ReceiveResponseAsync(CancellationToken cancelToken) {
-        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
-        if (Timeout >= 0) {
-            timeoutCts.CancelAfter(Timeout);
-        }
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
+        cts.CancelAfter(Timeout);
 
         try {
-            var response = await _session.ServerToClient.Reader.ReadAsync(timeoutCts.Token).ConfigureAwait(false);
+            var response = await _session.ServerToClient.Reader.ReadAsync(cts.Token).ConfigureAwait(false);
 
             if (response.Length == 0) {
                 throw new ModbusTimeoutException("Channel接收超时，未收到响应数据");
             }
 
             return response;
-        } catch (OperationCanceledException) when (timeoutCts.Token.IsCancellationRequested && !cancelToken.IsCancellationRequested) {
+        } catch (OperationCanceledException) when (cts.Token.IsCancellationRequested && !cancelToken.IsCancellationRequested) {
             throw new ModbusTimeoutException("Channel接收超时，未收到响应数据");
         }
     }

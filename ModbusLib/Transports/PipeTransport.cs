@@ -10,7 +10,7 @@ public class PipeTransport(PipeSession session) : IModbusTransport {
     private bool _disposed;
     private readonly SemaphoreSlim _semaphore = new(1, 1);
 
-    public int Timeout { get; set; }
+    public int Timeout { get; set; } = -1;
     public bool IsConnected => !_disposed;
 
     public Task<bool> ConnectAsync(CancellationToken cancelToken = default) {
@@ -34,9 +34,7 @@ public class PipeTransport(PipeSession session) : IModbusTransport {
         if (!IsConnected) throw new ModbusConnectionException("Pipe 不可用");
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
-        if (Timeout >= 0) {
-            cts.CancelAfter(Timeout);
-        }
+        cts.CancelAfter(Timeout);
 
         await _semaphore.WaitAsync(cts.Token).ConfigureAwait(false);
         try {
@@ -55,15 +53,13 @@ public class PipeTransport(PipeSession session) : IModbusTransport {
     }
 
     private async Task<byte[]> ReceiveResponseAsync(Pipe inPipe, CancellationToken cancelToken) {
-        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
-        if (Timeout >= 0) {
-            timeoutCts.CancelAfter(Timeout);
-        }
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
+        cts.CancelAfter(Timeout);
 
         using var memoryStream = new MemoryStream();
 
         try {
-            var result = await inPipe.Reader.ReadAsync(timeoutCts.Token).ConfigureAwait(false);
+            var result = await inPipe.Reader.ReadAsync(cts.Token).ConfigureAwait(false);
             var data = result.Buffer;
 
             if (!data.IsEmpty) {
@@ -72,7 +68,7 @@ public class PipeTransport(PipeSession session) : IModbusTransport {
                 }
                 inPipe.Reader.AdvanceTo(data.End);
             }
-        } catch (OperationCanceledException) when (timeoutCts.Token.IsCancellationRequested && !cancelToken.IsCancellationRequested) {
+        } catch (OperationCanceledException) when (cts.Token.IsCancellationRequested && !cancelToken.IsCancellationRequested) {
         }
 
         var response = memoryStream.ToArray();
