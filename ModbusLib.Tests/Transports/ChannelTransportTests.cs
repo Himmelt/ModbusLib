@@ -58,7 +58,7 @@ public class ChannelTransportTests : IDisposable {
     public async Task SendReceiveAsync_AfterDispose_ThrowsObjectDisposedException() {
         _transport.Dispose();
         await Assert.ThrowsAsync<ObjectDisposedException>(() =>
-            _transport.SendReceiveAsync(new byte[] { 0x01, 0x02 }));
+            _transport.SendReceiveAsync([0x01, 0x02]));
     }
 
     [Fact]
