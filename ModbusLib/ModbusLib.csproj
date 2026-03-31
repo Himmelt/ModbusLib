@@ -11,11 +11,11 @@
   <!-- NuGet Package Metadata -->
   <PropertyGroup>
     <PackageId>Himmelt.ModbusLib</PackageId>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
     <Authors>Himmelt</Authors>
     <Company>Himmelt</Company>
-    <Description>一个功能完整、高性能的Modbus客户端库，基于.NET 9平台，支持多种Modbus协议变体。</Description>
-    <Copyright>Copyright © 2024-2025 Himmelt</Copyright>
+    <Description>一个功能完整、高性能的Modbus客户端库，基于.NET 10平台，支持多种Modbus协议变体。</Description>
+    <Copyright>Copyright © 2024-2026 Himmelt</Copyright>
     <PackageProjectUrl>https://github.com/Himmelt/ModbusLib</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Himmelt/ModbusLib</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
