@@ -1,6 +1,5 @@
 using ModbusLib.Clients;
-using ModbusLib.Protocols;
-using ModbusLib.Transports;
+using ModbusLib.Models;
 
 namespace ModbusLib.Tests.Clients;
 
@@ -12,7 +11,7 @@ public class ModbusChannelClientTests : IDisposable {
 
     public ModbusChannelClientTests() {
         _session = new ChannelSession();
-        _client = new ModbusChannelClient(_session, new TcpProtocol());
+        _client = new ModbusChannelClient(_session);
     }
 
     public void Dispose() {
@@ -25,7 +24,7 @@ public class ModbusChannelClientTests : IDisposable {
     [Fact]
     public void CreateTcpClient_WithValidSession_CreatesClient() {
         var session = new ChannelSession();
-        using var client = ModbusChannelClient.CreateTcpClient(session);
+        using var client = new ModbusChannelClient(session);
 
         Assert.NotNull(client);
         Assert.True(client.IsConnected);
@@ -36,7 +35,7 @@ public class ModbusChannelClientTests : IDisposable {
     [Fact]
     public void CreateRtuClient_WithValidSession_CreatesClient() {
         var session = new ChannelSession();
-        using var client = ModbusChannelClient.CreateRtuClient(session);
+        using var client = new ModbusRtuOverChannelClient(session);
 
         Assert.NotNull(client);
         Assert.True(client.IsConnected);
@@ -47,32 +46,6 @@ public class ModbusChannelClientTests : IDisposable {
     [Fact]
     public void IsConnected_WithValidTransport_ReturnsTrue() {
         Assert.True(_client.IsConnected);
-    }
-
-    [Fact]
-    public void Timeout_SetValue_ReflectsInTransport() {
-        _client.Timeout = 3000;
-        Assert.Equal(3000, _client.Timeout);
-    }
-
-    [Fact]
-    public void Constructor_WithProtocolAndTransport_InitializesCorrectly() {
-        var protocol = new TcpProtocol();
-        var session = new ChannelSession();
-        using var client = new ModbusChannelClient(session, protocol, 2000);
-
-        Assert.True(client.IsConnected);
-        Assert.Equal(2000, client.Timeout);
-    }
-
-    [Fact]
-    public void Constructor_WithProtocolAndTimeout_InitializesCorrectly() {
-        var protocol = new RtuProtocol();
-        var session = new ChannelSession();
-        using var client = new ModbusChannelClient(session, protocol, 3000);
-
-        Assert.True(client.IsConnected);
-        Assert.Equal(3000, client.Timeout);
     }
 
     [Fact]

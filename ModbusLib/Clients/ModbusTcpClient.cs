@@ -1,21 +1,16 @@
+using ModbusLib.Interfaces;
 using ModbusLib.Models;
 using ModbusLib.Protocols;
 using ModbusLib.Transports;
-using System.Diagnostics.CodeAnalysis;
 
 namespace ModbusLib.Clients;
 
-/// <summary>
-/// Modbus TCP客户端
-/// </summary>
-public class ModbusTcpClient : ModbusClientBase {
-    [SuppressMessage("CodeQuality", "IDE0079")]
-    [SuppressMessage("Reliability", "CA2000:丢失范围之前释放对象", Justification = "在基类中统一释放")]
-    public ModbusTcpClient(NetworkConnectionConfig config)
-        : base(new TcpTransport(config), new TcpProtocol()) {
-    }
+public class ModbusTcpClient(NetworkConfig config) : ModbusClientBase {
 
-    public ModbusTcpClient(TcpTransport transport)
-        : base(transport, new TcpProtocol()) {
-    }
+    public NetworkConfig NetworkConfig => config;
+
+    protected override IModbusProtocol Protocol { get; set; } = new TcpProtocol();
+    protected override IModbusTransport Transport { get; set; } = new TcpTransport(config);
+
+    public ModbusTcpClient(string host, int remotePort = 502) : this(new NetworkConfig { Host = host, RemotePort = remotePort }) { }
 }

@@ -20,9 +20,7 @@ public class ModbusPipeClientIntegrationTests : IDisposable {
     }
 
     private IModbusClient CreateClient(MockModbusServer server) {
-        var pipeIn = server.ServerToClientPipe;
-        var pipeOut = server.ClientToServerPipe;
-        return new ModbusPipeClient(pipeIn, pipeOut, new ModbusLib.Protocols.TcpProtocol(), 5000);
+        return new ModbusPipeClient(server.Session);
     }
 
     public void Dispose() {

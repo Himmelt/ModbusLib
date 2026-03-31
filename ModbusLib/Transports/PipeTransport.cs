@@ -1,20 +1,19 @@
 using ModbusLib.Exceptions;
 using ModbusLib.Interfaces;
+using ModbusLib.Models;
 using System.IO.Pipelines;
 
 namespace ModbusLib.Transports;
 
-public class PipeTransport(Pipe serverToClient, Pipe clientToServer, int timeout = 5000) : IModbusTransport {
+public class PipeTransport(PipeSession session) : IModbusTransport {
 
     private bool _disposed;
     private readonly SemaphoreSlim _semaphore = new(1, 1);
-    private readonly Pipe serverToClient = serverToClient ?? throw new ArgumentNullException(nameof(serverToClient));
-    private readonly Pipe clientToServer = clientToServer ?? throw new ArgumentNullException(nameof(clientToServer));
 
-    public int Timeout { get; set; } = timeout;
-    public bool IsConnected => !_disposed && serverToClient != null && clientToServer != null;
+    public int Timeout { get; set; }
+    public bool IsConnected => !_disposed;
 
-    public Task<bool> ConnectAsync(CancellationToken cancellationToken = default) {
+    public Task<bool> ConnectAsync(CancellationToken cancelToken = default) {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         if (!IsConnected) {
@@ -24,27 +23,27 @@ public class PipeTransport(Pipe serverToClient, Pipe clientToServer, int timeout
         return Task.FromResult(true);
     }
 
-    public Task DisconnectAsync(CancellationToken cancellationToken = default) {
+    public Task DisconnectAsync(CancellationToken cancelToken = default) {
         if (_disposed) return Task.CompletedTask;
         return Task.CompletedTask;
     }
 
-    public async Task<byte[]> SendReceiveAsync(byte[] request, CancellationToken cancellationToken = default) {
+    public async Task<byte[]> SendReceiveAsync(byte[] request, CancellationToken cancelToken = default) {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         if (!IsConnected) throw new ModbusConnectionException("Pipe 不可用");
 
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
         if (Timeout >= 0) {
             cts.CancelAfter(Timeout);
         }
 
         await _semaphore.WaitAsync(cts.Token).ConfigureAwait(false);
         try {
-            await clientToServer.Writer.WriteAsync(request, cts.Token).ConfigureAwait(false);
-            await clientToServer.Writer.FlushAsync(cts.Token).ConfigureAwait(false);
+            await session.ClientToServer.Writer.WriteAsync(request, cts.Token).ConfigureAwait(false);
+            await session.ClientToServer.Writer.FlushAsync(cts.Token).ConfigureAwait(false);
 
-            var response = await ReceiveResponseAsync(serverToClient, cts.Token).ConfigureAwait(false);
+            var response = await ReceiveResponseAsync(session.ServerToClient, cts.Token).ConfigureAwait(false);
             return response;
         } catch (Exception ex) when (ex is IOException || ex is ObjectDisposedException) {
             throw new ModbusCommunicationException($"Pipe 通信异常: {ex.Message}", ex);
@@ -55,8 +54,8 @@ public class PipeTransport(Pipe serverToClient, Pipe clientToServer, int timeout
         }
     }
 
-    private async Task<byte[]> ReceiveResponseAsync(Pipe inPipe, CancellationToken cancellationToken) {
-        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+    private async Task<byte[]> ReceiveResponseAsync(Pipe inPipe, CancellationToken cancelToken) {
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
         if (Timeout >= 0) {
             timeoutCts.CancelAfter(Timeout);
         }
@@ -73,7 +72,7 @@ public class PipeTransport(Pipe serverToClient, Pipe clientToServer, int timeout
                 }
                 inPipe.Reader.AdvanceTo(data.End);
             }
-        } catch (OperationCanceledException) when (timeoutCts.Token.IsCancellationRequested && !cancellationToken.IsCancellationRequested) {
+        } catch (OperationCanceledException) when (timeoutCts.Token.IsCancellationRequested && !cancelToken.IsCancellationRequested) {
         }
 
         var response = memoryStream.ToArray();

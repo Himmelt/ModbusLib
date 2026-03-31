@@ -10,10 +10,10 @@ namespace ModbusLib.Transports;
 /// <summary>
 /// TCP传输实现
 /// </summary>
-public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport {
+public class TcpTransport(NetworkConfig config) : IModbusTransport {
     private TcpClient? _tcpClient;
     private NetworkStream? _stream;
-    private readonly NetworkConnectionConfig _config = config ?? throw new ArgumentNullException(nameof(config));
+    private readonly NetworkConfig _config = config ?? throw new ArgumentNullException(nameof(config));
     private readonly SemaphoreSlim _semaphore = new(1, 1);
     private bool _disposed;
 
@@ -21,10 +21,10 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport {
 
     public bool IsConnected => _tcpClient?.Connected == true && _stream != null;
 
-    public async Task<bool> ConnectAsync(CancellationToken cancellationToken = default) {
+    public async Task<bool> ConnectAsync(CancellationToken cancelToken = default) {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+        await _semaphore.WaitAsync(cancelToken).ConfigureAwait(false);
         try {
             if (IsConnected) return true;
 
@@ -44,15 +44,15 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport {
             _tcpClient.SendBufferSize = _config.SendBufferSize;
 
             // 连接到服务器
-            using var connectCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            using var connectCts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
             connectCts.CancelAfter(_config.ConnectTimeout);
 
             await _tcpClient.ConnectAsync(_config.Host, _config.RemotePort, connectCts.Token).ConfigureAwait(false);
 
             // 配置Socket选项
             if (_tcpClient.Client != null) {
-                _tcpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, _config.KeepAlive);
-                _tcpClient.Client.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.NoDelay, _config.NoDelay);
+                _tcpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+                _tcpClient.Client.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.NoDelay, true);
             }
 
             _stream = _tcpClient.GetStream();
@@ -68,11 +68,11 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport {
         }
     }
 
-    public async Task DisconnectAsync(CancellationToken cancellationToken = default) {
+    public async Task DisconnectAsync(CancellationToken cancelToken = default) {
         if (_disposed)
             return;
 
-        await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+        await _semaphore.WaitAsync(cancelToken).ConfigureAwait(false);
         try {
             await DisconnectInternalAsync().ConfigureAwait(false);
         } finally {
@@ -97,14 +97,14 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport {
         }
     }
 
-    public async Task<byte[]> SendReceiveAsync(byte[] request, CancellationToken cancellationToken = default) {
+    public async Task<byte[]> SendReceiveAsync(byte[] request, CancellationToken cancelToken = default) {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         if (!IsConnected)
             throw new ModbusConnectionException("TCP连接未建立");
 
         // 使用超时取消令牌
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
         if (Timeout >= 0) {
             cts.CancelAfter(Timeout);
         }
@@ -134,14 +134,14 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport {
         }
     }
 
-    private async Task<byte[]> ReceiveResponseAsync(NetworkStream stream, CancellationToken cancellationToken) {
+    private async Task<byte[]> ReceiveResponseAsync(NetworkStream stream, CancellationToken cancelToken) {
         // 创建一个足够大的缓冲区来接收数据
         // 对于大多数Modbus响应来说，512字节已经足够
         var buffer = ArrayPool<byte>.Shared.Rent(512);
 
         try {
             // 读取响应数据
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
             if (Timeout >= 0) {
                 cts.CancelAfter(Timeout);
             }
@@ -161,9 +161,9 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport {
             // 根据协议类型确定完整的响应长度
             // 这里我们先尝试读取更多数据，直到没有更多数据或超时
             try {
-                while (totalBytesRead < buffer.Length && !cancellationToken.IsCancellationRequested) {
+                while (totalBytesRead < buffer.Length && !cancelToken.IsCancellationRequested) {
                     // 设置一个较短的超时时间来检测数据结束
-                    using var quickCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                    using var quickCts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
                     quickCts.CancelAfter(100); // 100ms超时
 
                     bytesRead = await stream.ReadAsync(buffer.AsMemory(totalBytesRead, buffer.Length - totalBytesRead), quickCts.Token).ConfigureAwait(false);
@@ -180,7 +180,7 @@ public class TcpTransport(NetworkConnectionConfig config) : IModbusTransport {
             var result = new byte[totalBytesRead];
             Array.Copy(buffer, 0, result, 0, totalBytesRead);
             return result;
-        } catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
+        } catch (OperationCanceledException) when (cancelToken.IsCancellationRequested) {
             throw new ModbusTimeoutException("读取响应超时，操作已取消");
         } finally {
             ArrayPool<byte>.Shared.Return(buffer);

@@ -1,3 +1,4 @@
+using ModbusLib.Models;
 using ModbusLib.Transports;
 using Xunit.Abstractions;
 
@@ -89,7 +90,7 @@ public class SimpleChannelCommunicationTests {
     [Fact]
     public async Task ChannelTransport_FullRoundTrip_Succeeds() {
         var session = new ChannelSession();
-        using var transport = new ChannelTransport(session, 5000);
+        using var transport = new ChannelTransport(session);
 
         var serverTask = Task.Run(async () => {
             var request = await session.ClientToServer.Reader.ReadAsync();
@@ -121,7 +122,7 @@ public class SimpleChannelCommunicationTests {
 
         var writeTask = Task.Run(async () => {
             for (int i = 0; i < iterations; i++) {
-                await session.ServerToClient.Writer.WriteAsync(new byte[] { (byte)i });
+                await session.ServerToClient.Writer.WriteAsync([(byte)i]);
                 completedWrites++;
             }
         });

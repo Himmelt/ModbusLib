@@ -1,9 +1,9 @@
 using FluentModbus;
-using ModbusLib.Factories;
 using ModbusLib.Models;
 using System.Net;
 using Xunit.Abstractions;
 using ModbusLibClient = ModbusLib.Interfaces.IModbusClient;
+using MyModbusTcpClient = ModbusLib.Clients.ModbusTcpClient;
 
 namespace ModbusLib.Tests.Functional;
 
@@ -22,7 +22,7 @@ public class FluentTcpServerTests(ITestOutputHelper output) : IDisposable {
             StartFluentModbusServer();
 
             // 使用我们自己的客户端连接到服务器
-            var config = new NetworkConnectionConfig {
+            var config = new NetworkConfig {
                 Host = "127.0.0.1",
                 RemotePort = ServerPort,
                 ConnectTimeout = 5000,
@@ -30,7 +30,7 @@ public class FluentTcpServerTests(ITestOutputHelper output) : IDisposable {
                 SendTimeout = 5000
             };
 
-            ModbusLibClient client = ModbusClientFactory.CreateTcpClient(config);
+            ModbusLibClient client = new MyModbusTcpClient(config);
             output.WriteLine("ModbusLib客户端已创建");
 
             var isConnected = await client.ConnectAsync();
@@ -107,7 +107,7 @@ public class FluentTcpServerTests(ITestOutputHelper output) : IDisposable {
             output.WriteLine($"FluentModbus服务器已启动，端口: {ServerPort}");
 
             // 使用我们自己的客户端连接到服务器
-            var config = new NetworkConnectionConfig {
+            var config = new NetworkConfig {
                 Host = "127.0.0.1",
                 RemotePort = ServerPort,
                 ConnectTimeout = 5000,
@@ -115,7 +115,7 @@ public class FluentTcpServerTests(ITestOutputHelper output) : IDisposable {
                 SendTimeout = 5000
             };
 
-            ModbusLibClient client = ModbusClientFactory.CreateTcpClient(config);
+            ModbusLibClient client = new MyModbusTcpClient(config);
             output.WriteLine("ModbusLib客户端已创建");
 
             var isConnected = await client.ConnectAsync();
@@ -191,14 +191,14 @@ public class FluentTcpServerTests(ITestOutputHelper output) : IDisposable {
         try {
             StartFluentModbusServer();
 
-            var config = new NetworkConnectionConfig {
+            var config = new NetworkConfig {
                 Host = "127.0.0.1",
                 RemotePort = ServerPort,
                 ConnectTimeout = 5000,
                 ReceiveTimeout = 5000,
                 SendTimeout = 5000
             };
-            ModbusLibClient client = ModbusClientFactory.CreateTcpClient(config);
+            ModbusLibClient client = new MyModbusTcpClient(config);
             var isConnected = await client.ConnectAsync();
             Assert.True(isConnected, "客户端连接失败");
 
@@ -273,7 +273,7 @@ public class FluentTcpServerTests(ITestOutputHelper output) : IDisposable {
             output.WriteLine($"FluentModbus服务器已启动，端口: {ServerPort}");
 
             // 使用我们自己的客户端连接到服务器
-            var config = new NetworkConnectionConfig {
+            var config = new NetworkConfig {
                 Host = "127.0.0.1",
                 RemotePort = ServerPort,
                 ConnectTimeout = 5000,
@@ -281,7 +281,7 @@ public class FluentTcpServerTests(ITestOutputHelper output) : IDisposable {
                 SendTimeout = 5000
             };
 
-            ModbusLibClient client = ModbusClientFactory.CreateTcpClient(config);
+            ModbusLibClient client = new MyModbusTcpClient(config);
             output.WriteLine("ModbusLib客户端已创建");
 
             var isConnected = await client.ConnectAsync();

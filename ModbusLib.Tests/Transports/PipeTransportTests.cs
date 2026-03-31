@@ -1,18 +1,17 @@
+using ModbusLib.Models;
 using ModbusLib.Transports;
 using System.IO.Pipelines;
 
 namespace ModbusLib.Tests.Transports;
 
 public class PipeTransportTests : IDisposable {
-    private readonly Pipe _pipeIn;
-    private readonly Pipe _pipeOut;
+    private readonly PipeSession _session;
     private readonly PipeTransport _transport;
     private bool _disposed;
 
     public PipeTransportTests() {
-        _pipeIn = new Pipe();
-        _pipeOut = new Pipe();
-        _transport = new PipeTransport(_pipeIn, _pipeOut, 5000);
+        _session = new PipeSession();
+        _transport = new PipeTransport(_session);
     }
 
     public void Dispose() {
@@ -24,26 +23,14 @@ public class PipeTransportTests : IDisposable {
 
     [Fact]
     public void Constructor_WithValidPipes_SetsProperties() {
-        var pipeIn = new Pipe();
-        var pipeOut = new Pipe();
-        var transport = new PipeTransport(pipeIn, pipeOut, 3000);
+        var _session = new PipeSession();
+
+        var transport = new PipeTransport(_session);
 
         Assert.Equal(3000, transport.Timeout);
         Assert.True(transport.IsConnected);
 
         transport.Dispose();
-    }
-
-    [Fact]
-    public void Constructor_WithNullPipeIn_ThrowsArgumentNullException() {
-        var pipeOut = new Pipe();
-        Assert.Throws<ArgumentNullException>(() => new PipeTransport(null!, pipeOut));
-    }
-
-    [Fact]
-    public void Constructor_WithNullPipeOut_ThrowsArgumentNullException() {
-        var pipeIn = new Pipe();
-        Assert.Throws<ArgumentNullException>(() => new PipeTransport(pipeIn, null!));
     }
 
     [Fact]
@@ -73,7 +60,7 @@ public class PipeTransportTests : IDisposable {
     public async Task SendReceiveAsync_AfterDispose_ThrowsObjectDisposedException() {
         _transport.Dispose();
         await Assert.ThrowsAsync<ObjectDisposedException>(() =>
-            _transport.SendReceiveAsync(new byte[] { 0x01, 0x02 }));
+            _transport.SendReceiveAsync([0x01, 0x02]));
     }
 
     [Fact]
@@ -82,8 +69,8 @@ public class PipeTransportTests : IDisposable {
         var response = new byte[] { 0x01, 0x03, 0x14, 0x00, 0x0A };
         var responseTask = _transport.SendReceiveAsync(request);
 
-        await _pipeIn.Writer.WriteAsync(response);
-        _pipeIn.Writer.Complete();
+        await _session.ServerToClient.Writer.WriteAsync(response);
+        _session.ServerToClient.Writer.Complete();
 
         var result = await responseTask;
         Assert.NotNull(result);
@@ -102,8 +89,8 @@ public class PipeTransportTests : IDisposable {
             await _transport.SendReceiveAsync(request, cts.Token);
         });
 
-        await _pipeIn.Writer.WriteAsync(response);
-        _pipeIn.Writer.Complete();
+        await _session.ServerToClient.Writer.WriteAsync(response);
+        _session.ServerToClient.Writer.Complete();
 
         await firstTask;
     }
@@ -119,9 +106,8 @@ public class PipeTransportTests : IDisposable {
 
     [Fact]
     public async Task SendReceiveAsync_WithNegativeTimeout_IgnoresTimeout() {
-        var pipeIn = new Pipe();
-        var pipeOut = new Pipe();
-        var transport = new PipeTransport(pipeIn, pipeOut, -1);
+        var session = new PipeSession();
+        var transport = new PipeTransport(session);
 
         try {
             var request = new byte[] { 0x01 };
@@ -129,8 +115,8 @@ public class PipeTransportTests : IDisposable {
 
             var responseTask = transport.SendReceiveAsync(request);
 
-            await pipeIn.Writer.WriteAsync(response);
-            pipeIn.Writer.Complete();
+            await session.ServerToClient.Writer.WriteAsync(response);
+            session.ServerToClient.Writer.Complete();
 
             await responseTask;
         } finally {

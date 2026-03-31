@@ -7,15 +7,15 @@ public interface IModbusTransport : IDisposable, IAsyncDisposable {
     /// <summary>
     /// 异步连接
     /// </summary>
-    /// <param name="cancellationToken">取消令牌</param>
+    /// <param name="cancelToken">取消令牌</param>
     /// <returns>连接是否成功</returns>
-    Task<bool> ConnectAsync(CancellationToken cancellationToken = default);
+    Task<bool> ConnectAsync(CancellationToken cancelToken = default);
 
     /// <summary>
     /// 异步断开连接
     /// </summary>
-    /// <param name="cancellationToken">取消令牌</param>
-    Task DisconnectAsync(CancellationToken cancellationToken = default);
+    /// <param name="cancelToken">取消令牌</param>
+    Task DisconnectAsync(CancellationToken cancelToken = default);
 
     /// <summary>
     /// 获取连接状态
@@ -26,9 +26,9 @@ public interface IModbusTransport : IDisposable, IAsyncDisposable {
     /// 发送请求并接收响应
     /// </summary>
     /// <param name="request">请求数据</param>
-    /// <param name="cancellationToken">取消令牌</param>
+    /// <param name="cancelToken">取消令牌</param>
     /// <returns>响应数据</returns>
-    Task<byte[]> SendReceiveAsync(byte[] request, CancellationToken cancellationToken = default);
+    Task<byte[]> SendReceiveAsync(byte[] request, CancellationToken cancelToken = default);
 
     /// <summary>
     /// 超时时间（单位：毫秒，ms）

@@ -1,20 +1,17 @@
 using ModbusLib.Clients;
-using ModbusLib.Protocols;
-using System.IO.Pipelines;
+using ModbusLib.Models;
 
 namespace ModbusLib.Tests.Clients;
 
 public class ModbusPipeClientTests : IDisposable {
 
     private bool _disposed;
-    private readonly Pipe _pipeIn;
-    private readonly Pipe _pipeOut;
+    private readonly PipeSession session;
     private readonly ModbusPipeClient _client;
 
     public ModbusPipeClientTests() {
-        _pipeIn = new Pipe();
-        _pipeOut = new Pipe();
-        _client = new ModbusPipeClient(_pipeIn, _pipeOut, new TcpProtocol());
+        session = new PipeSession();
+        _client = new ModbusPipeClient(session);
     }
 
     public void Dispose() {
@@ -26,9 +23,8 @@ public class ModbusPipeClientTests : IDisposable {
 
     [Fact]
     public void CreateTcpClient_WithValidPipes_CreatesClient() {
-        var pipeIn = new Pipe();
-        var pipeOut = new Pipe();
-        using var client = ModbusPipeClient.CreateTcpClient(pipeIn, pipeOut);
+        PipeSession _session = new PipeSession();
+        using ModbusPipeClient client = new ModbusPipeClient(_session);
 
         Assert.NotNull(client);
         Assert.True(client.IsConnected);
@@ -38,9 +34,8 @@ public class ModbusPipeClientTests : IDisposable {
 
     [Fact]
     public void CreateRtuClient_WithValidPipes_CreatesClient() {
-        var pipeIn = new Pipe();
-        var pipeOut = new Pipe();
-        using var client = ModbusPipeClient.CreateRtuClient(pipeIn, pipeOut);
+        PipeSession _session = new PipeSession();
+        using var client = new ModbusRtuOverPipeClient(_session);
 
         Assert.NotNull(client);
         Assert.True(client.IsConnected);
@@ -51,34 +46,6 @@ public class ModbusPipeClientTests : IDisposable {
     [Fact]
     public void IsConnected_WithValidTransport_ReturnsTrue() {
         Assert.True(_client.IsConnected);
-    }
-
-    [Fact]
-    public void Timeout_SetValue_ReflectsInTransport() {
-        _client.Timeout = 3000;
-        Assert.Equal(3000, _client.Timeout);
-    }
-
-    [Fact]
-    public void Constructor_WithProtocolAndTransport_InitializesCorrectly() {
-        var protocol = new TcpProtocol();
-        var pipeIn = new Pipe();
-        var pipeOut = new Pipe();
-        using var client = new ModbusPipeClient(pipeIn, pipeOut, protocol, 2000);
-
-        Assert.True(client.IsConnected);
-        Assert.Equal(2000, client.Timeout);
-    }
-
-    [Fact]
-    public void Constructor_WithProtocolAndTimeout_InitializesCorrectly() {
-        var protocol = new RtuProtocol();
-        var pipeIn = new Pipe();
-        var pipeOut = new Pipe();
-        using var client = new ModbusPipeClient(pipeIn, pipeOut, protocol, 3000);
-
-        Assert.True(client.IsConnected);
-        Assert.Equal(3000, client.Timeout);
     }
 
     [Fact]

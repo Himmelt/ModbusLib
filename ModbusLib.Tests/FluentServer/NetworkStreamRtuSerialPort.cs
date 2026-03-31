@@ -68,16 +68,16 @@ public class NetworkStreamRtuSerialPort : IModbusRtuSerialPort, IDisposable {
     /// <param name="buffer">The buffer to read into.</param>
     /// <param name="offset">The offset in the buffer to start reading.</param>
     /// <param name="count">The number of bytes to read.</param>
-    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <param name="cancelToken">The cancellation token.</param>
     /// <returns>The number of bytes read.</returns>
-    public async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) {
+    public async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancelToken) {
         if (_disposed) return 0;
 
         // We'll implement timeout by a Task.WhenAny with a delay.
-        var readTask = _stream.ReadAsync(buffer, offset, count, cancellationToken);
+        var readTask = _stream.ReadAsync(buffer, offset, count, cancelToken);
 
         if (ReadTimeout != Timeout.Infinite) {
-            var delay = Task.Delay(ReadTimeout, cancellationToken);
+            var delay = Task.Delay(ReadTimeout, cancelToken);
             var completed = await Task.WhenAny(readTask, delay).ConfigureAwait(false);
             if (completed == delay) {
                 // emulate timeout -> throw so upstream behaves like serial timeout

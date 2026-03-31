@@ -9,9 +9,9 @@ namespace ModbusLib.Transports;
 /// <summary>
 /// 串口传输实现
 /// </summary>
-public class SerialTransport(SerialConnectionConfig config) : IModbusTransport {
+public class SerialTransport(SerialConfig config) : IModbusTransport {
     private SerialPort? _serialPort;
-    private readonly SerialConnectionConfig _config = config ?? throw new ArgumentNullException(nameof(config));
+    private readonly SerialConfig _config = config ?? throw new ArgumentNullException(nameof(config));
     private readonly SemaphoreSlim _semaphore = new(1, 1);
     private bool _disposed;
 
@@ -19,10 +19,10 @@ public class SerialTransport(SerialConnectionConfig config) : IModbusTransport {
 
     public bool IsConnected => _serialPort?.IsOpen == true;
 
-    public async Task<bool> ConnectAsync(CancellationToken cancellationToken = default) {
+    public async Task<bool> ConnectAsync(CancellationToken cancelToken = default) {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+        await _semaphore.WaitAsync(cancelToken).ConfigureAwait(false);
         try {
             if (IsConnected)
                 return true;
@@ -39,7 +39,7 @@ public class SerialTransport(SerialConnectionConfig config) : IModbusTransport {
                 WriteTimeout = _config.WriteTimeout
             };
 
-            await Task.Run(() => _serialPort.Open(), cancellationToken).ConfigureAwait(false);
+            await Task.Run(() => _serialPort.Open(), cancelToken).ConfigureAwait(false);
 
             // 清空输入输出缓冲区
             _serialPort.DiscardInBuffer();
@@ -53,28 +53,28 @@ public class SerialTransport(SerialConnectionConfig config) : IModbusTransport {
         }
     }
 
-    public async Task DisconnectAsync(CancellationToken cancellationToken = default) {
+    public async Task DisconnectAsync(CancellationToken cancelToken = default) {
         if (_disposed)
             return;
 
-        await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+        await _semaphore.WaitAsync(cancelToken).ConfigureAwait(false);
         try {
             if (_serialPort?.IsOpen == true) {
-                await Task.Run(() => _serialPort.Close(), cancellationToken).ConfigureAwait(false);
+                await Task.Run(() => _serialPort.Close(), cancelToken).ConfigureAwait(false);
             }
         } finally {
             _semaphore.Release();
         }
     }
 
-    public async Task<byte[]> SendReceiveAsync(byte[] request, CancellationToken cancellationToken = default) {
+    public async Task<byte[]> SendReceiveAsync(byte[] request, CancellationToken cancelToken = default) {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         if (!IsConnected) {
             throw new ModbusConnectionException($"串口 {_serialPort} 未连接");
         }
 
-        await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+        await _semaphore.WaitAsync(cancelToken).ConfigureAwait(false);
         try {
             var serialPort = _serialPort!;
 
@@ -82,10 +82,10 @@ public class SerialTransport(SerialConnectionConfig config) : IModbusTransport {
             serialPort.DiscardInBuffer();
 
             // 发送请求
-            await Task.Run(() => serialPort.Write(request, 0, request.Length), cancellationToken).ConfigureAwait(false);
+            await Task.Run(() => serialPort.Write(request, 0, request.Length), cancelToken).ConfigureAwait(false);
 
             // 接收响应
-            var response = await ReceiveResponseAsync(serialPort, cancellationToken).ConfigureAwait(false);
+            var response = await ReceiveResponseAsync(serialPort, cancelToken).ConfigureAwait(false);
             return response;
         } catch (TimeoutException) {
             throw new ModbusTimeoutException($"串口 {_serialPort} 通信超时");
@@ -98,7 +98,7 @@ public class SerialTransport(SerialConnectionConfig config) : IModbusTransport {
         }
     }
 
-    private async Task<byte[]> ReceiveResponseAsync(SerialPort serialPort, CancellationToken cancellationToken) {
+    private async Task<byte[]> ReceiveResponseAsync(SerialPort serialPort, CancellationToken cancelToken) {
         const int bufferSize = 256;
         var buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
         var responseList = new List<byte>();
@@ -107,10 +107,10 @@ public class SerialTransport(SerialConnectionConfig config) : IModbusTransport {
             var timeout = Timeout >= 0 ? DateTime.UtcNow.AddMilliseconds(Timeout) : DateTime.MaxValue;
             var lastReceiveTime = DateTime.UtcNow;
 
-            while (DateTime.UtcNow < timeout && !cancellationToken.IsCancellationRequested) {
+            while (DateTime.UtcNow < timeout && !cancelToken.IsCancellationRequested) {
                 if (serialPort.BytesToRead > 0) {
                     var bytesToRead = Math.Min(serialPort.BytesToRead, bufferSize);
-                    var bytesRead = await Task.Run(() => serialPort.Read(buffer, 0, bytesToRead), cancellationToken).ConfigureAwait(false);
+                    var bytesRead = await Task.Run(() => serialPort.Read(buffer, 0, bytesToRead), cancelToken).ConfigureAwait(false);
 
                     for (int i = 0; i < bytesRead; i++) {
                         responseList.Add(buffer[i]);
@@ -124,7 +124,7 @@ public class SerialTransport(SerialConnectionConfig config) : IModbusTransport {
                         break;
                     }
 
-                    await Task.Delay(1, cancellationToken).ConfigureAwait(false);
+                    await Task.Delay(1, cancelToken).ConfigureAwait(false);
                 }
             }
 

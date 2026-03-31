@@ -1,12 +1,13 @@
 using ModbusLib.Enums;
+using ModbusLib.Models;
 using System.Buffers;
 using System.IO.Pipelines;
 
 namespace ModbusLib.Tests.Mocks;
 
 public class MockModbusServer : IDisposable {
-    private readonly Pipe _clientToServerPipe;
-    private readonly Pipe _serverToClientPipe;
+
+    private readonly PipeSession session = new PipeSession();
     private CancellationTokenSource? _cts;
     private Task? _serverTask;
     private bool _disposed;
@@ -16,13 +17,7 @@ public class MockModbusServer : IDisposable {
     private readonly ushort[] _inputRegisters = new ushort[65536];
     private readonly bool[] _discreteInputs = new bool[65536];
 
-    public Pipe ClientToServerPipe => _clientToServerPipe;
-    public Pipe ServerToClientPipe => _serverToClientPipe;
-
-    public MockModbusServer() {
-        _clientToServerPipe = new Pipe();
-        _serverToClientPipe = new Pipe();
-    }
+    public PipeSession Session => session;
 
     public void Start() {
         if (_serverTask != null) return;
@@ -31,8 +26,8 @@ public class MockModbusServer : IDisposable {
     }
 
     private async Task ServerLoopAsync() {
-        var reader = _clientToServerPipe.Reader;
-        var writer = _serverToClientPipe.Writer;
+        var reader = session.ClientToServer.Reader;
+        var writer = session.ServerToClient.Writer;
         var token = _cts!.Token;
 
         try {
@@ -272,7 +267,7 @@ public class MockModbusServer : IDisposable {
 
     public async Task StopAsync() {
         _cts?.Cancel();
-        _clientToServerPipe.Reader.Complete();
+        session.ClientToServer.Reader.Complete();
         if (_serverTask != null) {
             try {
                 await _serverTask;
@@ -284,7 +279,7 @@ public class MockModbusServer : IDisposable {
     public void Dispose() {
         if (_disposed) return;
         _cts?.Cancel();
-        _clientToServerPipe.Reader.Complete();
+        session.ClientToServer.Reader.Complete();
         if (_serverTask != null) {
             try {
                 _serverTask.Wait(TimeSpan.FromSeconds(2));

@@ -9,10 +9,10 @@ namespace ModbusLib.Transports;
 /// <summary>
 /// UDP传输实现
 /// </summary>
-public class UdpTransport(NetworkConnectionConfig config) : IModbusTransport {
+public class UdpTransport(NetworkConfig config) : IModbusTransport {
     private UdpClient? _udpClient;
     private IPEndPoint? _remoteEndPoint;
-    private readonly NetworkConnectionConfig _config = config ?? throw new ArgumentNullException(nameof(config));
+    private readonly NetworkConfig _config = config ?? throw new ArgumentNullException(nameof(config));
     private readonly SemaphoreSlim _semaphore = new(1, 1);
     private bool _disposed;
 
@@ -20,10 +20,10 @@ public class UdpTransport(NetworkConnectionConfig config) : IModbusTransport {
 
     public bool IsConnected => _udpClient != null && _remoteEndPoint != null;
 
-    public async Task<bool> ConnectAsync(CancellationToken cancellationToken = default) {
+    public async Task<bool> ConnectAsync(CancellationToken cancelToken = default) {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+        await _semaphore.WaitAsync(cancelToken).ConfigureAwait(false);
         try {
             if (IsConnected)
                 return true;
@@ -32,7 +32,7 @@ public class UdpTransport(NetworkConnectionConfig config) : IModbusTransport {
 
             // 解析主机地址
             if (!IPAddress.TryParse(_config.Host, out IPAddress? ipAddress)) {
-                var hostEntry = await Dns.GetHostEntryAsync(_config.Host, cancellationToken).ConfigureAwait(false);
+                var hostEntry = await Dns.GetHostEntryAsync(_config.Host, cancelToken).ConfigureAwait(false);
                 ipAddress = hostEntry.AddressList.FirstOrDefault(addr => addr.AddressFamily == AddressFamily.InterNetwork);
                 if (ipAddress == null)
                     throw new ModbusConnectionException($"无法解析主机地址: {_config.Host}");
@@ -65,11 +65,11 @@ public class UdpTransport(NetworkConnectionConfig config) : IModbusTransport {
         }
     }
 
-    public async Task DisconnectAsync(CancellationToken cancellationToken = default) {
+    public async Task DisconnectAsync(CancellationToken cancelToken = default) {
         if (_disposed)
             return;
 
-        await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+        await _semaphore.WaitAsync(cancelToken).ConfigureAwait(false);
         try {
             await DisconnectInternalAsync().ConfigureAwait(false);
         } finally {
@@ -90,26 +90,26 @@ public class UdpTransport(NetworkConnectionConfig config) : IModbusTransport {
         return Task.CompletedTask;
     }
 
-    public async Task<byte[]> SendReceiveAsync(byte[] request, CancellationToken cancellationToken = default) {
+    public async Task<byte[]> SendReceiveAsync(byte[] request, CancellationToken cancelToken = default) {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         if (!IsConnected)
             throw new ModbusConnectionException("UDP连接未配置");
 
-        await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+        await _semaphore.WaitAsync(cancelToken).ConfigureAwait(false);
         try {
             var udpClient = _udpClient!;
             var remoteEndPoint = _remoteEndPoint!;
 
             // 发送请求
-            var bytesSent = await udpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            var bytesSent = await udpClient.SendAsync(request, cancelToken).ConfigureAwait(false);
             ArgumentNullException.ThrowIfNull(request, nameof(request));
             if (bytesSent != request.Length) {
                 throw new ModbusCommunicationException($"UDP发送不完整，期望{request.Length}字节，实际发送{bytesSent}字节");
             }
 
             // 接收响应
-            var response = await ReceiveResponseAsync(udpClient, cancellationToken).ConfigureAwait(false);
+            var response = await ReceiveResponseAsync(udpClient, cancelToken).ConfigureAwait(false);
             return response;
         } catch (Exception ex) when (ex is SocketException) {
             throw new ModbusCommunicationException($"UDP通信异常: {ex.Message}", ex);
@@ -120,8 +120,8 @@ public class UdpTransport(NetworkConnectionConfig config) : IModbusTransport {
         }
     }
 
-    private async Task<byte[]> ReceiveResponseAsync(UdpClient udpClient, CancellationToken cancellationToken) {
-        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+    private async Task<byte[]> ReceiveResponseAsync(UdpClient udpClient, CancellationToken cancelToken) {
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
         if (Timeout >= 0) {
             timeoutCts.CancelAfter(Timeout);
         }
@@ -129,7 +129,7 @@ public class UdpTransport(NetworkConnectionConfig config) : IModbusTransport {
         try {
             var result = await udpClient.ReceiveAsync(timeoutCts.Token).ConfigureAwait(false);
             return result.Buffer;
-        } catch (OperationCanceledException) when (timeoutCts.Token.IsCancellationRequested && !cancellationToken.IsCancellationRequested) {
+        } catch (OperationCanceledException) when (timeoutCts.Token.IsCancellationRequested && !cancelToken.IsCancellationRequested) {
             throw new ModbusTimeoutException("UDP接收超时，操作已取消");
         }
     }

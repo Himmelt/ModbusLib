@@ -1,3 +1,4 @@
+using ModbusLib.Models;
 using ModbusLib.Transports;
 
 namespace ModbusLib.Tests.Transports;
@@ -9,7 +10,7 @@ public class ChannelTransportTests : IDisposable {
 
     public ChannelTransportTests() {
         _session = new ChannelSession();
-        _transport = new ChannelTransport(_session, 5000);
+        _transport = new ChannelTransport(_session);
     }
 
     public void Dispose() {
@@ -22,7 +23,7 @@ public class ChannelTransportTests : IDisposable {
     [Fact]
     public void Constructor_WithValidSession_SetsProperties() {
         var session = new ChannelSession();
-        var transport = new ChannelTransport(session, 3000);
+        var transport = new ChannelTransport(session);
 
         Assert.Equal(3000, transport.Timeout);
         Assert.True(transport.IsConnected);
@@ -107,7 +108,7 @@ public class ChannelTransportTests : IDisposable {
     [Fact]
     public async Task SendReceiveAsync_WithNegativeTimeout_IgnoresTimeout() {
         var session = new ChannelSession();
-        var transport = new ChannelTransport(session, -1);
+        var transport = new ChannelTransport(session);
 
         try {
             var request = new byte[] { 0x01 };

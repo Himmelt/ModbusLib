@@ -1,4 +1,4 @@
-using ModbusLib.Factories;
+using ModbusLib.Clients;
 using ModbusLib.Models;
 using ModbusLib.Tests.FluentServer;
 using System.Net;
@@ -22,7 +22,7 @@ public class FluentRtuOverTcpServerTests(ITestOutputHelper output) : IDisposable
             StartFluentModbusServer();
 
             // 使用我们自己的RTU over TCP客户端连接到服务器
-            var config = new NetworkConnectionConfig {
+            var config = new NetworkConfig {
                 Host = "127.0.0.1",
                 RemotePort = ServerPort,
                 ConnectTimeout = 5000,
@@ -30,7 +30,7 @@ public class FluentRtuOverTcpServerTests(ITestOutputHelper output) : IDisposable
                 SendTimeout = 5000
             };
 
-            ModbusLibClient client = ModbusClientFactory.CreateRtuOverTcpClient(config);
+            ModbusLibClient client = new ModbusRtuOverTcpClient(config);
             output.WriteLine("ModbusLib RTU over TCP客户端已创建");
 
             var isConnected = await client.ConnectAsync();
@@ -107,7 +107,7 @@ public class FluentRtuOverTcpServerTests(ITestOutputHelper output) : IDisposable
             output.WriteLine($"FluentModbus服务器已启动，端口: {ServerPort}");
 
             // 使用我们自己的RTU over TCP客户端连接到服务器
-            var config = new NetworkConnectionConfig {
+            var config = new NetworkConfig {
                 Host = "127.0.0.1",
                 RemotePort = ServerPort,
                 ConnectTimeout = 5000,
@@ -115,7 +115,7 @@ public class FluentRtuOverTcpServerTests(ITestOutputHelper output) : IDisposable
                 SendTimeout = 5000
             };
 
-            ModbusLibClient client = ModbusClientFactory.CreateRtuOverTcpClient(config);
+            ModbusLibClient client = new ModbusRtuOverTcpClient(config);
             output.WriteLine("ModbusLib RTU over TCP客户端已创建");
 
             var isConnected = await client.ConnectAsync();
@@ -192,14 +192,14 @@ public class FluentRtuOverTcpServerTests(ITestOutputHelper output) : IDisposable
             // 启动FluentModbus服务器
             StartFluentModbusServer();
 
-            var config = new NetworkConnectionConfig {
+            var config = new NetworkConfig {
                 Host = "127.0.0.1",
                 RemotePort = ServerPort,
                 ConnectTimeout = 5000,
                 ReceiveTimeout = 5000,
                 SendTimeout = 5000
             };
-            ModbusLibClient client = ModbusClientFactory.CreateRtuOverTcpClient(config);
+            ModbusLibClient client = new ModbusRtuOverTcpClient(config);
             var isConnected = await client.ConnectAsync();
             Assert.True(isConnected, "客户端连接失败");
 
@@ -274,7 +274,7 @@ public class FluentRtuOverTcpServerTests(ITestOutputHelper output) : IDisposable
             output.WriteLine($"FluentModbus服务器已启动，端口: {ServerPort}");
 
             // 使用我们自己的RTU over TCP客户端连接到服务器
-            var config = new NetworkConnectionConfig {
+            var config = new NetworkConfig {
                 Host = "127.0.0.1",
                 RemotePort = ServerPort,
                 ConnectTimeout = 5000,
@@ -282,7 +282,7 @@ public class FluentRtuOverTcpServerTests(ITestOutputHelper output) : IDisposable
                 SendTimeout = 5000
             };
 
-            ModbusLibClient client = ModbusClientFactory.CreateRtuOverTcpClient(config);
+            ModbusLibClient client = new ModbusRtuOverTcpClient(config);
             output.WriteLine("ModbusLib RTU over TCP客户端已创建");
 
             var isConnected = await client.ConnectAsync();

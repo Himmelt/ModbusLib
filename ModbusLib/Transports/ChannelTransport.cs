@@ -1,19 +1,20 @@
 using ModbusLib.Exceptions;
 using ModbusLib.Interfaces;
+using ModbusLib.Models;
 using System.Threading.Channels;
 
 namespace ModbusLib.Transports;
 
-public class ChannelTransport(ChannelSession session, int timeout = 5000) : IModbusTransport {
+public class ChannelTransport(ChannelSession session) : IModbusTransport {
 
     private bool _disposed;
     private readonly SemaphoreSlim _semaphore = new(1, 1);
-    private readonly ChannelSession _session = session ?? throw new ArgumentNullException(nameof(session));
+    private readonly ChannelSession _session = session;
 
-    public int Timeout { get; set; } = timeout;
-    public bool IsConnected => !_disposed && _session != null;
+    public int Timeout { get; set; } = 2000;
+    public bool IsConnected => !_disposed;
 
-    public Task<bool> ConnectAsync(CancellationToken cancellationToken = default) {
+    public Task<bool> ConnectAsync(CancellationToken cancelToken = default) {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         if (!IsConnected) {
@@ -23,17 +24,17 @@ public class ChannelTransport(ChannelSession session, int timeout = 5000) : IMod
         return Task.FromResult(true);
     }
 
-    public Task DisconnectAsync(CancellationToken cancellationToken = default) {
+    public Task DisconnectAsync(CancellationToken cancelToken = default) {
         if (_disposed) return Task.CompletedTask;
         return Task.CompletedTask;
     }
 
-    public async Task<byte[]> SendReceiveAsync(byte[] request, CancellationToken cancellationToken = default) {
+    public async Task<byte[]> SendReceiveAsync(byte[] request, CancellationToken cancelToken = default) {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         if (!IsConnected) throw new ModbusConnectionException("Channel 不可用");
 
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
         if (Timeout >= 0) {
             cts.CancelAfter(Timeout);
         }
@@ -53,21 +54,21 @@ public class ChannelTransport(ChannelSession session, int timeout = 5000) : IMod
         }
     }
 
-    private async Task<byte[]> ReceiveResponseAsync(CancellationToken cancellationToken) {
-        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+    private async Task<byte[]> ReceiveResponseAsync(CancellationToken cancelToken) {
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
         if (Timeout >= 0) {
             timeoutCts.CancelAfter(Timeout);
         }
 
         try {
             var response = await _session.ServerToClient.Reader.ReadAsync(timeoutCts.Token).ConfigureAwait(false);
-            
+
             if (response.Length == 0) {
                 throw new ModbusTimeoutException("Channel接收超时，未收到响应数据");
             }
 
             return response;
-        } catch (OperationCanceledException) when (timeoutCts.Token.IsCancellationRequested && !cancellationToken.IsCancellationRequested) {
+        } catch (OperationCanceledException) when (timeoutCts.Token.IsCancellationRequested && !cancelToken.IsCancellationRequested) {
             throw new ModbusTimeoutException("Channel接收超时，未收到响应数据");
         }
     }

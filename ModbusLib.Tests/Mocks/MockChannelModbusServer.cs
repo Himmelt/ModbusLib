@@ -1,5 +1,5 @@
 using ModbusLib.Enums;
-using ModbusLib.Transports;
+using ModbusLib.Models;
 
 namespace ModbusLib.Tests.Mocks;
 

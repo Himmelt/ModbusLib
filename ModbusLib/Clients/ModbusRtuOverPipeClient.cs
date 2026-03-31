@@ -5,7 +5,7 @@ using ModbusLib.Transports;
 
 namespace ModbusLib.Clients;
 
-public class ModbusPipeClient(PipeSession session) : ModbusClientBase {
-    protected override IModbusProtocol Protocol { get; set; } = new TcpProtocol();
+public class ModbusRtuOverPipeClient(PipeSession session) : ModbusClientBase {
+    protected override IModbusProtocol Protocol { get; set; } = new RtuProtocol();
     protected override IModbusTransport Transport { get; set; } = new PipeTransport(session);
 }

@@ -20,7 +20,7 @@ public class ModbusChannelClientIntegrationTests : IDisposable {
 
     private IModbusClient CreateClient(MockChannelModbusServer server) {
         var session = server.Session;
-        return new ModbusChannelClient(session, new ModbusLib.Protocols.TcpProtocol(), 5000);
+        return new ModbusChannelClient(session);
     }
 
     public void Dispose() {
@@ -122,7 +122,7 @@ public class ModbusChannelClientIntegrationTests : IDisposable {
     [Fact]
     public async Task ModbusChannelClient_CreateTcpClient_Works() {
         _server = CreateServer();
-        _client = ModbusChannelClient.CreateTcpClient(_server.Session, 5000);
+        _client = new ModbusChannelClient(_server.Session);
 
         await _client.ConnectAsync();
         Assert.True(_client.IsConnected);
@@ -134,7 +134,7 @@ public class ModbusChannelClientIntegrationTests : IDisposable {
     [Fact]
     public async Task ModbusChannelClient_CreateRtuClient_Works() {
         _server = CreateServer();
-        _client = ModbusChannelClient.CreateRtuClient(_server.Session, 5000);
+        _client = new ModbusChannelClient(_server.Session);
 
         await _client.ConnectAsync();
         Assert.True(_client.IsConnected);

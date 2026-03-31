@@ -9,56 +9,45 @@ namespace ModbusLib.Clients;
 /// <summary>
 /// Modbus客户端基类
 /// </summary>
-public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtocol protocol) : IModbusClient {
+public abstract class ModbusClientBase : IModbusClient {
 
     private bool _disposed;
-    private readonly IModbusProtocol _protocol = protocol ?? throw new ArgumentNullException(nameof(protocol));
-    private readonly IModbusTransport _transport = transport ?? throw new ArgumentNullException(nameof(transport));
 
     /// <summary>
     /// 获取一个值，表示当前对象是否已被释放
     /// </summary>
     protected bool IsDisposed => _disposed;
 
+    public int Retries { get; set; }
+
+    public bool IsConnected => Transport.IsConnected;
     /// <summary>
     /// 获取Modbus协议实现
     /// </summary>
-    protected IModbusProtocol Protocol => _protocol;
+    protected abstract IModbusProtocol Protocol { get; set; }
 
     /// <summary>
     /// 获取Modbus传输实现
     /// </summary>
-    protected IModbusTransport Transport => _transport;
+    protected abstract IModbusTransport Transport { get; set; }
 
-    public int Timeout {
-        get => _transport.Timeout;
-        set => _transport.Timeout = value;
-    }
-
-    public int Retries { get; set; } = 3;
-
-    public bool IsConnected => Transport.IsConnected;
-
-    public virtual async Task<bool> ConnectAsync(CancellationToken cancellationToken = default) {
+    public virtual async Task<bool> ConnectAsync(CancellationToken cancelToken = default) {
         ObjectDisposedException.ThrowIf(_disposed, this);
-
-        return await _transport.ConnectAsync(cancellationToken).ConfigureAwait(false);
+        return await Transport.ConnectAsync(cancelToken).ConfigureAwait(false);
     }
 
-    public virtual async Task DisconnectAsync(CancellationToken cancellationToken = default) {
-        if (_disposed)
-            return;
-
-        await _transport.DisconnectAsync(cancellationToken).ConfigureAwait(false);
+    public virtual async Task DisconnectAsync(CancellationToken cancelToken = default) {
+        if (_disposed) return;
+        await Transport.DisconnectAsync(cancelToken).ConfigureAwait(false);
     }
 
     #region 读取功能
 
-    public async Task<bool[]> ReadCoilsAsync(byte unitId, ushort startAddress, ushort quantity, CancellationToken cancellationToken = default) {
+    public async Task<bool[]> ReadCoilsAsync(byte unitId, ushort startAddress, ushort quantity, CancellationToken cancelToken = default) {
         ValidateReadParameters(quantity, 2000);
 
         var request = new ModbusRequest(unitId, ModbusFunction.ReadCoils, startAddress, quantity);
-        var response = await ExecuteRequestAsync(request, cancellationToken).ConfigureAwait(false);
+        var response = await ExecuteRequestAsync(request, cancelToken).ConfigureAwait(false);
 
         if (response.IsError)
             throw new ModbusException(response.ExceptionCode!.Value, unitId, ModbusFunction.ReadCoils);
@@ -76,11 +65,11 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
         return DataConverter.ByteArrayToBoolArray(dataBytes, quantity);
     }
 
-    public async Task<bool[]> ReadDiscreteInputsAsync(byte unitId, ushort startAddress, ushort quantity, CancellationToken cancellationToken = default) {
+    public async Task<bool[]> ReadDiscreteInputsAsync(byte unitId, ushort startAddress, ushort quantity, CancellationToken cancelToken = default) {
         ValidateReadParameters(quantity, 2000);
 
         var request = new ModbusRequest(unitId, ModbusFunction.ReadDiscreteInputs, startAddress, quantity);
-        var response = await ExecuteRequestAsync(request, cancellationToken).ConfigureAwait(false);
+        var response = await ExecuteRequestAsync(request, cancelToken).ConfigureAwait(false);
 
         if (response.IsError)
             throw new ModbusException(response.ExceptionCode!.Value, unitId, ModbusFunction.ReadDiscreteInputs);
@@ -98,16 +87,16 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
         return DataConverter.ByteArrayToBoolArray(dataBytes, quantity);
     }
 
-    public async Task<ushort[]> ReadHoldingRegistersAsync(byte unitId, ushort startAddress, ushort quantity, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) {
-        var dataBytes = await ReadHoldingRegistersRawAsync(unitId, startAddress, quantity, cancellationToken).ConfigureAwait(false);
+    public async Task<ushort[]> ReadHoldingRegistersAsync(byte unitId, ushort startAddress, ushort quantity, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancelToken = default) {
+        var dataBytes = await ReadHoldingRegistersRawAsync(unitId, startAddress, quantity, cancelToken).ConfigureAwait(false);
         return DataConverter.Convert<ushort>(dataBytes, byteOrder, wordOrder);
     }
 
-    public async Task<byte[]> ReadHoldingRegistersRawAsync(byte unitId, ushort startAddress, ushort quantity, CancellationToken cancellationToken = default) {
+    public async Task<byte[]> ReadHoldingRegistersRawAsync(byte unitId, ushort startAddress, ushort quantity, CancellationToken cancelToken = default) {
         ValidateReadParameters(quantity, 125);
 
         var request = new ModbusRequest(unitId, ModbusFunction.ReadHoldingRegisters, startAddress, quantity);
-        var response = await ExecuteRequestAsync(request, cancellationToken).ConfigureAwait(false);
+        var response = await ExecuteRequestAsync(request, cancelToken).ConfigureAwait(false);
 
         if (response.IsError) {
             throw new ModbusException(response.ExceptionCode!.Value, unitId, ModbusFunction.ReadHoldingRegisters);
@@ -128,16 +117,16 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
         return dataBytes;
     }
 
-    public async Task<ushort[]> ReadInputRegistersAsync(byte unitId, ushort startAddress, ushort quantity, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) {
-        var dataBytes = await ReadInputRegistersRawAsync(unitId, startAddress, quantity, cancellationToken).ConfigureAwait(false);
+    public async Task<ushort[]> ReadInputRegistersAsync(byte unitId, ushort startAddress, ushort quantity, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancelToken = default) {
+        var dataBytes = await ReadInputRegistersRawAsync(unitId, startAddress, quantity, cancelToken).ConfigureAwait(false);
         return DataConverter.Convert<ushort>(dataBytes, byteOrder, wordOrder);
     }
 
-    public async Task<byte[]> ReadInputRegistersRawAsync(byte unitId, ushort startAddress, ushort quantity, CancellationToken cancellationToken = default) {
+    public async Task<byte[]> ReadInputRegistersRawAsync(byte unitId, ushort startAddress, ushort quantity, CancellationToken cancelToken = default) {
         ValidateReadParameters(quantity, 125);
 
         var request = new ModbusRequest(unitId, ModbusFunction.ReadInputRegisters, startAddress, quantity);
-        var response = await ExecuteRequestAsync(request, cancellationToken).ConfigureAwait(false);
+        var response = await ExecuteRequestAsync(request, cancelToken).ConfigureAwait(false);
 
         if (response.IsError) {
             throw new ModbusException(response.ExceptionCode!.Value, unitId, ModbusFunction.ReadInputRegisters);
@@ -162,13 +151,13 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
 
     #region 泛型读取功能
 
-    public async Task<T[]> ReadHoldingRegistersAsync<T>(byte unitId, ushort startAddress, ushort count, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) where T : unmanaged {
+    public async Task<T[]> ReadHoldingRegistersAsync<T>(byte unitId, ushort startAddress, ushort count, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancelToken = default) where T : unmanaged {
         if (count == 0) throw new ArgumentException("元素数量不能为 0", nameof(count));
 
         var registerCount = (ushort)DataConverter.GetTotalRegisterCount<T>(count);
         ValidateReadParameters(registerCount, 125);
 
-        var rawBytes = await ReadHoldingRegistersRawAsync(unitId, startAddress, registerCount, cancellationToken).ConfigureAwait(false);
+        var rawBytes = await ReadHoldingRegistersRawAsync(unitId, startAddress, registerCount, cancelToken).ConfigureAwait(false);
         // 验证rawBytes长度是否匹配
         if (rawBytes.Length < registerCount * 2) {
             throw new ModbusCommunicationException($"响应数据长度 {rawBytes.Length} 不满足转换 {count} 个目标数据类型 {typeof(T)}");
@@ -177,13 +166,13 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
         return DataConverter.Convert<T>(rawBytes, byteOrder, wordOrder);
     }
 
-    public async Task<T[]> ReadInputRegistersAsync<T>(byte unitId, ushort startAddress, ushort count, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) where T : unmanaged {
+    public async Task<T[]> ReadInputRegistersAsync<T>(byte unitId, ushort startAddress, ushort count, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancelToken = default) where T : unmanaged {
         if (count == 0) throw new ArgumentException("元素数量不能为 0", nameof(count));
 
         var registerCount = (ushort)DataConverter.GetTotalRegisterCount<T>(count);
         ValidateReadParameters(registerCount, 125);
 
-        var rawBytes = await ReadInputRegistersRawAsync(unitId, startAddress, registerCount, cancellationToken).ConfigureAwait(false);
+        var rawBytes = await ReadInputRegistersRawAsync(unitId, startAddress, registerCount, cancelToken).ConfigureAwait(false);
         // 验证rawBytes长度是否匹配
         if (rawBytes.Length < registerCount * 2) {
             throw new ModbusCommunicationException($"响应数据长度 {rawBytes.Length} 不满足转换 {count} 个目标数据类型 {typeof(T)}");
@@ -196,16 +185,16 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
 
     #region 写入功能
 
-    public async Task WriteSingleCoilAsync(byte unitId, ushort address, bool value, CancellationToken cancellationToken = default) {
+    public async Task WriteSingleCoilAsync(byte unitId, ushort address, bool value, CancellationToken cancelToken = default) {
         var data = new byte[] { (byte)(value ? 1 : 0) };
         var request = new ModbusRequest(unitId, ModbusFunction.WriteSingleCoil, address, 1, data);
-        var response = await ExecuteRequestAsync(request, cancellationToken).ConfigureAwait(false);
+        var response = await ExecuteRequestAsync(request, cancelToken).ConfigureAwait(false);
 
         if (response.IsError)
             throw new ModbusException(response.ExceptionCode!.Value, unitId, ModbusFunction.WriteSingleCoil);
     }
 
-    public async Task WriteMultipleCoilsAsync(byte unitId, ushort startAddress, bool[] values, CancellationToken cancellationToken = default) {
+    public async Task WriteMultipleCoilsAsync(byte unitId, ushort startAddress, bool[] values, CancellationToken cancelToken = default) {
         if (values == null || values.Length == 0) {
             throw new ArgumentException("线圈值数组不能为空", nameof(values));
         }
@@ -216,34 +205,34 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
 
         var data = DataConverter.BoolArrayToByteArray(values);
         var request = new ModbusRequest(unitId, ModbusFunction.WriteMultipleCoils, startAddress, (ushort)values.Length, data);
-        var response = await ExecuteRequestAsync(request, cancellationToken).ConfigureAwait(false);
+        var response = await ExecuteRequestAsync(request, cancelToken).ConfigureAwait(false);
 
         if (response.IsError) {
             throw new ModbusException(response.ExceptionCode!.Value, unitId, ModbusFunction.WriteMultipleCoils);
         }
     }
 
-    public async Task WriteSingleRegisterAsync(byte unitId, ushort address, ushort value, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) {
+    public async Task WriteSingleRegisterAsync(byte unitId, ushort address, ushort value, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancelToken = default) {
         var data = DataConverter.Convert([value], byteOrder, wordOrder);
         var request = new ModbusRequest(unitId, ModbusFunction.WriteSingleRegister, address, 1, data);
-        var response = await ExecuteRequestAsync(request, cancellationToken).ConfigureAwait(false);
+        var response = await ExecuteRequestAsync(request, cancelToken).ConfigureAwait(false);
 
         if (response.IsError) {
             throw new ModbusException(response.ExceptionCode!.Value, unitId, ModbusFunction.WriteSingleRegister);
         }
     }
 
-    public async Task WriteSingleRegisterAsync(byte unitId, ushort address, short value, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) {
+    public async Task WriteSingleRegisterAsync(byte unitId, ushort address, short value, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancelToken = default) {
         var data = DataConverter.Convert([value], byteOrder, wordOrder);
         var request = new ModbusRequest(unitId, ModbusFunction.WriteSingleRegister, address, 1, data);
-        var response = await ExecuteRequestAsync(request, cancellationToken).ConfigureAwait(false);
+        var response = await ExecuteRequestAsync(request, cancelToken).ConfigureAwait(false);
 
         if (response.IsError) {
             throw new ModbusException(response.ExceptionCode!.Value, unitId, ModbusFunction.WriteSingleRegister);
         }
     }
 
-    public async Task WriteMultipleRegistersAsync(byte unitId, ushort startAddress, ushort[] values, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) {
+    public async Task WriteMultipleRegistersAsync(byte unitId, ushort startAddress, ushort[] values, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancelToken = default) {
         if (values == null || values.Length == 0) {
             throw new ArgumentException("寄存器值数组不能为空", nameof(values));
         }
@@ -254,14 +243,14 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
 
         var data = DataConverter.Convert(values, byteOrder, wordOrder);
         var request = new ModbusRequest(unitId, ModbusFunction.WriteMultipleRegisters, startAddress, (ushort)values.Length, data);
-        var response = await ExecuteRequestAsync(request, cancellationToken).ConfigureAwait(false);
+        var response = await ExecuteRequestAsync(request, cancelToken).ConfigureAwait(false);
 
         if (response.IsError) {
             throw new ModbusException(response.ExceptionCode!.Value, unitId, ModbusFunction.WriteMultipleRegisters);
         }
     }
 
-    public async Task WriteMultipleRegistersAsync(byte unitId, ushort startAddress, short[] values, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) {
+    public async Task WriteMultipleRegistersAsync(byte unitId, ushort startAddress, short[] values, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancelToken = default) {
         if (values == null || values.Length == 0) {
             throw new ArgumentException("寄存器值数组不能为空", nameof(values));
         }
@@ -272,14 +261,14 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
 
         var data = DataConverter.Convert(values, byteOrder, wordOrder);
         var request = new ModbusRequest(unitId, ModbusFunction.WriteMultipleRegisters, startAddress, (ushort)values.Length, data);
-        var response = await ExecuteRequestAsync(request, cancellationToken).ConfigureAwait(false);
+        var response = await ExecuteRequestAsync(request, cancelToken).ConfigureAwait(false);
 
         if (response.IsError) {
             throw new ModbusException(response.ExceptionCode!.Value, unitId, ModbusFunction.WriteMultipleRegisters);
         }
     }
 
-    public async Task WriteMultipleRegistersRawAsync(byte unitId, ushort startAddress, byte[] rawBytes, CancellationToken cancellationToken = default) {
+    public async Task WriteMultipleRegistersRawAsync(byte unitId, ushort startAddress, byte[] rawBytes, CancellationToken cancelToken = default) {
         if (rawBytes == null || rawBytes.Length == 0) {
             throw new ArgumentException("原始字节数组不能为空", nameof(rawBytes));
         }
@@ -289,7 +278,7 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
         }
 
         var request = new ModbusRequest(unitId, ModbusFunction.WriteMultipleRegisters, startAddress, (ushort)(rawBytes.Length / 2), rawBytes);
-        var response = await ExecuteRequestAsync(request, cancellationToken).ConfigureAwait(false);
+        var response = await ExecuteRequestAsync(request, cancelToken).ConfigureAwait(false);
 
         if (response.IsError) {
             throw new ModbusException(response.ExceptionCode!.Value, unitId, ModbusFunction.WriteMultipleRegisters);
@@ -300,7 +289,7 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
 
     #region 泛型写入功能
 
-    public async Task WriteMultipleRegistersAsync<T>(byte unitId, ushort startAddress, T value, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) where T : unmanaged {
+    public async Task WriteMultipleRegistersAsync<T>(byte unitId, ushort startAddress, T value, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancelToken = default) where T : unmanaged {
         var registerCount = DataConverter.GetRegisterCount<T>();
         if (registerCount > 4) {
             throw new ArgumentException($"写入所需寄存器数量({registerCount})不能超过4", nameof(value));
@@ -310,10 +299,10 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
         var rawBytes = DataConverter.Convert([value], byteOrder, wordOrder);
 
         // 调用原始写入方法
-        await WriteMultipleRegistersRawAsync(unitId, startAddress, rawBytes, cancellationToken).ConfigureAwait(false);
+        await WriteMultipleRegistersRawAsync(unitId, startAddress, rawBytes, cancelToken).ConfigureAwait(false);
     }
 
-    public async Task WriteMultipleRegistersAsync<T>(byte unitId, ushort startAddress, T[] values, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) where T : unmanaged {
+    public async Task WriteMultipleRegistersAsync<T>(byte unitId, ushort startAddress, T[] values, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancelToken = default) where T : unmanaged {
         if (values == null || values.Length == 0) {
             throw new ArgumentException("值数组不能为空", nameof(values));
         }
@@ -327,14 +316,14 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
         var rawBytes = DataConverter.Convert(values, byteOrder, wordOrder);
 
         // 调用原始写入方法
-        await WriteMultipleRegistersRawAsync(unitId, startAddress, rawBytes, cancellationToken).ConfigureAwait(false);
+        await WriteMultipleRegistersRawAsync(unitId, startAddress, rawBytes, cancelToken).ConfigureAwait(false);
     }
 
     #endregion
 
     #region 高级功能
 
-    public async Task<ushort[]> ReadWriteMultipleRegistersAsync(byte unitId, ushort readStartAddress, ushort readQuantity, ushort writeStartAddress, ushort[] writeValues, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancellationToken = default) {
+    public async Task<ushort[]> ReadWriteMultipleRegistersAsync(byte unitId, ushort readStartAddress, ushort readQuantity, ushort writeStartAddress, ushort[] writeValues, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancelToken = default) {
         ValidateReadParameters(readQuantity, 125);
 
         if (writeValues == null || writeValues.Length == 0) {
@@ -358,7 +347,7 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
         Array.Copy(writeData, 0, requestData, 4, writeData.Length);
 
         var request = new ModbusRequest(unitId, ModbusFunction.ReadWriteMultipleRegisters, readStartAddress, readQuantity, requestData);
-        var response = await ExecuteRequestAsync(request, cancellationToken).ConfigureAwait(false);
+        var response = await ExecuteRequestAsync(request, cancelToken).ConfigureAwait(false);
 
         if (response.IsError) {
             throw new ModbusException(response.ExceptionCode!.Value, unitId, ModbusFunction.ReadWriteMultipleRegisters);
@@ -487,7 +476,7 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
 
     #endregion
 
-    protected async Task<ModbusResponse> ExecuteRequestAsync(ModbusRequest request, CancellationToken cancellationToken) {
+    protected async Task<ModbusResponse> ExecuteRequestAsync(ModbusRequest request, CancellationToken cancelToken) {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         if (!IsConnected) throw new ModbusConnectionException("客户端未连接");
@@ -496,22 +485,22 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
 
         for (int attempt = 0; attempt <= Retries; attempt++) {
             // 检查取消令牌
-            cancellationToken.ThrowIfCancelRequestCN();
+            cancelToken.ThrowIfCancelRequestCN();
 
             try {
-                var requestBytes = _protocol.BuildRequest(request);
-                var responseBytes = await _transport.SendReceiveAsync(requestBytes, cancellationToken).ConfigureAwait(false);
+                var requestBytes = Protocol.BuildRequest(request);
+                var responseBytes = await Transport.SendReceiveAsync(requestBytes, cancelToken).ConfigureAwait(false);
 
-                if (!_protocol.ValidateResponse(responseBytes)) {
+                if (!Protocol.ValidateResponse(responseBytes)) {
                     throw new ModbusCommunicationException($"响应数据验证失败: 响应长度 = {responseBytes?.Length ?? 0}");
                 }
 
-                return _protocol.ParseResponse(responseBytes, request);
+                return Protocol.ParseResponse(responseBytes, request);
             } catch (Exception ex) when (attempt < Retries && IsRetryableException(ex)) {
                 lastException = ex;
                 // 在重试前检查取消令牌
-                cancellationToken.ThrowIfCancelRequestCN();
-                await Task.Delay(100 * (attempt + 1), cancellationToken).ConfigureAwait(false); // 递增延迟
+                cancelToken.ThrowIfCancelRequestCN();
+                await Task.Delay(100 * (attempt + 1), cancelToken).ConfigureAwait(false); // 递增延迟
             }
         }
 
@@ -542,7 +531,7 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
         _disposed = true;
 
         if (disposing) {
-            _transport?.Dispose();
+            Transport?.Dispose();
         }
     }
 
@@ -558,7 +547,7 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
 
         _disposed = true;
 
-        if (_transport != null) {
+        if (Transport != null) {
             try {
                 await DisconnectAsync().ConfigureAwait(false);
             } catch {
@@ -566,10 +555,10 @@ public abstract class ModbusClientBase(IModbusTransport transport, IModbusProtoc
             }
 
             // 优先使用异步释放，回退到同步释放
-            if (_transport is IAsyncDisposable asyncDisposableTransport) {
+            if (Transport is IAsyncDisposable asyncDisposableTransport) {
                 await asyncDisposableTransport.DisposeAsync().ConfigureAwait(false);
             } else {
-                _transport.Dispose();
+                Transport.Dispose();
             }
         }
     }
