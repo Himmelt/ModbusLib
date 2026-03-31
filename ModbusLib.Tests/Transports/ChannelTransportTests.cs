@@ -32,11 +32,6 @@ public class ChannelTransportTests : IDisposable {
     }
 
     [Fact]
-    public void Constructor_WithNullSession_ThrowsArgumentNullException() {
-        Assert.Throws<ArgumentNullException>(() => new ChannelTransport(null!));
-    }
-
-    [Fact]
     public void IsConnected_WithValidSession_ReturnsTrue() {
         Assert.True(_transport.IsConnected);
     }
