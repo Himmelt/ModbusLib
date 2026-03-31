@@ -119,11 +119,10 @@ public class SerialTransport(SerialConfig config) : IModbusTransport {
                     lastReceiveTime = DateTime.UtcNow;
                 } else {
                     // 检查字符间隔超时
-                    if (responseList.Count > 0 &&
+                    if (_config.InterCharTimeout > 0 && responseList.Count > 0 &&
                         DateTime.UtcNow - lastReceiveTime > TimeSpan.FromMilliseconds(_config.InterCharTimeout)) {
                         break;
                     }
-
                     await Task.Delay(1, cancelToken).ConfigureAwait(false);
                 }
             }
