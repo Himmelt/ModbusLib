@@ -127,8 +127,7 @@ public class SerialTransport(SerialConfig config) : IModbusTransport {
                 }
             }
 
-            if (responseList.Count == 0)
-                throw new ModbusTimeoutException("未收到响应数据，操作已取消");
+            if (responseList.Count == 0) throw new ModbusTimeoutException("未收到响应数据，操作已取消");
 
             return [.. responseList];
         } finally {
