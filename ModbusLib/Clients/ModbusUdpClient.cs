@@ -1,16 +1,16 @@
+using ModbusLib.Enums;
 using ModbusLib.Interfaces;
 using ModbusLib.Models;
-using ModbusLib.Protocols;
 using ModbusLib.Transports;
 
 namespace ModbusLib.Clients;
 
-public class ModbusUdpClient(NetworkConfig config) : ModbusClientBase {
+public class ModbusUdpClient(NetworkConfig config, ProtocolType protocol = ProtocolType.Tcp) : ModbusClientBase {
 
     public NetworkConfig NetworkConfig => config;
 
-    protected override IModbusProtocol Protocol { get; set; } = new TcpProtocol();
+    protected override IModbusProtocol Protocol { get; set; } = protocol.GetProtocol();
     protected override IModbusTransport Transport { get; set; } = new UdpTransport(config);
 
-    public ModbusUdpClient(string host, int remotePort = 502) : this(new NetworkConfig { Host = host, RemotePort = remotePort }) { }
+    public ModbusUdpClient(string host, int remotePort = 502, ProtocolType protocol = ProtocolType.Tcp) : this(new NetworkConfig { Host = host, RemotePort = remotePort }, protocol) { }
 }

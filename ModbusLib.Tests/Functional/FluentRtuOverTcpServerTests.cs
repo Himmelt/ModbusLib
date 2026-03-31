@@ -1,4 +1,5 @@
 using ModbusLib.Clients;
+using ModbusLib.Enums;
 using ModbusLib.Models;
 using ModbusLib.Tests.FluentServer;
 using System.Net;
@@ -30,7 +31,7 @@ public class FluentRtuOverTcpServerTests(ITestOutputHelper output) : IDisposable
                 SendTimeout = 5000
             };
 
-            ModbusLibClient client = new ModbusRtuOverTcpClient(config);
+            ModbusLibClient client = new ModbusTcpClient(config, ProtocolType.Rtu);
             output.WriteLine("ModbusLib RTU over TCP客户端已创建");
 
             var isConnected = await client.ConnectAsync();
@@ -115,7 +116,7 @@ public class FluentRtuOverTcpServerTests(ITestOutputHelper output) : IDisposable
                 SendTimeout = 5000
             };
 
-            ModbusLibClient client = new ModbusRtuOverTcpClient(config);
+            ModbusLibClient client = new ModbusTcpClient(config, ProtocolType.Rtu);
             output.WriteLine("ModbusLib RTU over TCP客户端已创建");
 
             var isConnected = await client.ConnectAsync();
@@ -199,7 +200,7 @@ public class FluentRtuOverTcpServerTests(ITestOutputHelper output) : IDisposable
                 ReceiveTimeout = 5000,
                 SendTimeout = 5000
             };
-            ModbusLibClient client = new ModbusRtuOverTcpClient(config);
+            ModbusLibClient client = new ModbusTcpClient(config, ProtocolType.Rtu);
             var isConnected = await client.ConnectAsync();
             Assert.True(isConnected, "客户端连接失败");
 
@@ -282,7 +283,7 @@ public class FluentRtuOverTcpServerTests(ITestOutputHelper output) : IDisposable
                 SendTimeout = 5000
             };
 
-            ModbusLibClient client = new ModbusRtuOverTcpClient(config);
+            ModbusLibClient client = new ModbusTcpClient(config, ProtocolType.Rtu);
             output.WriteLine("ModbusLib RTU over TCP客户端已创建");
 
             var isConnected = await client.ConnectAsync();

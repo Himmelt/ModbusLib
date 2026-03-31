@@ -1,4 +1,5 @@
 using ModbusLib.Clients;
+using ModbusLib.Enums;
 using ModbusLib.Models;
 
 namespace ModbusLib.Tests.Clients;
@@ -35,7 +36,7 @@ public class ModbusChannelClientTests : IDisposable {
     [Fact]
     public void CreateRtuClient_WithValidSession_CreatesClient() {
         var session = new ChannelSession();
-        using var client = new ModbusRtuOverChannelClient(session);
+        using var client = new ModbusChannelClient(session, ProtocolType.Rtu);
 
         Assert.NotNull(client);
         Assert.True(client.IsConnected);

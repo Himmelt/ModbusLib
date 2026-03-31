@@ -5,7 +5,7 @@ root = true
 [*.cs]
 
 # IDE0130: 命名空间与文件夹结构不匹配
-# dotnet_diagnostic.IDE0130.severity = none
+dotnet_diagnostic.IDE0130.severity = warning
 
 # CA1816: Dispose 方法应调用 SuppressFinalize
 dotnet_diagnostic.CA1816.severity = warning
@@ -18,9 +18,6 @@ dotnet_diagnostic.CA1513.severity = warning
 
 # IDE0056: 使用索引运算符
 dotnet_diagnostic.IDE0056.severity = warning
-
-# CA1031: 不捕获常规异常类型
-dotnet_diagnostic.CA1031.severity = none
 
 # IDE0305: 简化集合初始化
 dotnet_diagnostic.IDE0305.severity = warning

@@ -1,4 +1,5 @@
 using ModbusLib.Clients;
+using ModbusLib.Enums;
 using ModbusLib.Models;
 
 namespace ModbusLib.Tests.Clients;
@@ -35,7 +36,7 @@ public class ModbusPipeClientTests : IDisposable {
     [Fact]
     public void CreateRtuClient_WithValidPipes_CreatesClient() {
         PipeSession _session = new PipeSession();
-        using var client = new ModbusRtuOverPipeClient(_session);
+        using var client = new ModbusPipeClient(_session, ProtocolType.Rtu);
 
         Assert.NotNull(client);
         Assert.True(client.IsConnected);
