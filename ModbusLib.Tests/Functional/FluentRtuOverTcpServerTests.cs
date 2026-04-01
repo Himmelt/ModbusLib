@@ -24,7 +24,7 @@ public class FluentRtuOverTcpServerTests(ITestOutputHelper output) : IDisposable
 
             // 使用我们自己的RTU over TCP客户端连接到服务器
             var config = new NetworkConfig {
-                Host = "127.0.0.1",
+                RemoteHost = "127.0.0.1",
                 RemotePort = ServerPort,
                 ConnectTimeout = 5000,
                 ReceiveTimeout = 5000,
@@ -109,7 +109,7 @@ public class FluentRtuOverTcpServerTests(ITestOutputHelper output) : IDisposable
 
             // 使用我们自己的RTU over TCP客户端连接到服务器
             var config = new NetworkConfig {
-                Host = "127.0.0.1",
+                RemoteHost = "127.0.0.1",
                 RemotePort = ServerPort,
                 ConnectTimeout = 5000,
                 ReceiveTimeout = 5000,
@@ -194,7 +194,7 @@ public class FluentRtuOverTcpServerTests(ITestOutputHelper output) : IDisposable
             StartFluentModbusServer();
 
             var config = new NetworkConfig {
-                Host = "127.0.0.1",
+                RemoteHost = "127.0.0.1",
                 RemotePort = ServerPort,
                 ConnectTimeout = 5000,
                 ReceiveTimeout = 5000,
@@ -276,7 +276,7 @@ public class FluentRtuOverTcpServerTests(ITestOutputHelper output) : IDisposable
 
             // 使用我们自己的RTU over TCP客户端连接到服务器
             var config = new NetworkConfig {
-                Host = "127.0.0.1",
+                RemoteHost = "127.0.0.1",
                 RemotePort = ServerPort,
                 ConnectTimeout = 5000,
                 ReceiveTimeout = 5000,

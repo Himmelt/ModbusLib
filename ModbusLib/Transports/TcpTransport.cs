@@ -10,44 +10,39 @@ namespace ModbusLib.Transports;
 /// <summary>
 /// TCP传输实现
 /// </summary>
-public class TcpTransport(NetworkConfig config) : IModbusTransport {
+public sealed class TcpTransport(NetworkConfig config) : IModbusTransport {
+
+    private bool _disposed;
     private TcpClient? _tcpClient;
     private NetworkStream? _stream;
-    private readonly NetworkConfig _config = config ?? throw new ArgumentNullException(nameof(config));
-    private readonly SemaphoreSlim _semaphore = new(1, 1);
-    private bool _disposed;
+    private readonly SemaphoreSlim _lock = new(1, 1);
 
     public int Timeout { get; set; } = -1;
-
     public bool IsConnected => _tcpClient?.Connected == true && _stream != null;
 
     public async Task<bool> ConnectAsync(CancellationToken cancelToken = default) {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        await _semaphore.WaitAsync(cancelToken).ConfigureAwait(false);
+        await _lock.WaitAsync(cancelToken).ConfigureAwait(false);
         try {
             if (IsConnected) return true;
 
             await DisconnectInternalAsync().ConfigureAwait(false);
 
-            // 如果指定了本地端口，则绑定到该端口
-            if (_config.LocalPort.HasValue) {
-                _tcpClient = new TcpClient(new IPEndPoint(IPAddress.Any, _config.LocalPort.Value));
-            } else {
-                _tcpClient = new TcpClient();
-            }
-
-            // 配置TCP选项
-            _tcpClient.ReceiveTimeout = _config.ReceiveTimeout;
-            _tcpClient.SendTimeout = _config.SendTimeout;
-            _tcpClient.ReceiveBufferSize = _config.ReceiveBufferSize;
-            _tcpClient.SendBufferSize = _config.SendBufferSize;
+            var localIP = string.IsNullOrWhiteSpace(config.LocalHost) ? IPAddress.Any : IPAddress.Parse(config.LocalHost);
+            var localPort = config.LocalPort ?? 0;
+            _tcpClient = new TcpClient(new IPEndPoint(localIP, localPort)) {
+                ReceiveTimeout = config.ReceiveTimeout,
+                SendTimeout = config.SendTimeout,
+                ReceiveBufferSize = config.ReceiveBufferSize,
+                SendBufferSize = config.SendBufferSize
+            };
 
             // 连接到服务器
-            using var connectCts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
-            connectCts.CancelAfter(_config.ConnectTimeout);
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
+            cts.CancelAfter(config.ConnectTimeout);
 
-            await _tcpClient.ConnectAsync(_config.Host, _config.RemotePort, connectCts.Token).ConfigureAwait(false);
+            await _tcpClient.ConnectAsync(config.RemoteHost, config.RemotePort, cts.Token).ConfigureAwait(false);
 
             // 配置Socket选项
             if (_tcpClient.Client != null) {
@@ -56,27 +51,26 @@ public class TcpTransport(NetworkConfig config) : IModbusTransport {
             }
 
             _stream = _tcpClient.GetStream();
-            _stream.ReadTimeout = _config.ReceiveTimeout;
-            _stream.WriteTimeout = _config.SendTimeout;
+            _stream.ReadTimeout = config.ReceiveTimeout;
+            _stream.WriteTimeout = config.SendTimeout;
 
             return true;
         } catch (Exception ex) {
             await DisconnectInternalAsync().ConfigureAwait(false);
-            throw new ModbusConnectionException($"TCP连接失败: {ex.Message}", ex);
+            throw new ModbusConnectionException($"TCP 连接失败: {ex.Message}", ex);
         } finally {
-            _semaphore.Release();
+            _lock.Release();
         }
     }
 
     public async Task DisconnectAsync(CancellationToken cancelToken = default) {
-        if (_disposed)
-            return;
+        if (_disposed) return;
 
-        await _semaphore.WaitAsync(cancelToken).ConfigureAwait(false);
+        await _lock.WaitAsync(cancelToken).ConfigureAwait(false);
         try {
             await DisconnectInternalAsync().ConfigureAwait(false);
         } finally {
-            _semaphore.Release();
+            _lock.Release();
         }
     }
 
@@ -88,26 +82,20 @@ public class TcpTransport(NetworkConfig config) : IModbusTransport {
                 _stream = null;
             }
 
-            if (_tcpClient != null) {
-                _tcpClient.Close();
-                _tcpClient = null;
-            }
-        } catch {
-            // 忽略断开连接时的异常
-        }
+            _tcpClient?.Close();
+            _tcpClient = null;
+        } catch (Exception ex) when (ex is SocketException || ex is ObjectDisposedException) { }
     }
 
     public async Task<byte[]> SendReceiveAsync(byte[] request, CancellationToken cancelToken = default) {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        ArgumentNullException.ThrowIfNull(request, nameof(request));
+        if (!IsConnected) throw new ModbusConnectionException("TCP 连接未建立");
 
-        if (!IsConnected)
-            throw new ModbusConnectionException("TCP连接未建立");
-
-        // 使用超时取消令牌
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
         cts.CancelAfter(Timeout);
 
-        await _semaphore.WaitAsync(cts.Token).ConfigureAwait(false);
+        await _lock.WaitAsync(cts.Token).ConfigureAwait(false);
         try {
             var stream = _stream!;
 
@@ -116,40 +104,33 @@ public class TcpTransport(NetworkConfig config) : IModbusTransport {
             await stream.FlushAsync(cts.Token).ConfigureAwait(false);
 
             // 接收响应
-            var response = await ReceiveResponseAsync(stream, cts.Token).ConfigureAwait(false);
-            return response;
-        } catch (Exception ex) when (ex is SocketException || ex is IOException) {
-            await DisconnectInternalAsync().ConfigureAwait(false);
-            throw new ModbusCommunicationException($"TCP [{_config.Host}:{_config.RemotePort}] 通信异常: {ex.Message}", ex);
-        } catch (OperationCanceledException) when (cts.Token.IsCancellationRequested) {
-            throw new ModbusTimeoutException($"TCP [{_config.Host}:{_config.RemotePort}] 通信超时，操作已取消");
+            return await ReceiveResponseAsync(cts.Token).ConfigureAwait(false);
         } catch (TimeoutException) {
-            throw new ModbusTimeoutException($"TCP [{_config.Host}:{_config.RemotePort}] 通信超时");
+            throw new ModbusTimeoutException($"TCP [{config.RemoteHost}:{config.RemotePort}] 通信超时");
+        } catch (OperationCanceledException) when (cts.Token.IsCancellationRequested && !cancelToken.IsCancellationRequested) {
+            throw new ModbusTimeoutException($"TCP [{config.RemoteHost}:{config.RemotePort}] 通信超时，操作已取消");
+        } catch (Exception ex) {
+            throw new ModbusCommunicationException($"TCP [{config.RemoteHost}:{config.RemotePort}] 通信异常: {ex.Message}", ex);
         } finally {
-            if (_semaphore.CurrentCount == 0) {  // 防止重复释放
-                _semaphore.Release();
-            }
+            _lock.Release();
         }
     }
 
-    private async Task<byte[]> ReceiveResponseAsync(NetworkStream stream, CancellationToken cancelToken) {
+    private async Task<byte[]> ReceiveResponseAsync(CancellationToken cancelToken) {
         // 创建一个足够大的缓冲区来接收数据
-        // 对于大多数Modbus响应来说，512字节已经足够
-        var buffer = ArrayPool<byte>.Shared.Rent(512);
+        var buffer = ArrayPool<byte>.Shared.Rent(1024);
 
         try {
-            // 读取响应数据
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
-            cts.CancelAfter(Timeout);
+            var stream = _stream!;
 
-            var totalBytesRead = 0;
             var bytesRead = 0;
+            var totalBytesRead = 0;
 
             // 先读取前几个字节来确定响应长度
-            while (totalBytesRead < 6 && !cts.Token.IsCancellationRequested) {
-                bytesRead = await stream.ReadAsync(buffer.AsMemory(totalBytesRead, 6 - totalBytesRead), cts.Token).ConfigureAwait(false);
+            while (totalBytesRead < 6 && !cancelToken.IsCancellationRequested) {
+                bytesRead = await stream.ReadAsync(buffer.AsMemory(totalBytesRead, 6 - totalBytesRead), cancelToken).ConfigureAwait(false);
                 if (bytesRead == 0) {
-                    throw new ModbusCommunicationException("连接意外关闭");
+                    throw new ModbusCommunicationException($"TCP [{config.RemoteHost}:{config.RemotePort}] 连接 意外关闭");
                 }
                 totalBytesRead += bytesRead;
             }
@@ -172,57 +153,34 @@ public class TcpTransport(NetworkConfig config) : IModbusTransport {
                 // 正常情况，表示没有更多数据
             }
 
+            if (totalBytesRead == 0) throw new ModbusTimeoutException($"TCP 接收超时，未收到响应数据");
+
             // 返回实际读取的数据
             var result = new byte[totalBytesRead];
             Array.Copy(buffer, 0, result, 0, totalBytesRead);
             return result;
-        } catch (OperationCanceledException) when (cancelToken.IsCancellationRequested) {
-            throw new ModbusTimeoutException("读取响应超时，操作已取消");
         } finally {
             ArrayPool<byte>.Shared.Return(buffer);
         }
     }
 
     public void Dispose() {
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
-    }
+        if (_disposed) return;
 
-    protected virtual void Dispose(bool disposing) {
-        if (_disposed)
-            return;
+        try {
+            DisconnectInternalAsync().Wait(1000);
+        } catch (Exception ex) when (ex is AggregateException || ex is ObjectDisposedException) { }
+        _lock?.Dispose();
 
         _disposed = true;
-
-        if (disposing) {
-            try {
-                DisconnectInternalAsync().Wait(1000);
-            } catch {
-                // 忽略释放时的异常
-            }
-
-            _semaphore?.Dispose();
-        }
     }
 
     public async ValueTask DisposeAsync() {
-        await DisposeAsyncCore().ConfigureAwait(false);
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
-    }
+        if (_disposed) return;
 
-    protected virtual async ValueTask DisposeAsyncCore() {
-        if (_disposed)
-            return;
+        await DisconnectAsync().ConfigureAwait(false);
+        _lock?.Dispose();
 
         _disposed = true;
-
-        try {
-            await DisconnectAsync().ConfigureAwait(false);
-        } catch {
-            // 忽略释放时的异常
-        }
-
-        _semaphore?.Dispose();
     }
 }

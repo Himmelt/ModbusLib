@@ -5,9 +5,9 @@ namespace ModbusLib.Models;
 /// </summary>
 public class NetworkConfig {
     /// <summary>
-    /// 主机地址（IP地址或域名）
+    /// 远程主机地址（IP地址或域名）
     /// </summary>
-    public string Host { get; set; } = "localhost";
+    public string RemoteHost { get; set; } = "localhost";
 
     /// <summary>
     /// 远程端口号

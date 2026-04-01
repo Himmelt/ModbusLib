@@ -9,49 +9,37 @@ namespace ModbusLib.Transports;
 /// <summary>
 /// UDP传输实现
 /// </summary>
-public class UdpTransport(NetworkConfig config) : IModbusTransport {
+public sealed class UdpTransport(NetworkConfig config) : IModbusTransport {
+
+    private bool _disposed;
     private UdpClient? _udpClient;
     private IPEndPoint? _remoteEndPoint;
-    private readonly NetworkConfig _config = config ?? throw new ArgumentNullException(nameof(config));
-    private readonly SemaphoreSlim _semaphore = new(1, 1);
-    private bool _disposed;
+    private readonly SemaphoreSlim _lock = new(1, 1);
 
     public int Timeout { get; set; } = -1;
-
     public bool IsConnected => _udpClient != null && _remoteEndPoint != null;
 
     public async Task<bool> ConnectAsync(CancellationToken cancelToken = default) {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        await _semaphore.WaitAsync(cancelToken).ConfigureAwait(false);
+        await _lock.WaitAsync(cancelToken).ConfigureAwait(false);
         try {
-            if (IsConnected)
-                return true;
+            if (IsConnected) return true;
 
             await DisconnectInternalAsync().ConfigureAwait(false);
 
-            // 解析主机地址
-            if (!IPAddress.TryParse(_config.Host, out IPAddress? ipAddress)) {
-                var hostEntry = await Dns.GetHostEntryAsync(_config.Host, cancelToken).ConfigureAwait(false);
-                ipAddress = hostEntry.AddressList.FirstOrDefault(addr => addr.AddressFamily == AddressFamily.InterNetwork);
-                if (ipAddress == null)
-                    throw new ModbusConnectionException($"无法解析主机地址: {_config.Host}");
-            }
+            // 解析远程主机地址
+            _remoteEndPoint = new IPEndPoint(IPAddress.Parse(config.RemoteHost), config.RemotePort);
 
-            _remoteEndPoint = new IPEndPoint(ipAddress, _config.RemotePort);
-
-            // 如果指定了本地端口，则绑定到该端口
-            if (_config.LocalPort.HasValue) {
-                _udpClient = new UdpClient(new IPEndPoint(IPAddress.Any, _config.LocalPort.Value));
-            } else {
-                _udpClient = new UdpClient();
-            }
+            var localIP = string.IsNullOrWhiteSpace(config.LocalHost) ? IPAddress.Any : IPAddress.Parse(config.LocalHost);
+            var localPort = config.LocalPort ?? 0;
+            _udpClient = new UdpClient(new IPEndPoint(localIP, localPort));
 
             // 配置UDP选项
-            _udpClient.Client.ReceiveTimeout = _config.ReceiveTimeout;
-            _udpClient.Client.SendTimeout = _config.SendTimeout;
-            _udpClient.Client.ReceiveBufferSize = _config.ReceiveBufferSize;
-            _udpClient.Client.SendBufferSize = _config.SendBufferSize;
+            _udpClient.Client.ReceiveTimeout = config.ReceiveTimeout;
+            _udpClient.Client.SendTimeout = config.SendTimeout;
+            _udpClient.Client.ReceiveBufferSize = config.ReceiveBufferSize;
+            _udpClient.Client.SendBufferSize = config.SendBufferSize;
 
             // UDP是无连接协议，这里只是配置远程端点
             _udpClient.Connect(_remoteEndPoint);
@@ -59,21 +47,20 @@ public class UdpTransport(NetworkConfig config) : IModbusTransport {
             return true;
         } catch (Exception ex) {
             await DisconnectInternalAsync().ConfigureAwait(false);
-            throw new ModbusConnectionException($"UDP连接配置失败: {ex.Message}", ex);
+            throw new ModbusConnectionException($"UDP 连接失败: {ex.Message}", ex);
         } finally {
-            _semaphore.Release();
+            _lock.Release();
         }
     }
 
     public async Task DisconnectAsync(CancellationToken cancelToken = default) {
-        if (_disposed)
-            return;
+        if (_disposed) return;
 
-        await _semaphore.WaitAsync(cancelToken).ConfigureAwait(false);
+        await _lock.WaitAsync(cancelToken).ConfigureAwait(false);
         try {
             await DisconnectInternalAsync().ConfigureAwait(false);
         } finally {
-            _semaphore.Release();
+            _lock.Release();
         }
     }
 
@@ -83,95 +70,65 @@ public class UdpTransport(NetworkConfig config) : IModbusTransport {
             _udpClient?.Dispose();
             _udpClient = null;
             _remoteEndPoint = null;
-        } catch {
-            // 忽略断开连接时的异常
-        }
-
+        } catch (SocketException) { }
         return Task.CompletedTask;
     }
 
     public async Task<byte[]> SendReceiveAsync(byte[] request, CancellationToken cancelToken = default) {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        ArgumentNullException.ThrowIfNull(request, nameof(request));
+        if (!IsConnected) throw new ModbusConnectionException("UDP 连接未建立");
 
-        if (!IsConnected)
-            throw new ModbusConnectionException("UDP连接未配置");
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
+        cts.CancelAfter(Timeout);
 
-        await _semaphore.WaitAsync(cancelToken).ConfigureAwait(false);
+        await _lock.WaitAsync(cts.Token).ConfigureAwait(false);
         try {
             var udpClient = _udpClient!;
             var remoteEndPoint = _remoteEndPoint!;
 
             // 发送请求
-            var bytesSent = await udpClient.SendAsync(request, cancelToken).ConfigureAwait(false);
-            ArgumentNullException.ThrowIfNull(request, nameof(request));
+            var bytesSent = await udpClient.SendAsync(request, cts.Token).ConfigureAwait(false);
             if (bytesSent != request.Length) {
-                throw new ModbusCommunicationException($"UDP发送不完整，期望{request.Length}字节，实际发送{bytesSent}字节");
+                throw new ModbusCommunicationException($"UDP 发送不完整，期望{request.Length}字节，实际发送{bytesSent}字节");
             }
 
             // 接收响应
-            var response = await ReceiveResponseAsync(udpClient, cancelToken).ConfigureAwait(false);
-            return response;
-        } catch (Exception ex) when (ex is SocketException) {
-            throw new ModbusCommunicationException($"UDP通信异常: {ex.Message}", ex);
+            return await ReceiveResponseAsync(cts.Token).ConfigureAwait(false);
         } catch (TimeoutException) {
-            throw new ModbusTimeoutException("UDP通信超时");
+            throw new ModbusTimeoutException($"UDP [{config.RemoteHost}:{config.RemotePort}] 通信超时");
+        } catch (OperationCanceledException) when (cts.Token.IsCancellationRequested && !cancelToken.IsCancellationRequested) {
+            throw new ModbusTimeoutException($"UDP [{config.RemoteHost}:{config.RemotePort}] 通信超时，操作已取消");
+        } catch (Exception ex) {
+            throw new ModbusCommunicationException($"UDP [{config.RemoteHost}:{config.RemotePort}] 通信异常: {ex.Message}", ex);
         } finally {
-            _semaphore.Release();
+            _lock.Release();
         }
     }
 
-    private async Task<byte[]> ReceiveResponseAsync(UdpClient udpClient, CancellationToken cancelToken) {
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
-        cts.CancelAfter(Timeout);
-
-        try {
-            var result = await udpClient.ReceiveAsync(cts.Token).ConfigureAwait(false);
-            return result.Buffer;
-        } catch (OperationCanceledException) when (cts.Token.IsCancellationRequested && !cancelToken.IsCancellationRequested) {
-            throw new ModbusTimeoutException("UDP接收超时，操作已取消");
-        }
+    private async Task<byte[]> ReceiveResponseAsync(CancellationToken cancelToken) {
+        var udpClient = _udpClient!;
+        var result = await udpClient.ReceiveAsync(cancelToken).ConfigureAwait(false);
+        return result.Buffer;
     }
 
     public void Dispose() {
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
-    }
+        if (_disposed) return;
 
-    protected virtual void Dispose(bool disposing) {
-        if (_disposed)
-            return;
+        try {
+            DisconnectInternalAsync().Wait(1000);
+        } catch (Exception ex) when (ex is AggregateException || ex is ObjectDisposedException) { }
+        _lock?.Dispose();
 
         _disposed = true;
-
-        if (disposing) {
-            try {
-                DisconnectInternalAsync().Wait(1000);
-            } catch {
-                // 忽略释放时的异常
-            }
-
-            _semaphore?.Dispose();
-        }
     }
 
     public async ValueTask DisposeAsync() {
-        await DisposeAsyncCore().ConfigureAwait(false);
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
-    }
+        if (_disposed) return;
 
-    protected virtual async ValueTask DisposeAsyncCore() {
-        if (_disposed)
-            return;
+        await DisconnectAsync().ConfigureAwait(false);
+        _lock?.Dispose();
 
         _disposed = true;
-
-        try {
-            await DisconnectAsync().ConfigureAwait(false);
-        } catch {
-            // 忽略释放时的异常
-        }
-
-        _semaphore?.Dispose();
     }
 }

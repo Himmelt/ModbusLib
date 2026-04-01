@@ -12,5 +12,5 @@ public class ModbusTcpClient(NetworkConfig config, ProtocolType protocol = Proto
     protected override IModbusProtocol Protocol { get; set; } = protocol.GetProtocol();
     protected override IModbusTransport Transport { get; set; } = new TcpTransport(config);
 
-    public ModbusTcpClient(string host, int remotePort = 502, ProtocolType protocol = ProtocolType.Tcp) : this(new NetworkConfig { Host = host, RemotePort = remotePort }, protocol) { }
+    public ModbusTcpClient(string host, int remotePort = 502, ProtocolType protocol = ProtocolType.Tcp) : this(new NetworkConfig { RemoteHost = host, RemotePort = remotePort }, protocol) { }
 }

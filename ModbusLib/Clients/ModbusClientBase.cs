@@ -525,46 +525,27 @@ public abstract class ModbusClientBase : IModbusClient {
     }
 
     public void Dispose() {
-        Dispose(disposing: true);
+        Dispose(true);
         GC.SuppressFinalize(this);
     }
 
     protected virtual void Dispose(bool disposing) {
-        if (_disposed)
-            return;
-
-        _disposed = true;
+        if (_disposed) return;
 
         if (disposing) {
             Transport?.Dispose();
         }
+        _disposed = true;
     }
 
     public async ValueTask DisposeAsync() {
-        await DisposeAsyncCore().ConfigureAwait(false);
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
-    }
-
-    protected virtual async ValueTask DisposeAsyncCore() {
-        if (_disposed)
-            return;
-
-        _disposed = true;
+        if (_disposed) return;
 
         if (Transport != null) {
-            try {
-                await DisconnectAsync().ConfigureAwait(false);
-            } catch {
-                // 忽略断开连接时的异常
-            }
-
-            // 优先使用异步释放，回退到同步释放
-            if (Transport is IAsyncDisposable asyncDisposableTransport) {
-                await asyncDisposableTransport.DisposeAsync().ConfigureAwait(false);
-            } else {
-                Transport.Dispose();
-            }
+            await Transport.DisposeAsync().ConfigureAwait(false);
         }
+        _disposed = true;
+
+        GC.SuppressFinalize(this);
     }
 }
