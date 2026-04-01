@@ -27,7 +27,7 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <Title>ModbusLib</Title>
     <PackageTags>modbus;modbus-rtu;modbus-tcp;modbus-udp;.net;dotnet;client;protocol</PackageTags>
-    <PackageReleaseNotes>增加ModbusPipeClient，用于自定义数据源</PackageReleaseNotes>
+    <PackageReleaseNotes>添加Pipe/Channel传输，以适应自定义数据源；调整架构；</PackageReleaseNotes>
     <PackageIcon>nuget_logo.png</PackageIcon>
   </PropertyGroup>
 
