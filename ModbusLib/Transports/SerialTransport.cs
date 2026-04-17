@@ -107,10 +107,14 @@ public sealed class SerialTransport(SerialConfig config) : IModbusTransport {
 
                     lastReceiveTime = DateTime.UtcNow;
                 } else {
-                    // 检查字符间隔超时
-                    if (config.InterCharTimeout > 0 && responseList.Count > 0 &&
-                        DateTime.UtcNow - lastReceiveTime > TimeSpan.FromMilliseconds(config.InterCharTimeout)) {
-                        break;
+                    if (responseList.Count > 0) {
+                        if (config.InterCharTimeout > 0) {
+                            if (DateTime.UtcNow - lastReceiveTime > TimeSpan.FromMilliseconds(config.InterCharTimeout)) {
+                                break;
+                            }
+                        } else {
+                            break;
+                        }
                     }
                     await Task.Delay(1, cancelToken).ConfigureAwait(false);
                 }
