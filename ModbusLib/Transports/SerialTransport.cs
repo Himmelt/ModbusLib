@@ -65,7 +65,7 @@ public sealed class SerialTransport(SerialConfig config) : IModbusTransport {
 
     public async Task<byte[]> SendReceiveAsync(byte[] request, CancellationToken cancelToken = default) {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        if (!IsConnected) throw new ModbusConnectionException($"串口 {_serialPort} 未连接");
+        if (!IsConnected) throw new ModbusConnectionException($"串口 {_serialPort?.PortName} 未连接");
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
         cts.CancelAfter(Timeout);
@@ -77,11 +77,11 @@ public sealed class SerialTransport(SerialConfig config) : IModbusTransport {
             await Task.Run(() => serialPort.Write(request, 0, request.Length), cts.Token).ConfigureAwait(false);
             return await ReceiveResponseAsync(cts.Token).ConfigureAwait(false);
         } catch (TimeoutException) {
-            throw new ModbusTimeoutException($"串口 {_serialPort} 通信超时");
+            throw new ModbusTimeoutException($"串口 {_serialPort?.PortName} 通信超时");
         } catch (OperationCanceledException) when (cts.IsCancellationRequested && !cancelToken.IsCancellationRequested) {
-            throw new ModbusTimeoutException($"串口 {_serialPort} 通信超时，操作已取消");
+            throw new ModbusTimeoutException($"串口 {_serialPort?.PortName} 通信超时，操作已取消");
         } catch (Exception ex) {
-            throw new ModbusCommunicationException($"串口 {_serialPort} 通信异常: {ex.Message}", ex);
+            throw new ModbusCommunicationException($"串口 {_serialPort?.PortName} 通信异常: {ex.Message}", ex);
         } finally {
             _lock.Release();
         }
