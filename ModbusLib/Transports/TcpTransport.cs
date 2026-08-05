@@ -13,12 +13,13 @@ namespace ModbusLib.Transports;
 public sealed class TcpTransport(NetworkConfig config) : IModbusTransport {
 
     private bool _disposed;
+    private bool _connected;
     private TcpClient? _tcpClient;
     private NetworkStream? _stream;
     private readonly SemaphoreSlim _lock = new(1, 1);
 
     public int Timeout { get; set; } = -1;
-    public bool IsConnected => _tcpClient?.Connected == true && _stream != null;
+    public bool IsConnected => _connected && _tcpClient != null && _stream != null;
 
     public async Task<bool> ConnectAsync(CancellationToken cancelToken = default) {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -53,6 +54,7 @@ public sealed class TcpTransport(NetworkConfig config) : IModbusTransport {
             _stream = _tcpClient.GetStream();
             _stream.ReadTimeout = config.ReceiveTimeout;
             _stream.WriteTimeout = config.SendTimeout;
+            _connected = true;
 
             return true;
         } catch (Exception ex) {
@@ -75,6 +77,7 @@ public sealed class TcpTransport(NetworkConfig config) : IModbusTransport {
     }
 
     private async Task DisconnectInternalAsync() {
+        _connected = false;
         try {
             if (_stream != null) {
                 await _stream.FlushAsync().ConfigureAwait(false);

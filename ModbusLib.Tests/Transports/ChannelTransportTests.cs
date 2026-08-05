@@ -38,13 +38,13 @@ public class ChannelTransportTests : IDisposable {
 
     [Fact]
     public async Task ConnectAsync_ReturnsTrue() {
-        var result = await _transport.ConnectAsync();
+        var result = await _transport.ConnectAsync(TestContext.Current.CancellationToken);
         Assert.True(result);
     }
 
     [Fact]
     public async Task DisconnectAsync_CompletesSuccessfully() {
-        await _transport.DisconnectAsync();
+        await _transport.DisconnectAsync(TestContext.Current.CancellationToken);
         Assert.True(_transport.IsConnected);
     }
 
@@ -58,16 +58,16 @@ public class ChannelTransportTests : IDisposable {
     public async Task SendReceiveAsync_AfterDispose_ThrowsObjectDisposedException() {
         _transport.Dispose();
         await Assert.ThrowsAsync<ObjectDisposedException>(() =>
-            _transport.SendReceiveAsync([0x01, 0x02]));
+            _transport.SendReceiveAsync([0x01, 0x02], TestContext.Current.CancellationToken));
     }
 
     [Fact]
     public async Task SendReceiveAsync_WithValidRequestAndResponse_ReturnsResponse() {
         var request = new byte[] { 0x01, 0x03, 0x00, 0x00, 0x00, 0x0A };
         var response = new byte[] { 0x01, 0x03, 0x14, 0x00, 0x0A };
-        var responseTask = _transport.SendReceiveAsync(request);
+        var responseTask = _transport.SendReceiveAsync(request, TestContext.Current.CancellationToken);
 
-        await _session.ServerToClient.Writer.WriteAsync(response);
+        await _session.ServerToClient.Writer.WriteAsync(response, TestContext.Current.CancellationToken);
 
         var result = await responseTask;
         Assert.NotNull(result);
@@ -79,14 +79,14 @@ public class ChannelTransportTests : IDisposable {
         var request = new byte[] { 0x01, 0x03, 0x00, 0x00, 0x00, 0x0A };
         var response = new byte[] { 0x01, 0x03, 0x02 };
 
-        var firstTask = _transport.SendReceiveAsync(request);
+        var firstTask = _transport.SendReceiveAsync(request, TestContext.Current.CancellationToken);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
         await Assert.ThrowsAsync<OperationCanceledException>(async () => {
             await _transport.SendReceiveAsync(request, cts.Token);
         });
 
-        await _session.ServerToClient.Writer.WriteAsync(response);
+        await _session.ServerToClient.Writer.WriteAsync(response, TestContext.Current.CancellationToken);
 
         await firstTask;
     }
@@ -109,9 +109,9 @@ public class ChannelTransportTests : IDisposable {
             var request = new byte[] { 0x01 };
             var response = new byte[] { 0x01, 0x02 };
 
-            var responseTask = transport.SendReceiveAsync(request);
+            var responseTask = transport.SendReceiveAsync(request, TestContext.Current.CancellationToken);
 
-            await session.ServerToClient.Writer.WriteAsync(response);
+            await session.ServerToClient.Writer.WriteAsync(response, TestContext.Current.CancellationToken);
 
             var result = await responseTask;
             Assert.Equal(response, result);
@@ -138,12 +138,12 @@ public class ChannelTransportTests : IDisposable {
         var request = new byte[] { 0x01, 0x02, 0x03 };
         var response = new byte[] { 0x04, 0x05, 0x06 };
 
-        var sendTask = _transport.SendReceiveAsync(request);
+        var sendTask = _transport.SendReceiveAsync(request, TestContext.Current.CancellationToken);
 
-        var received = await _session.ClientToServer.Reader.ReadAsync();
+        var received = await _session.ClientToServer.Reader.ReadAsync(TestContext.Current.CancellationToken);
         Assert.Equal(request, received);
 
-        await _session.ServerToClient.Writer.WriteAsync(response);
+        await _session.ServerToClient.Writer.WriteAsync(response, TestContext.Current.CancellationToken);
 
         var result = await sendTask;
         Assert.Equal(response, result);

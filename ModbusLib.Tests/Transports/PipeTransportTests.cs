@@ -1,6 +1,5 @@
 using ModbusLib.Models;
 using ModbusLib.Transports;
-using System.IO.Pipelines;
 
 namespace ModbusLib.Tests.Transports;
 
@@ -40,13 +39,13 @@ public class PipeTransportTests : IDisposable {
 
     [Fact]
     public async Task ConnectAsync_ReturnsTrue() {
-        var result = await _transport.ConnectAsync();
+        var result = await _transport.ConnectAsync(TestContext.Current.CancellationToken);
         Assert.True(result);
     }
 
     [Fact]
     public async Task DisconnectAsync_CompletesSuccessfully() {
-        await _transport.DisconnectAsync();
+        await _transport.DisconnectAsync(TestContext.Current.CancellationToken);
         Assert.True(_transport.IsConnected);
     }
 
@@ -60,16 +59,16 @@ public class PipeTransportTests : IDisposable {
     public async Task SendReceiveAsync_AfterDispose_ThrowsObjectDisposedException() {
         _transport.Dispose();
         await Assert.ThrowsAsync<ObjectDisposedException>(() =>
-            _transport.SendReceiveAsync([0x01, 0x02]));
+            _transport.SendReceiveAsync([0x01, 0x02], TestContext.Current.CancellationToken));
     }
 
     [Fact]
     public async Task SendReceiveAsync_WithValidRequestAndResponse_ReturnsResponse() {
         var request = new byte[] { 0x01, 0x03, 0x00, 0x00, 0x00, 0x0A };
         var response = new byte[] { 0x01, 0x03, 0x14, 0x00, 0x0A };
-        var responseTask = _transport.SendReceiveAsync(request);
+        var responseTask = _transport.SendReceiveAsync(request, TestContext.Current.CancellationToken);
 
-        await _session.ServerToClient.Writer.WriteAsync(response);
+        await _session.ServerToClient.Writer.WriteAsync(response, TestContext.Current.CancellationToken);
         _session.ServerToClient.Writer.Complete();
 
         var result = await responseTask;
@@ -82,14 +81,14 @@ public class PipeTransportTests : IDisposable {
         var request = new byte[] { 0x01, 0x03, 0x00, 0x00, 0x00, 0x0A };
         var response = new byte[] { 0x01, 0x03, 0x02 };
 
-        var firstTask = _transport.SendReceiveAsync(request);
+        var firstTask = _transport.SendReceiveAsync(request, TestContext.Current.CancellationToken);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
         await Assert.ThrowsAsync<OperationCanceledException>(async () => {
             await _transport.SendReceiveAsync(request, cts.Token);
         });
 
-        await _session.ServerToClient.Writer.WriteAsync(response);
+        await _session.ServerToClient.Writer.WriteAsync(response, TestContext.Current.CancellationToken);
         _session.ServerToClient.Writer.Complete();
 
         await firstTask;
@@ -113,9 +112,9 @@ public class PipeTransportTests : IDisposable {
             var request = new byte[] { 0x01 };
             var response = new byte[] { 0x01, 0x02 };
 
-            var responseTask = transport.SendReceiveAsync(request);
+            var responseTask = transport.SendReceiveAsync(request, TestContext.Current.CancellationToken);
 
-            await session.ServerToClient.Writer.WriteAsync(response);
+            await session.ServerToClient.Writer.WriteAsync(response, TestContext.Current.CancellationToken);
             session.ServerToClient.Writer.Complete();
 
             await responseTask;

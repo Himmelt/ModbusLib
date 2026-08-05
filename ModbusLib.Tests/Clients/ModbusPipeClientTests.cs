@@ -57,13 +57,13 @@ public class ModbusPipeClientTests : IDisposable {
 
     [Fact]
     public async Task ConnectAsync_ReturnsTrue() {
-        var result = await _client.ConnectAsync();
+        var result = await _client.ConnectAsync(TestContext.Current.CancellationToken);
         Assert.True(result);
     }
 
     [Fact]
     public async Task DisconnectAsync_CompletesSuccessfully() {
-        await _client.DisconnectAsync();
+        await _client.DisconnectAsync(TestContext.Current.CancellationToken);
         Assert.True(_client.IsConnected);
     }
 }

@@ -36,7 +36,7 @@ public class ModbusChannelClientIntegrationTests : IDisposable {
         _server = CreateServer();
         _client = CreateClient(_server);
 
-        var isConnected = await _client.ConnectAsync();
+        var isConnected = await _client.ConnectAsync(TestContext.Current.CancellationToken);
         Assert.True(isConnected);
         Assert.True(_client.IsConnected);
     }
@@ -46,9 +46,9 @@ public class ModbusChannelClientIntegrationTests : IDisposable {
         _server = CreateServer();
         _client = CreateClient(_server);
 
-        await _client.ConnectAsync();
+        await _client.ConnectAsync(TestContext.Current.CancellationToken);
 
-        await _client.WriteSingleCoilAsync(1, 0, true);
+        await _client.WriteSingleCoilAsync(1, 0, true, TestContext.Current.CancellationToken);
 
         Assert.True(_server.GetCoil(0));
     }
@@ -62,9 +62,9 @@ public class ModbusChannelClientIntegrationTests : IDisposable {
         _server.SetCoil(1, false);
         _server.SetCoil(2, true);
 
-        await _client.ConnectAsync();
+        await _client.ConnectAsync(TestContext.Current.CancellationToken);
 
-        var coils = await _client.ReadCoilsAsync(1, 0, 3);
+        var coils = await _client.ReadCoilsAsync(1, 0, 3, TestContext.Current.CancellationToken);
 
         Assert.True(coils[0]);
         Assert.False(coils[1]);
@@ -76,9 +76,9 @@ public class ModbusChannelClientIntegrationTests : IDisposable {
         _server = CreateServer();
         _client = CreateClient(_server);
 
-        await _client.ConnectAsync();
+        await _client.ConnectAsync(TestContext.Current.CancellationToken);
 
-        await _client.WriteSingleRegisterAsync(1, 100, 12345);
+        await _client.WriteSingleRegisterAsync(1, 100, 12345, cancelToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(12345, _server.GetHoldingRegister(100));
     }
@@ -91,9 +91,9 @@ public class ModbusChannelClientIntegrationTests : IDisposable {
         _server.SetHoldingRegister(0, 11111);
         _server.SetHoldingRegister(1, 22222);
 
-        await _client.ConnectAsync();
+        await _client.ConnectAsync(TestContext.Current.CancellationToken);
 
-        var registers = await _client.ReadHoldingRegistersAsync(1, 0, 2);
+        var registers = await _client.ReadHoldingRegistersAsync(1, 0, 2, cancelToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(11111, registers[0]);
         Assert.Equal(22222, registers[1]);
@@ -104,18 +104,18 @@ public class ModbusChannelClientIntegrationTests : IDisposable {
         _server = CreateServer();
         _client = CreateClient(_server);
 
-        await _client.ConnectAsync();
+        await _client.ConnectAsync(TestContext.Current.CancellationToken);
 
-        await _client.WriteSingleCoilAsync(1, 0, true);
+        await _client.WriteSingleCoilAsync(1, 0, true, TestContext.Current.CancellationToken);
         Assert.True(_server.GetCoil(0));
 
-        await _client.WriteSingleRegisterAsync(1, 100, 9999);
+        await _client.WriteSingleRegisterAsync(1, 100, 9999, cancelToken: TestContext.Current.CancellationToken);
         Assert.Equal(9999, _server.GetHoldingRegister(100));
 
-        var coils = await _client.ReadCoilsAsync(1, 0, 1);
+        var coils = await _client.ReadCoilsAsync(1, 0, 1, TestContext.Current.CancellationToken);
         Assert.True(coils[0]);
 
-        var registers = await _client.ReadHoldingRegistersAsync(1, 100, 1);
+        var registers = await _client.ReadHoldingRegistersAsync(1, 100, 1, cancelToken: TestContext.Current.CancellationToken);
         Assert.Equal(9999, registers[0]);
     }
 
@@ -124,10 +124,10 @@ public class ModbusChannelClientIntegrationTests : IDisposable {
         _server = CreateServer();
         _client = new ModbusChannelClient(_server.Session);
 
-        await _client.ConnectAsync();
+        await _client.ConnectAsync(TestContext.Current.CancellationToken);
         Assert.True(_client.IsConnected);
 
-        await _client.WriteSingleRegisterAsync(1, 50, 5555);
+        await _client.WriteSingleRegisterAsync(1, 50, 5555, cancelToken: TestContext.Current.CancellationToken);
         Assert.Equal(5555, _server.GetHoldingRegister(50));
     }
 
@@ -136,7 +136,7 @@ public class ModbusChannelClientIntegrationTests : IDisposable {
         _server = CreateServer();
         _client = new ModbusChannelClient(_server.Session);
 
-        await _client.ConnectAsync();
+        await _client.ConnectAsync(TestContext.Current.CancellationToken);
         Assert.True(_client.IsConnected);
     }
 }

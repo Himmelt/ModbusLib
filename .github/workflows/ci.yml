@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
+      - name: Restore
+        run: dotnet restore ModbusLib.slnx
+      - name: Build
+        run: dotnet build ModbusLib.slnx -c Release --no-restore
+      - name: Test
+        run: dotnet test ModbusLib.slnx -c Release --no-build
+      - name: Pack
+        run: dotnet pack ModbusLib/ModbusLib.csproj -c Release -o artifacts
+      - name: Upload NuGet packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: nuget-packages
+          path: artifacts/*.nupkg
+
+  publish:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - name: Pack
+        run: dotnet pack ModbusLib/ModbusLib.csproj -c Release -o out
+      - name: Push to NuGet.org
+        run: dotnet nuget push out/*.nupkg --source https://api.nuget.org/v3/index.json --symbol-source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }} --skip-duplicate

@@ -1,6 +1,5 @@
 using System.Buffers;
 using System.IO.Pipelines;
-using Xunit.Abstractions;
 
 namespace ModbusLib.Tests.Functional;
 
@@ -19,7 +18,7 @@ public class SimplePipeCommunicationTests {
             var data = new byte[] { 1, 2, 3, 4, 5 };
             await pipe.Writer.WriteAsync(data);
             pipe.Writer.Complete();
-        });
+        }, TestContext.Current.CancellationToken);
 
         var readTask = Task.Run(async () => {
             var result = await pipe.Reader.ReadAsync();
@@ -61,7 +60,7 @@ public class SimplePipeCommunicationTests {
             await writer.WriteAsync(response);
             await writer.FlushAsync();
             writer.Complete();
-        });
+        }, TestContext.Current.CancellationToken);
 
         var clientTask = Task.Run(async () => {
             var writer = pipe1.Writer;

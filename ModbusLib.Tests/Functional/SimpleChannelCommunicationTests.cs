@@ -1,6 +1,5 @@
 using ModbusLib.Models;
 using ModbusLib.Transports;
-using Xunit.Abstractions;
 
 namespace ModbusLib.Tests.Functional;
 
@@ -18,7 +17,7 @@ public class SimpleChannelCommunicationTests {
         var writeTask = Task.Run(async () => {
             var data = new byte[] { 1, 2, 3, 4, 5 };
             await session.ServerToClient.Writer.WriteAsync(data);
-        });
+        }, TestContext.Current.CancellationToken);
 
         var readTask = Task.Run(async () => {
             var result = await session.ClientToServer.Reader.ReadAsync();
@@ -27,7 +26,7 @@ public class SimpleChannelCommunicationTests {
 
         await writeTask;
 
-        var data = await session.ServerToClient.Reader.ReadAsync();
+        var data = await session.ServerToClient.Reader.ReadAsync(TestContext.Current.CancellationToken);
         Assert.Equal(5, data.Length);
         Assert.Equal(1, data[0]);
         Assert.Equal(5, data[4]);
@@ -44,7 +43,7 @@ public class SimpleChannelCommunicationTests {
 
             var response = new byte[] { (byte)(request[0] + 10), request[1], request[2] };
             await session.ServerToClient.Writer.WriteAsync(response);
-        });
+        }, TestContext.Current.CancellationToken);
 
         var clientTask = Task.Run(async () => {
             var request = new byte[] { 100, 101, 102 };
@@ -72,12 +71,12 @@ public class SimpleChannelCommunicationTests {
         };
 
         foreach (var msg in messages) {
-            await session.ClientToServer.Writer.WriteAsync(msg);
+            await session.ClientToServer.Writer.WriteAsync(msg, TestContext.Current.CancellationToken);
         }
 
         var receivedMessages = new List<byte[]>();
         for (int i = 0; i < messages.Count; i++) {
-            var data = await session.ClientToServer.Reader.ReadAsync();
+            var data = await session.ClientToServer.Reader.ReadAsync(TestContext.Current.CancellationToken);
             receivedMessages.Add(data.ToArray());
         }
 
@@ -99,10 +98,10 @@ public class SimpleChannelCommunicationTests {
                 response[i] = (byte)(request[i] + 1);
             }
             await session.ServerToClient.Writer.WriteAsync(response);
-        });
+        }, TestContext.Current.CancellationToken);
 
         var requestData = new byte[] { 10, 20, 30, 40 };
-        var responseData = await transport.SendReceiveAsync(requestData);
+        var responseData = await transport.SendReceiveAsync(requestData, TestContext.Current.CancellationToken);
 
         await serverTask;
 
@@ -125,7 +124,7 @@ public class SimpleChannelCommunicationTests {
                 await session.ServerToClient.Writer.WriteAsync([(byte)i]);
                 completedWrites++;
             }
-        });
+        }, TestContext.Current.CancellationToken);
 
         var readTask = Task.Run(async () => {
             for (int i = 0; i < iterations; i++) {
@@ -133,7 +132,7 @@ public class SimpleChannelCommunicationTests {
                 Assert.Single(data);
                 completedReads++;
             }
-        });
+        }, TestContext.Current.CancellationToken);
 
         await Task.WhenAll(writeTask, readTask);
 

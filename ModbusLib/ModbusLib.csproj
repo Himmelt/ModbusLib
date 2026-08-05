@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
@@ -14,7 +14,7 @@
     <Version>1.0.3</Version>
     <Authors>Himmelt</Authors>
     <Company>Himmelt</Company>
-    <Description>一个功能完整、高性能的Modbus客户端库，基于.NET 10平台，支持多种Modbus协议变体。</Description>
+    <Description>一个功能完整、高性能的Modbus客户端库，支持.NET 8/9/10平台和多种Modbus协议变体。</Description>
     <Copyright>Copyright © 2024-2026 Himmelt</Copyright>
     <PackageProjectUrl>https://github.com/Himmelt/ModbusLib</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Himmelt/ModbusLib</RepositoryUrl>
@@ -55,7 +55,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.IO.Ports" Version="10.0.7" />
+    <PackageReference Include="System.IO.Ports" Version="10.0.10" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+    <PackageReference Include="System.IO.Pipelines" Version="10.0.10" />
   </ItemGroup>
 
   <ItemGroup>

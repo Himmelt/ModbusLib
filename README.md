@@ -1,12 +1,18 @@
-# ModbusLib - .NET 10 Modbus 客户端库
+<div align="center">
 
-[![NuGet](https://img.shields.io/nuget/v/Himmelt.ModbusLib.svg)](https://www.nuget.org/packages/Himmelt.ModbusLib)
-[![NuGet Downloads](https://img.shields.io/nuget/dt/Himmelt.ModbusLib.svg)](https://www.nuget.org/packages/Himmelt.ModbusLib)
-[![License](https://img.shields.io/github/license/Himmelt/ModbusLib.svg)](https://github.com/Himmelt/ModbusLib/blob/main/LICENSE)
+# ModbusLib
+一个功能完整、高性能的 Modbus 客户端库，支持 .NET 8 / 9 / 10 平台和多种 Modbus 协议变体
 
-一个功能完整、高性能的 Modbus 客户端库，基于.NET 10 平台，支持多种 Modbus 协议变体。
+[![CI](https://github.com/Himmelt/ModbusLib/actions/workflows/ci.yml/badge.svg)](https://github.com/Himmelt/ModbusLib/actions/workflows/ci.yml)
+[![NuGet](https://img.shields.io/nuget/v/Himmelt.ModbusLib?color=004880&logo=nuget)](https://www.nuget.org/packages/Himmelt.ModbusLib)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/Himmelt.ModbusLib?color=004880&logo=nuget)](https://www.nuget.org/packages/Himmelt.ModbusLib)
+[![.NET](https://img.shields.io/badge/.NET-8%20%7C%209%20%7C%2010-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com)
+[![License](https://img.shields.io/github/license/Himmelt/ModbusLib?color=green)](LICENSE)
+[![DeepSeek](https://img.shields.io/badge/DeepSeek-4D6BFE?logo=deepseek&logoColor=white)](https://www.deepseek.com/)
 
-> **注意**：本项目是由 AI 生成的，主要使用了 Trae 以及 Qoder 等工具辅助开发，主要模型是 Qwen-3-Coder、Qwen-3.5-Plus、MiniMax-2.7、GLM-5 等。
+</div>
+
+> **注意**：本项目由 AI 辅助生成，主要使用了 Trae、Codex 以及 Qoder 等工具，主要模型是 Qwen-3-Coder、Qwen-3.5-Plus、MiniMax-2.7、GLM-5.2、DeepSeek-V4 等。
 
 ## 📦 安装
 

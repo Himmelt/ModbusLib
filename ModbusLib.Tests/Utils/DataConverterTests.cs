@@ -1,7 +1,7 @@
 using ModbusLib.Enums;
 using ModbusLib.Utils;
 using System.Reflection;
-using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace ModbusLib.Tests.Utils;
 
@@ -21,7 +21,7 @@ public class DataConverterTests {
         }
 
         public void Deserialize(IXunitSerializationInfo info) {
-            Type = Type.GetType(info.GetValue<string>(nameof(Type)))!;
+            Type = Type.GetType(info.GetValue<string>(nameof(Type)) ?? string.Empty)!;
             Expected = info.GetValue<int>(nameof(Expected));
             Description = info.GetValue<string>(nameof(Description));
         }
@@ -44,20 +44,22 @@ public class DataConverterTests {
         Assert.Equal(testCase.Expected, (int)result!);
     }
 
+#pragma warning disable IDE0090
     public static TheoryData<GetRegisterCountTestCase> GetRegisterCountTestData() {
         var data = new TheoryData<GetRegisterCountTestCase> {
-            new() { Type = typeof(byte), Expected = 1, Description = "byte类型1字节=1个寄存器(向上取整)" },
-            new() { Type = typeof(short), Expected = 1, Description = "short类型2字节=1个寄存器" },
-            new() { Type = typeof(ushort), Expected = 1, Description = "ushort类型2字节=1个寄存器" },
-            new() { Type = typeof(int), Expected = 2, Description = "int类型4字节=2个寄存器" },
-            new() { Type = typeof(uint), Expected = 2, Description = "uint类型4字节=2个寄存器" },
-            new() { Type = typeof(float), Expected = 2, Description = "float类型4字节=2个寄存器" },
-            new() { Type = typeof(double), Expected = 4, Description = "double类型8字节=4个寄存器" },
-            new() { Type = typeof(long), Expected = 4, Description = "long类型8字节=4个寄存器" },
-            new() { Type = typeof(ulong), Expected = 4, Description = "ulong类型8字节=4个寄存器" }
+            new GetRegisterCountTestCase { Type = typeof(byte), Expected = 1, Description = "byte类型1字节=1个寄存器(向上取整)" },
+            new GetRegisterCountTestCase { Type = typeof(short), Expected = 1, Description = "short类型2字节=1个寄存器" },
+            new GetRegisterCountTestCase { Type = typeof(ushort), Expected = 1, Description = "ushort类型2字节=1个寄存器" },
+            new GetRegisterCountTestCase { Type = typeof(int), Expected = 2, Description = "int类型4字节=2个寄存器" },
+            new GetRegisterCountTestCase { Type = typeof(uint), Expected = 2, Description = "uint类型4字节=2个寄存器" },
+            new GetRegisterCountTestCase { Type = typeof(float), Expected = 2, Description = "float类型4字节=2个寄存器" },
+            new GetRegisterCountTestCase { Type = typeof(double), Expected = 4, Description = "double类型8字节=4个寄存器" },
+            new GetRegisterCountTestCase { Type = typeof(long), Expected = 4, Description = "long类型8字节=4个寄存器" },
+            new GetRegisterCountTestCase { Type = typeof(ulong), Expected = 4, Description = "ulong类型8字节=4个寄存器" }
         };
         return data;
     }
+#pragma warning restore IDE0090
 
     public class GetTotalRegisterCountTestCase : IXunitSerializable {
         public required Type Type { get; set; }
@@ -75,7 +77,7 @@ public class DataConverterTests {
         }
 
         public void Deserialize(IXunitSerializationInfo info) {
-            Type = Type.GetType(info.GetValue<string>(nameof(Type)))!;
+            Type = Type.GetType(info.GetValue<string>(nameof(Type)) ?? string.Empty)!;
             ElementCount = info.GetValue<int>(nameof(ElementCount));
             Expected = info.GetValue<int>(nameof(Expected));
             Description = info.GetValue<string>(nameof(Description));
@@ -100,20 +102,22 @@ public class DataConverterTests {
         Assert.Equal(testCase.Expected, (int)result!);
     }
 
+#pragma warning disable IDE0090
     public static TheoryData<GetTotalRegisterCountTestCase> GetTotalRegisterCountTestData() {
         var data = new TheoryData<GetTotalRegisterCountTestCase> {
-            new() { Type = typeof(byte), ElementCount = 7, Expected = 4, Description = "7个字节=4个寄存器(向上取整)" },
-            new() { Type = typeof(short), ElementCount = 10, Expected = 10, Description = "10个short*每个1个寄存器=10个寄存器" },
-            new() { Type = typeof(ushort), ElementCount = 5, Expected = 5, Description = "5个ushort*每个1个寄存器=5个寄存器" },
-            new() { Type = typeof(int), ElementCount = 4, Expected = 8, Description = "4个int*每个2个寄存器=8个寄存器" },
-            new() { Type = typeof(uint), ElementCount = 2, Expected = 4, Description = "2个uint*每个2个寄存器=4个寄存器" },
-            new() { Type = typeof(float), ElementCount = 3, Expected = 6, Description = "3个float*每个2个寄存器=6个寄存器" },
-            new() { Type = typeof(double), ElementCount = 1, Expected = 4, Description = "1个double*4个寄存器=4个寄存器" },
-            new() { Type = typeof(long), ElementCount = 2, Expected = 8, Description = "2个long*每个4个寄存器=8个寄存器" },
-            new() { Type = typeof(ulong), ElementCount = 2, Expected = 8, Description = "2个ulong*每个4个寄存器=8个寄存器" }
+            new GetTotalRegisterCountTestCase { Type = typeof(byte), ElementCount = 7, Expected = 4, Description = "7个字节=4个寄存器(向上取整)" },
+            new GetTotalRegisterCountTestCase { Type = typeof(short), ElementCount = 10, Expected = 10, Description = "10个short*每个1个寄存器=10个寄存器" },
+            new GetTotalRegisterCountTestCase { Type = typeof(ushort), ElementCount = 5, Expected = 5, Description = "5个ushort*每个1个寄存器=5个寄存器" },
+            new GetTotalRegisterCountTestCase { Type = typeof(int), ElementCount = 4, Expected = 8, Description = "4个int*每个2个寄存器=8个寄存器" },
+            new GetTotalRegisterCountTestCase { Type = typeof(uint), ElementCount = 2, Expected = 4, Description = "2个uint*每个2个寄存器=4个寄存器" },
+            new GetTotalRegisterCountTestCase { Type = typeof(float), ElementCount = 3, Expected = 6, Description = "3个float*每个2个寄存器=6个寄存器" },
+            new GetTotalRegisterCountTestCase { Type = typeof(double), ElementCount = 1, Expected = 4, Description = "1个double*4个寄存器=4个寄存器" },
+            new GetTotalRegisterCountTestCase { Type = typeof(long), ElementCount = 2, Expected = 8, Description = "2个long*每个4个寄存器=8个寄存器" },
+            new GetTotalRegisterCountTestCase { Type = typeof(ulong), ElementCount = 2, Expected = 8, Description = "2个ulong*每个4个寄存器=8个寄存器" }
         };
         return data;
     }
+#pragma warning restore IDE0090
 
     [Fact]
     public void ByteArrayToBoolArray() {

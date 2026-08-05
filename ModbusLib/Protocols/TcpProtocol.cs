@@ -10,7 +10,11 @@ namespace ModbusLib.Protocols;
 /// </summary>
 public class TcpProtocol : IModbusProtocol {
     private ushort _transactionId;
+#if NET9_0_OR_GREATER
     private readonly Lock _transactionLock = new();
+#else
+    private readonly object _transactionLock = new();
+#endif
 
     public byte[] BuildRequest(ModbusRequest request) {
         ArgumentNullException.ThrowIfNull(request, nameof(request));
