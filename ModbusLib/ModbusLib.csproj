@@ -63,9 +63,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="nuget_logo.png">
+    <None Include="nuget_logo.png">
       <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
+      <PackagePath></PackagePath>
     </None>
   </ItemGroup>
 
