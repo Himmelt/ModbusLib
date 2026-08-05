@@ -1,4 +1,5 @@
 using FluentModbus;
+using ModbusLib.Tests.FluentServer;
 using ModbusLib.Models;
 using System.Net;
 using ModbusLibClient = ModbusLib.Interfaces.IModbusClient;
@@ -361,7 +362,7 @@ public class FluentTcpServerTests(ITestOutputHelper output) : IDisposable {
         }
 
         _mbus_erver = new ModbusTcpServer();
-        _mbus_erver.Start(new IPEndPoint(IPAddress.Loopback, ServerPort));
+        _mbus_erver.Start(new NonFaultingTcpClientProvider(new IPEndPoint(IPAddress.Loopback, ServerPort)));
         _mbus_erver.AddUnit(UnitId);
 
         // 等待服务器启动
