@@ -14,36 +14,29 @@ namespace ModbusLib.Tests.FluentServer;
 /// that exception and returns a task that stays pending, so the accept loop
 /// simply exits via its cancellation token.
 /// </summary>
-public sealed class NonFaultingTcpClientProvider : ITcpClientProvider
-{
+public sealed class NonFaultingTcpClientProvider : ITcpClientProvider {
     private readonly ITcpClientProvider _inner;
     private readonly object _lock = new();
     private bool _stopped;
 
     public NonFaultingTcpClientProvider(IPEndPoint endPoint)
-        : this(new DefaultTcpClientProvider(endPoint))
-    {
+        : this(new DefaultTcpClientProvider(endPoint)) {
     }
 
-    public NonFaultingTcpClientProvider(ITcpClientProvider inner)
-    {
+    public NonFaultingTcpClientProvider(ITcpClientProvider inner) {
         _inner = inner;
     }
 
-    public Task<TcpClient> AcceptTcpClientAsync()
-    {
-        lock (_lock)
-        {
-            if (_stopped)
-            {
+    public Task<TcpClient> AcceptTcpClientAsync() {
+        lock (_lock) {
+            if (_stopped) {
                 // After stop, return a task that never completes and never faults.
                 return new TaskCompletionSource<TcpClient>(TaskCreationOptions.RunContinuationsAsynchronously).Task;
             }
 
             var tcs = new TaskCompletionSource<TcpClient>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            _inner.AcceptTcpClientAsync().ContinueWith(innerTask =>
-            {
+            _inner.AcceptTcpClientAsync().ContinueWith(innerTask => {
                 // Observe the exception (e.g. SocketException 995) so it is never
                 // reported as an unobserved task exception.
                 _ = innerTask.Exception;
@@ -59,10 +52,8 @@ public sealed class NonFaultingTcpClientProvider : ITcpClientProvider
         }
     }
 
-    public void Dispose()
-    {
-        lock (_lock)
-        {
+    public void Dispose() {
+        lock (_lock) {
             _stopped = true;
             _inner.Dispose();
         }

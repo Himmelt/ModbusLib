@@ -80,9 +80,19 @@ public class NetworkStreamRtuSerialPort : IModbusRtuSerialPort, IDisposable {
             var delay = Task.Delay(ReadTimeout, cancelToken);
             var completed = await Task.WhenAny(readTask, delay).ConfigureAwait(false);
             if (completed == delay) {
+                // Timeout (or cancellation) won the race. The read is still pending and
+                // will fault when the stream is closed or the token is cancelled; observe
+                // it (and the delay) so neither ever surfaces as an unobserved task
+                // exception reported by the test host.
+                ObserveFault(delay);
+                ObserveFault(readTask);
+
                 // emulate timeout -> throw so upstream behaves like serial timeout
                 throw new TimeoutException("Read timed out");
             }
+
+            // The read won; the delay may still be cancelled during shutdown.
+            ObserveFault(delay);
         }
 
         var bytesRead = await readTask.ConfigureAwait(false);
@@ -136,6 +146,9 @@ public class NetworkStreamRtuSerialPort : IModbusRtuSerialPort, IDisposable {
         var readTask = Task.Run(() => _stream.Read(buffer, offset, count));
 
         if (Task.WhenAny(readTask, timeoutTask).Result == timeoutTask) {
+            // The read is still pending and will fault when the stream is closed;
+            // observe it so it never becomes an unobserved task exception.
+            ObserveFault(readTask);
             throw new TimeoutException("Read timed out");
         }
 
@@ -157,5 +170,13 @@ public class NetworkStreamRtuSerialPort : IModbusRtuSerialPort, IDisposable {
     /// <returns>A task representing the asynchronous operation.</returns>
     public Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken token) {
         throw new NotImplementedException();
+    }
+
+    private static void ObserveFault(Task task) {
+        _ = task.ContinueWith(
+            static t => _ = t.Exception,
+            CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnFaulted,
+            TaskScheduler.Default);
     }
 }

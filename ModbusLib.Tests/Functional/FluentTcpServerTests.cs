@@ -1,6 +1,6 @@
 using FluentModbus;
-using ModbusLib.Tests.FluentServer;
 using ModbusLib.Models;
+using ModbusLib.Tests.FluentServer;
 using System.Net;
 using ModbusLibClient = ModbusLib.Interfaces.IModbusClient;
 using MyModbusTcpClient = ModbusLib.Clients.ModbusTcpClient;
