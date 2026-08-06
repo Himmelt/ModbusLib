@@ -459,6 +459,14 @@ public class NetworkConfig {
 }
 ```
 
+### 超时与重试
+
+- `Timeout`（客户端/传输层属性）为单次请求的整体超时，默认 `-1` 表示不启用；设为 `>= 0` 后生效（毫秒）。
+- `NetworkConfig.ReceiveTimeout` / `SendTimeout`（串口对应 `ReadTimeout` / `WriteTimeout`）同样作用于异步收发，不再只是同步 I/O 的配置。
+- 通信超时或异常后，TCP 传输会自动断开底层连接并清理可能残留的半帧数据，避免后续请求读到错位数据；配合 `Retries > 0` 时，客户端会在重试前自动重连。
+- `Retries` 默认 `0`（不重试）。需要自动恢复时请显式设置，例如 `client.Retries = 2`。
+- 触发重试的异常包括：`ModbusTimeoutException`、`ModbusCommunicationException`、`ModbusConnectionException` 以及设备忙（`TargetDeviceBusy`）异常。
+
 ### 数据类型转换
 
 库支持所有 `unmanaged` 类型的泛型读写，包括但不限于：

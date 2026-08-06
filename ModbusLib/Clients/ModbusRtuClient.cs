@@ -1,3 +1,4 @@
+using ModbusLib.Enums;
 using ModbusLib.Interfaces;
 using ModbusLib.Models;
 using ModbusLib.Protocols;
@@ -9,7 +10,7 @@ namespace ModbusLib.Clients {
         public SerialConfig SerialConfig => config;
 
         protected override IModbusProtocol Protocol { get; set; } = new RtuProtocol();
-        protected override IModbusTransport Transport { get; set; } = new SerialTransport(config);
+        protected override IModbusTransport Transport { get; set; } = new SerialTransport(config, ProtocolType.Rtu);
 
         public ModbusRtuClient(string portName, int baudRate = 9600) : this(new SerialConfig { PortName = portName, BaudRate = baudRate }) { }
     }

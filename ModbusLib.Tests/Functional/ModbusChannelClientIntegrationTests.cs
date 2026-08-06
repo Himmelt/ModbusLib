@@ -1,5 +1,6 @@
 using ModbusLib.Clients;
 using ModbusLib.Interfaces;
+using ModbusLib.Models;
 using ModbusLib.Tests.Mocks;
 
 namespace ModbusLib.Tests.Functional;
@@ -117,6 +118,43 @@ public class ModbusChannelClientIntegrationTests : IDisposable {
 
         var registers = await _client.ReadHoldingRegistersAsync(1, 100, 1, cancelToken: TestContext.Current.CancellationToken);
         Assert.Equal(9999, registers[0]);
+    }
+
+    [Fact]
+    public async Task ModbusChannelClient_ByteGenericReadWrite_RoundTrips() {
+        _server = CreateServer();
+        _client = CreateClient(_server);
+
+        await _client.ConnectAsync(TestContext.Current.CancellationToken);
+
+        // 3 个 byte 需要 2 个寄存器（第4字节补0），读回时截断到请求数量
+        var values = new byte[] { 0x12, 0x34, 0x56 };
+        await _client.WriteMultipleRegistersAsync(1, 0, values, cancelToken: TestContext.Current.CancellationToken);
+
+        var read = await _client.ReadHoldingRegistersAsync<byte>(1, 0, 3, cancelToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(values, read);
+    }
+
+    [Fact]
+    public async Task ModbusChannelClient_SingleByteWrite_PadsToRegister() {
+        _server = CreateServer();
+        _client = CreateClient(_server);
+
+        await _client.ConnectAsync(TestContext.Current.CancellationToken);
+
+        await _client.WriteMultipleRegistersAsync(1, 0, (byte)0xAB, cancelToken: TestContext.Current.CancellationToken);
+
+        var raw = await _client.ReadHoldingRegistersRawAsync(1, 0, 1, cancelToken: TestContext.Current.CancellationToken);
+        Assert.Equal(new byte[] { 0xAB, 0x00 }, raw);
+    }
+
+    [Fact]
+    public async Task WriteMultipleRegistersRawAsync_WithOddBytes_Throws() {
+        _client = new ModbusChannelClient(new ChannelSession());
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            _client.WriteMultipleRegistersRawAsync(1, 0, new byte[] { 0x01, 0x02, 0x03 }, TestContext.Current.CancellationToken));
     }
 
     [Fact]

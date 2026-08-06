@@ -14,7 +14,7 @@ public static class CancelTokenExtensions {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void ThrowIfCancelRequestCN(this CancellationToken cancelToken, string message = "操作已取消") {
         if (cancelToken.IsCancellationRequested) {
-            throw new OperationCanceledException(message);
+            throw new OperationCanceledException(message, cancelToken);
         }
     }
 }

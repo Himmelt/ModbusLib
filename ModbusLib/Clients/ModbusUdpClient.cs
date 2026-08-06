@@ -10,7 +10,7 @@ public class ModbusUdpClient(NetworkConfig config, ProtocolType protocol = Proto
     public NetworkConfig NetworkConfig => config;
 
     protected override IModbusProtocol Protocol { get; set; } = protocol.GetProtocol();
-    protected override IModbusTransport Transport { get; set; } = new UdpTransport(config);
+    protected override IModbusTransport Transport { get; set; } = new UdpTransport(config, protocol);
 
     public ModbusUdpClient(string host, int remotePort = 502, ProtocolType protocol = ProtocolType.Tcp) : this(new NetworkConfig { RemoteHost = host, RemotePort = remotePort }, protocol) { }
 }

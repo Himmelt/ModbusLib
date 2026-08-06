@@ -93,23 +93,21 @@ public class SimpleChannelCommunicationTests {
 
         var serverTask = Task.Run(async () => {
             var request = await session.ClientToServer.Reader.ReadAsync();
-            var response = new byte[request.Length];
-            for (int i = 0; i < request.Length; i++) {
-                response[i] = (byte)(request[i] + 1);
-            }
+            // 回显标准 MBAP 写单个寄存器响应（12字节）
+            var response = new byte[] { request[0], request[1], 0x00, 0x00, 0x00, 0x06, request[6], 0x06, 0x00, 0x64, 0x30, 0x39 };
             await session.ServerToClient.Writer.WriteAsync(response);
         }, TestContext.Current.CancellationToken);
 
-        var requestData = new byte[] { 10, 20, 30, 40 };
+        var requestData = new byte[] { 0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x01, 0x06, 0x00, 0x64, 0x30, 0x39 };
         var responseData = await transport.SendReceiveAsync(requestData, TestContext.Current.CancellationToken);
 
         await serverTask;
 
-        Assert.Equal(4, responseData.Length);
-        Assert.Equal(11, responseData[0]);
-        Assert.Equal(21, responseData[1]);
-        Assert.Equal(31, responseData[2]);
-        Assert.Equal(41, responseData[3]);
+        Assert.Equal(12, responseData.Length);
+        Assert.Equal(0x00, responseData[0]);
+        Assert.Equal(0x01, responseData[1]);
+        Assert.Equal(0x30, responseData[10]);
+        Assert.Equal(0x39, responseData[11]);
     }
 
     [Fact]

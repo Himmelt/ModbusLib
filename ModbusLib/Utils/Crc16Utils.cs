@@ -48,7 +48,8 @@ public static class Crc16Utils {
     /// <returns>是否有效</returns>
     public static bool ValidateCrc16(byte[] data) {
         ArgumentNullException.ThrowIfNull(data, nameof(data));
-        if (data.Length < 3)
+        // 最短合法 RTU 帧为 5 字节（设备地址 + 功能码 + 异常码 + CRC 2 字节）
+        if (data.Length < 5)
             return false;
 
         var dataLength = data.Length - 2;

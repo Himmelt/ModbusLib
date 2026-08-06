@@ -155,6 +155,7 @@ public class MockModbusServer : IDisposable {
 
         var response = new byte[12];
         data.Slice(0, 8).CopyTo(response);
+        response[7] = (byte)ModbusFunction.WriteSingleCoil;
         response[8] = (byte)(address >> 8);
         response[9] = (byte)(address & 0xFF);
         response[10] = (byte)(value >> 8);
@@ -173,6 +174,7 @@ public class MockModbusServer : IDisposable {
 
         var response = new byte[12];
         data.Slice(0, 8).CopyTo(response);
+        response[7] = (byte)ModbusFunction.WriteSingleRegister;
         response[8] = (byte)(address >> 8);
         response[9] = (byte)(address & 0xFF);
         response[10] = (byte)(value >> 8);

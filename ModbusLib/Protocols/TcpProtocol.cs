@@ -10,6 +10,7 @@ namespace ModbusLib.Protocols;
 /// </summary>
 public class TcpProtocol : IModbusProtocol {
     private ushort _transactionId;
+    private ushort _lastTransactionId;
 #if NET9_0_OR_GREATER
     private readonly Lock _transactionLock = new();
 #else
@@ -23,8 +24,9 @@ public class TcpProtocol : IModbusProtocol {
 
         ushort currentTransactionId;
         lock (_transactionLock) {
-            _transactionId = (ushort)((_transactionId + 1) % 65536);
+            _transactionId++;
             currentTransactionId = _transactionId;
+            _lastTransactionId = currentTransactionId;
         }
 
         // 构建MBAP头部
@@ -46,19 +48,28 @@ public class TcpProtocol : IModbusProtocol {
 
     public ModbusResponse ParseResponse(byte[] response, ModbusRequest request) {
         ArgumentNullException.ThrowIfNull(response, nameof(response));
-        if (response.Length < 6)
+        if (response.Length < 9)
             throw new ModbusCommunicationException($"TCP响应长度不足: {response.Length}");
 
         // 解析MBAP头部
-        // var transactionId = (ushort)((response[0] << 8) | response[1]);
+        var transactionId = (ushort)((response[0] << 8) | response[1]);
         var protocolId = (ushort)((response[2] << 8) | response[3]);
         var length = (ushort)((response[4] << 8) | response[5]);
 
         if (protocolId != 0)
             throw new ModbusCommunicationException($"无效的协议ID: {protocolId}");
 
+        if (length < 3)
+            throw new ModbusCommunicationException($"无效的MBAP长度字段: {length}");
+
         if (response.Length < 6 + length)
             throw new ModbusCommunicationException($"TCP响应数据不完整，期望{6 + length}字节，实际{response.Length}字节");
+
+        lock (_transactionLock) {
+            if (transactionId != _lastTransactionId) {
+                throw new ModbusCommunicationException($"事务ID不匹配: 期望 {_lastTransactionId}, 实际 {transactionId}");
+            }
+        }
 
         var unitId = response[6];
         var functionCode = response[7];
@@ -76,6 +87,9 @@ public class TcpProtocol : IModbusProtocol {
 
         // 解析正常响应数据
         var dataLength = length - 2; // 减去单元ID和功能码
+        if (dataLength < 1)
+            throw new ModbusCommunicationException("TCP响应数据长度无效");
+
         var data = new byte[dataLength];
         if (dataLength > 0) {
             Array.Copy(response, 8, data, 0, dataLength);
@@ -99,6 +113,7 @@ public class TcpProtocol : IModbusProtocol {
 
         // 验证长度字段
         if (response.Length < 6 + length) return false;
+        if (length < 3) return false;
 
         return true;
     }
@@ -181,7 +196,13 @@ public class TcpProtocol : IModbusProtocol {
         if (request.Data.IsEmpty)
             throw new ArgumentException("WriteMultipleCoils需要数据");
 
-        // 字节计数应该等于数据的实际长度，因为线圈数据已经被打包成字节
+        var expectedByteCount = (request.Quantity + 7) / 8;
+        if (request.Data.Length != expectedByteCount)
+            throw new ArgumentException($"WriteMultipleCoils数据长度不匹配: 线圈数量{request.Quantity}应打包成{expectedByteCount}字节，实际{request.Data.Length}字节");
+        if (request.Data.Length > 255)
+            throw new ArgumentException("WriteMultipleCoils数据不能超过255字节");
+
+        // 字节计数等于数据的实际长度，因为线圈数据已经被打包成字节
         var byteCount = (byte)request.Data.Length;
         var pdu = new byte[6 + byteCount]; // 功能码(1) + 地址(2) + 数量(2) + 字节计数(1) + 数据(N)
 
@@ -200,6 +221,11 @@ public class TcpProtocol : IModbusProtocol {
     private static byte[] BuildWriteMultipleRegistersPdu(ModbusRequest request) {
         if (request.Data.IsEmpty)
             throw new ArgumentException("WriteMultipleRegisters需要数据");
+
+        if (request.Data.Length != request.Quantity * 2)
+            throw new ArgumentException($"WriteMultipleRegisters数据长度不匹配: 寄存器数量{request.Quantity}应对应{request.Quantity * 2}字节，实际{request.Data.Length}字节");
+        if (request.Data.Length > 255)
+            throw new ArgumentException("WriteMultipleRegisters数据不能超过255字节");
 
         var byteCount = (byte)request.Data.Length;
         var pdu = new byte[6 + byteCount];
@@ -225,6 +251,11 @@ public class TcpProtocol : IModbusProtocol {
         var writeQuantity = (ushort)((request.Data[2] << 8) | request.Data[3]);
         var writeData = new byte[request.Data.Length - 4];
         Array.Copy(request.Data.ToArray(), 4, writeData, 0, writeData.Length);
+
+        if (writeData.Length != writeQuantity * 2)
+            throw new ArgumentException($"ReadWriteMultipleRegisters写入数据长度不匹配: 写入寄存器数量{writeQuantity}应对应{writeQuantity * 2}字节，实际{writeData.Length}字节");
+        if (writeData.Length > 255)
+            throw new ArgumentException("ReadWriteMultipleRegisters写入数据不能超过255字节");
 
         var byteCount = (byte)writeData.Length;
         var pdu = new byte[10 + byteCount];

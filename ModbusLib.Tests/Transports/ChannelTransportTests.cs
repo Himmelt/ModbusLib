@@ -64,7 +64,7 @@ public class ChannelTransportTests : IDisposable {
     [Fact]
     public async Task SendReceiveAsync_WithValidRequestAndResponse_ReturnsResponse() {
         var request = new byte[] { 0x01, 0x03, 0x00, 0x00, 0x00, 0x0A };
-        var response = new byte[] { 0x01, 0x03, 0x14, 0x00, 0x0A };
+        var response = new byte[] { 0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x01, 0x06, 0x00, 0x64, 0x30, 0x39 };
         var responseTask = _transport.SendReceiveAsync(request, TestContext.Current.CancellationToken);
 
         await _session.ServerToClient.Writer.WriteAsync(response, TestContext.Current.CancellationToken);
@@ -75,9 +75,25 @@ public class ChannelTransportTests : IDisposable {
     }
 
     [Fact]
+    public async Task SendReceiveAsync_SplitResponse_AssemblesCompleteFrame() {
+        var session = new ChannelSession();
+        using var transport = new ChannelTransport(session);
+
+        var response = new byte[] { 0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x01, 0x06, 0x00, 0x64, 0x30, 0x39 };
+        var responseTask = transport.SendReceiveAsync([0x01], TestContext.Current.CancellationToken);
+
+        await session.ServerToClient.Writer.WriteAsync(response[..6], TestContext.Current.CancellationToken);
+        await Task.Delay(10, TestContext.Current.CancellationToken);
+        await session.ServerToClient.Writer.WriteAsync(response[6..], TestContext.Current.CancellationToken);
+
+        var result = await responseTask;
+        Assert.Equal(response, result);
+    }
+
+    [Fact]
     public async Task SendReceiveAsync_SemaphorePreventsConcurrentCalls() {
         var request = new byte[] { 0x01, 0x03, 0x00, 0x00, 0x00, 0x0A };
-        var response = new byte[] { 0x01, 0x03, 0x02 };
+        var response = new byte[] { 0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x01, 0x06, 0x00, 0x64, 0x30, 0x39 };
 
         var firstTask = _transport.SendReceiveAsync(request, TestContext.Current.CancellationToken);
 
@@ -107,7 +123,7 @@ public class ChannelTransportTests : IDisposable {
 
         try {
             var request = new byte[] { 0x01 };
-            var response = new byte[] { 0x01, 0x02 };
+            var response = new byte[] { 0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x01, 0x06, 0x00, 0x64, 0x30, 0x39 };
 
             var responseTask = transport.SendReceiveAsync(request, TestContext.Current.CancellationToken);
 
@@ -136,7 +152,7 @@ public class ChannelTransportTests : IDisposable {
     [Fact]
     public async Task SendReceiveAsync_SendsDataToClientToServerChannel() {
         var request = new byte[] { 0x01, 0x02, 0x03 };
-        var response = new byte[] { 0x04, 0x05, 0x06 };
+        var response = new byte[] { 0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x01, 0x06, 0x00, 0x64, 0x30, 0x39 };
 
         var sendTask = _transport.SendReceiveAsync(request, TestContext.Current.CancellationToken);
 

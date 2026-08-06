@@ -7,5 +7,5 @@ namespace ModbusLib.Clients;
 
 public class ModbusPipeClient(PipeSession session, ProtocolType protocol = ProtocolType.Tcp) : ModbusClientBase {
     protected override IModbusProtocol Protocol { get; set; } = protocol.GetProtocol();
-    protected override IModbusTransport Transport { get; set; } = new PipeTransport(session);
+    protected override IModbusTransport Transport { get; set; } = new PipeTransport(session, protocol);
 }

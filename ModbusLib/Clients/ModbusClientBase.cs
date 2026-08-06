@@ -53,19 +53,7 @@ public abstract class ModbusClientBase : IModbusClient {
 
         var request = new ModbusRequest(unitId, ModbusFunction.ReadCoils, startAddress, quantity);
         var response = await ExecuteRequestAsync(request, cancelToken).ConfigureAwait(false);
-
-        if (response.IsError)
-            throw new ModbusException(response.ExceptionCode!.Value, unitId, ModbusFunction.ReadCoils);
-
-        if (response.Data.IsEmpty || response.Data.Length < 1)
-            throw new ModbusCommunicationException("读取线圈响应数据不足");
-
-        var byteCount = response.Data[0];
-        if (response.Data.Length < 1 + byteCount)
-            throw new ModbusCommunicationException("读取线圈响应数据长度不匹配");
-
-        var dataBytes = new byte[byteCount];
-        Array.Copy(response.Data.ToArray(), 1, dataBytes, 0, byteCount);
+        var dataBytes = ExtractReadData(response, ModbusFunction.ReadCoils, expectedByteCount: -1);
 
         return DataConverter.ByteArrayToBoolArray(dataBytes, quantity);
     }
@@ -75,19 +63,7 @@ public abstract class ModbusClientBase : IModbusClient {
 
         var request = new ModbusRequest(unitId, ModbusFunction.ReadDiscreteInputs, startAddress, quantity);
         var response = await ExecuteRequestAsync(request, cancelToken).ConfigureAwait(false);
-
-        if (response.IsError)
-            throw new ModbusException(response.ExceptionCode!.Value, unitId, ModbusFunction.ReadDiscreteInputs);
-
-        if (response.Data.IsEmpty || response.Data.Length < 1)
-            throw new ModbusCommunicationException("读取离散输入响应数据不足");
-
-        var byteCount = response.Data[0];
-        if (response.Data.Length < 1 + byteCount)
-            throw new ModbusCommunicationException("读取离散输入响应数据长度不匹配");
-
-        var dataBytes = new byte[byteCount];
-        Array.Copy(response.Data.ToArray(), 1, dataBytes, 0, byteCount);
+        var dataBytes = ExtractReadData(response, ModbusFunction.ReadDiscreteInputs, expectedByteCount: -1);
 
         return DataConverter.ByteArrayToBoolArray(dataBytes, quantity);
     }
@@ -102,24 +78,7 @@ public abstract class ModbusClientBase : IModbusClient {
 
         var request = new ModbusRequest(unitId, ModbusFunction.ReadHoldingRegisters, startAddress, quantity);
         var response = await ExecuteRequestAsync(request, cancelToken).ConfigureAwait(false);
-
-        if (response.IsError) {
-            throw new ModbusException(response.ExceptionCode!.Value, unitId, ModbusFunction.ReadHoldingRegisters);
-        }
-
-        if (response.Data.IsEmpty || response.Data.Length < 1) {
-            throw new ModbusCommunicationException("读取保持寄存器响应数据不足");
-        }
-
-        var byteCount = response.Data[0];
-        if (response.Data.Length < 1 + byteCount || byteCount != quantity * 2) {
-            throw new ModbusCommunicationException("读取保持寄存器响应数据长度不匹配");
-        }
-
-        var dataBytes = new byte[byteCount];
-        Array.Copy(response.Data.ToArray(), 1, dataBytes, 0, byteCount);
-
-        return dataBytes;
+        return ExtractReadData(response, ModbusFunction.ReadHoldingRegisters, quantity * 2);
     }
 
     public async Task<ushort[]> ReadInputRegistersAsync(byte unitId, ushort startAddress, ushort quantity, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancelToken = default) {
@@ -132,24 +91,7 @@ public abstract class ModbusClientBase : IModbusClient {
 
         var request = new ModbusRequest(unitId, ModbusFunction.ReadInputRegisters, startAddress, quantity);
         var response = await ExecuteRequestAsync(request, cancelToken).ConfigureAwait(false);
-
-        if (response.IsError) {
-            throw new ModbusException(response.ExceptionCode!.Value, unitId, ModbusFunction.ReadInputRegisters);
-        }
-
-        if (response.Data.IsEmpty || response.Data.Length < 1) {
-            throw new ModbusCommunicationException("读取输入寄存器响应数据不足");
-        }
-
-        var byteCount = response.Data[0];
-        if (response.Data.Length < 1 + byteCount || byteCount != quantity * 2) {
-            throw new ModbusCommunicationException("读取输入寄存器响应数据长度不匹配");
-        }
-
-        var dataBytes = new byte[byteCount];
-        Array.Copy(response.Data.ToArray(), 1, dataBytes, 0, byteCount);
-
-        return dataBytes;
+        return ExtractReadData(response, ModbusFunction.ReadInputRegisters, quantity * 2);
     }
 
     #endregion
@@ -168,7 +110,9 @@ public abstract class ModbusClientBase : IModbusClient {
             throw new ModbusCommunicationException($"响应数据长度 {rawBytes.Length} 不满足转换 {count} 个目标数据类型 {typeof(T)}");
         }
         // 使用泛型转换器转换为目标类型
-        return DataConverter.Convert<T>(rawBytes, byteOrder, wordOrder);
+        var result = DataConverter.Convert<T>(rawBytes, byteOrder, wordOrder);
+        // 对于 byte/sbyte 等奇数大小类型，读回的字节数可能多于请求数量，截断到请求数量
+        return result.Length == count ? result : result[..count];
     }
 
     public async Task<T[]> ReadInputRegistersAsync<T>(byte unitId, ushort startAddress, ushort count, ByteOrder byteOrder = ByteOrder.BigEndian, WordOrder wordOrder = WordOrder.HighFirst, CancellationToken cancelToken = default) where T : unmanaged {
@@ -183,7 +127,9 @@ public abstract class ModbusClientBase : IModbusClient {
             throw new ModbusCommunicationException($"响应数据长度 {rawBytes.Length} 不满足转换 {count} 个目标数据类型 {typeof(T)}");
         }
         // 使用泛型转换器转换为目标类型
-        return DataConverter.Convert<T>(rawBytes, byteOrder, wordOrder);
+        var result = DataConverter.Convert<T>(rawBytes, byteOrder, wordOrder);
+        // 对于 byte/sbyte 等奇数大小类型，读回的字节数可能多于请求数量，截断到请求数量
+        return result.Length == count ? result : result[..count];
     }
 
     #endregion
@@ -282,6 +228,10 @@ public abstract class ModbusClientBase : IModbusClient {
             throw new ArgumentException("写入寄存器字节数量不能超过246（123个寄存器）", nameof(rawBytes));
         }
 
+        if (rawBytes.Length % 2 != 0) {
+            throw new ArgumentException("寄存器数据必须为偶数个字节（每个寄存器占2字节）", nameof(rawBytes));
+        }
+
         var request = new ModbusRequest(unitId, ModbusFunction.WriteMultipleRegisters, startAddress, (ushort)(rawBytes.Length / 2), rawBytes);
         var response = await ExecuteRequestAsync(request, cancelToken).ConfigureAwait(false);
 
@@ -302,6 +252,10 @@ public abstract class ModbusClientBase : IModbusClient {
 
         // 将泛型转换为字节数组
         var rawBytes = DataConverter.Convert([value], byteOrder, wordOrder);
+        // byte/sbyte 等奇数大小类型会产生奇数字节，末尾补0凑成完整寄存器
+        if (rawBytes.Length % 2 != 0) {
+            Array.Resize(ref rawBytes, rawBytes.Length + 1);
+        }
 
         // 调用原始写入方法
         await WriteMultipleRegistersRawAsync(unitId, startAddress, rawBytes, cancelToken).ConfigureAwait(false);
@@ -319,6 +273,10 @@ public abstract class ModbusClientBase : IModbusClient {
 
         // 将泛型数组转换为字节数组
         var rawBytes = DataConverter.Convert(values, byteOrder, wordOrder);
+        // byte/sbyte 等奇数大小类型会产生奇数字节，末尾补0凑成完整寄存器
+        if (rawBytes.Length % 2 != 0) {
+            Array.Resize(ref rawBytes, rawBytes.Length + 1);
+        }
 
         // 调用原始写入方法
         await WriteMultipleRegistersRawAsync(unitId, startAddress, rawBytes, cancelToken).ConfigureAwait(false);
@@ -353,22 +311,7 @@ public abstract class ModbusClientBase : IModbusClient {
 
         var request = new ModbusRequest(unitId, ModbusFunction.ReadWriteMultipleRegisters, readStartAddress, readQuantity, requestData);
         var response = await ExecuteRequestAsync(request, cancelToken).ConfigureAwait(false);
-
-        if (response.IsError) {
-            throw new ModbusException(response.ExceptionCode!.Value, unitId, ModbusFunction.ReadWriteMultipleRegisters);
-        }
-
-        if (response.Data.IsEmpty || response.Data.Length < 1) {
-            throw new ModbusCommunicationException("读写多个寄存器响应数据不足");
-        }
-
-        var byteCount = response.Data[0];
-        if (response.Data.Length < 1 + byteCount || byteCount != readQuantity * 2) {
-            throw new ModbusCommunicationException("读写多个寄存器响应数据长度不匹配");
-        }
-
-        var dataBytes = new byte[byteCount];
-        Array.Copy(response.Data.ToArray(), 1, dataBytes, 0, byteCount);
+        var dataBytes = ExtractReadData(response, ModbusFunction.ReadWriteMultipleRegisters, readQuantity * 2);
 
         return DataConverter.Convert<ushort>(dataBytes, byteOrder, wordOrder);
     }
@@ -501,8 +444,12 @@ public abstract class ModbusClientBase : IModbusClient {
                 }
 
                 return Protocol.ParseResponse(responseBytes, request);
+            } catch (OperationCanceledException) {
+                throw; // 保留用户取消语义
             } catch (Exception ex) when (attempt < Retries && IsRetryableException(ex)) {
                 lastException = ex;
+                // 通信层异常时先尝试断开并重连，让重试真正具备自愈能力
+                await TryReconnectAsync(cancelToken).ConfigureAwait(false);
                 // 在重试前检查取消令牌
                 cancelToken.ThrowIfCancelRequestCN();
                 await Task.Delay(100 * (attempt + 1), cancelToken).ConfigureAwait(false); // 递增延迟
@@ -515,8 +462,39 @@ public abstract class ModbusClientBase : IModbusClient {
     private static bool IsRetryableException(Exception exception) {
         return exception is ModbusTimeoutException ||
                exception is ModbusCommunicationException ||
+               exception is ModbusConnectionException ||
                (exception is ModbusException modbusEx &&
                 modbusEx.ExceptionCode == ModbusExceptionCode.TargetDeviceBusy);
+    }
+
+    private async Task TryReconnectAsync(CancellationToken cancelToken) {
+        try {
+            await Transport.DisconnectAsync(CancellationToken.None).ConfigureAwait(false);
+            await Transport.ConnectAsync(cancelToken).ConfigureAwait(false);
+        } catch (OperationCanceledException) when (cancelToken.IsCancellationRequested) {
+            throw;
+        } catch (Exception ex) when (ex is ModbusConnectionException or ModbusTimeoutException or ModbusCommunicationException) {
+            // 重连失败：由下一次请求尝试抛出真实的连接异常
+        }
+    }
+
+    private static byte[] ExtractReadData(ModbusResponse response, ModbusFunction function, int expectedByteCount) {
+        if (response.IsError) {
+            throw new ModbusException(response.ExceptionCode!.Value, response.UnitId, function);
+        }
+
+        if (response.Data.IsEmpty || response.Data.Length < 1) {
+            throw new ModbusCommunicationException("读取响应数据不足");
+        }
+
+        var byteCount = response.Data[0];
+        if (response.Data.Length < 1 + byteCount || (expectedByteCount >= 0 && byteCount != expectedByteCount)) {
+            throw new ModbusCommunicationException("读取响应数据长度不匹配");
+        }
+
+        var dataBytes = new byte[byteCount];
+        response.Data.Slice(1, byteCount).CopyTo(dataBytes);
+        return dataBytes;
     }
 
     private static void ValidateReadParameters(int quantity, int maxQuantity) {

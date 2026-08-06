@@ -134,6 +134,9 @@ public static class DataConverter {
     private static void ApplyByteAndWordOrder<T>(Span<byte> bytes, ByteOrder byteOrder, WordOrder wordOrder) where T : unmanaged {
         var typeSize = Unsafe.SizeOf<T>();
 
+        // 单字节类型（byte/sbyte）没有字节序/字序概念，直接返回，避免破坏数据
+        if (typeSize <= 1) return;
+
         // 先处理字节序
         // 需要转换的条件：数据存储字节序和系统字节序不一致
         if (byteOrder.IsLittleEndian() != BitConverter.IsLittleEndian) {

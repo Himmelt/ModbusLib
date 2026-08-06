@@ -28,7 +28,7 @@ public class RtuProtocol : IModbusProtocol {
 
     public ModbusResponse ParseResponse(byte[] response, ModbusRequest request) {
         ArgumentNullException.ThrowIfNull(response, nameof(response));
-        if (response.Length < 3) {
+        if (response.Length < 5) {
             throw new ModbusCommunicationException($"RTU响应长度不足: {response.Length}");
         }
 
@@ -53,6 +53,9 @@ public class RtuProtocol : IModbusProtocol {
 
         // 解析正常响应
         var dataLength = response.Length - 3; // 减去设备地址 + CRC(2字节)
+        if (dataLength < 2) {
+            throw new ModbusCommunicationException("RTU响应数据长度无效");
+        }
         var data = new byte[dataLength - 1]; // 减去功能码
         Array.Copy(response, 2, data, 0, data.Length);
 
@@ -61,7 +64,7 @@ public class RtuProtocol : IModbusProtocol {
 
     public bool ValidateResponse(byte[] response) {
         ArgumentNullException.ThrowIfNull(response, nameof(response));
-        if (response.Length < 3) return false;
+        if (response.Length < 5) return false;
 
         return Crc16Utils.ValidateCrc16(response);
     }
@@ -69,15 +72,15 @@ public class RtuProtocol : IModbusProtocol {
     public int CalculateExpectedResponseLength(ModbusRequest request) {
         ArgumentNullException.ThrowIfNull(request, nameof(request));
         return request.Function switch {
-            ModbusFunction.ReadCoils => 3 + 1 + (request.Quantity + 7) / 8 + 2, // 设备地址 + Function + ByteCount + Data + CRC
-            ModbusFunction.ReadDiscreteInputs => 3 + 1 + (request.Quantity + 7) / 8 + 2,
-            ModbusFunction.ReadHoldingRegisters => 3 + 1 + request.Quantity * 2 + 2,
-            ModbusFunction.ReadInputRegisters => 3 + 1 + request.Quantity * 2 + 2,
+            ModbusFunction.ReadCoils => 5 + (request.Quantity + 7) / 8, // 设备地址 + Function + ByteCount + Data + CRC
+            ModbusFunction.ReadDiscreteInputs => 5 + (request.Quantity + 7) / 8,
+            ModbusFunction.ReadHoldingRegisters => 5 + request.Quantity * 2,
+            ModbusFunction.ReadInputRegisters => 5 + request.Quantity * 2,
             ModbusFunction.WriteSingleCoil => 8, // Echo请求
             ModbusFunction.WriteSingleRegister => 8,
             ModbusFunction.WriteMultipleCoils => 8,
             ModbusFunction.WriteMultipleRegisters => 8,
-            ModbusFunction.ReadWriteMultipleRegisters => 3 + 1 + request.Quantity * 2 + 2,
+            ModbusFunction.ReadWriteMultipleRegisters => 5 + request.Quantity * 2,
             _ => throw new NotSupportedException($"不支持的功能码: {request.Function}")
         };
     }
@@ -145,6 +148,12 @@ public class RtuProtocol : IModbusProtocol {
             throw new ArgumentException("WriteMultipleCoils需要数据");
         }
 
+        var expectedByteCount = (request.Quantity + 7) / 8;
+        if (request.Data.Length != expectedByteCount)
+            throw new ArgumentException($"WriteMultipleCoils数据长度不匹配: 线圈数量{request.Quantity}应打包成{expectedByteCount}字节，实际{request.Data.Length}字节");
+        if (request.Data.Length > 255)
+            throw new ArgumentException("WriteMultipleCoils数据不能超过255字节");
+
         var byteCount = (byte)request.Data.Length;
         var pdu = new byte[6 + byteCount];
 
@@ -164,6 +173,11 @@ public class RtuProtocol : IModbusProtocol {
         if (request.Data.IsEmpty) {
             throw new ArgumentException("WriteMultipleRegisters需要数据");
         }
+
+        if (request.Data.Length != request.Quantity * 2)
+            throw new ArgumentException($"WriteMultipleRegisters数据长度不匹配: 寄存器数量{request.Quantity}应对应{request.Quantity * 2}字节，实际{request.Data.Length}字节");
+        if (request.Data.Length > 255)
+            throw new ArgumentException("WriteMultipleRegisters数据不能超过255字节");
 
         var byteCount = (byte)request.Data.Length;
         var pdu = new byte[6 + byteCount];
@@ -190,6 +204,11 @@ public class RtuProtocol : IModbusProtocol {
         var writeQuantity = (ushort)((request.Data[2] << 8) | request.Data[3]);
         var writeData = new byte[request.Data.Length - 4];
         Array.Copy(request.Data.ToArray(), 4, writeData, 0, writeData.Length);
+
+        if (writeData.Length != writeQuantity * 2)
+            throw new ArgumentException($"ReadWriteMultipleRegisters写入数据长度不匹配: 写入寄存器数量{writeQuantity}应对应{writeQuantity * 2}字节，实际{writeData.Length}字节");
+        if (writeData.Length > 255)
+            throw new ArgumentException("ReadWriteMultipleRegisters写入数据不能超过255字节");
 
         var byteCount = (byte)writeData.Length;
         var pdu = new byte[10 + byteCount];

@@ -65,7 +65,7 @@ public class PipeTransportTests : IDisposable {
     [Fact]
     public async Task SendReceiveAsync_WithValidRequestAndResponse_ReturnsResponse() {
         var request = new byte[] { 0x01, 0x03, 0x00, 0x00, 0x00, 0x0A };
-        var response = new byte[] { 0x01, 0x03, 0x14, 0x00, 0x0A };
+        var response = new byte[] { 0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x01, 0x06, 0x00, 0x64, 0x30, 0x39 };
         var responseTask = _transport.SendReceiveAsync(request, TestContext.Current.CancellationToken);
 
         await _session.ServerToClient.Writer.WriteAsync(response, TestContext.Current.CancellationToken);
@@ -77,9 +77,26 @@ public class PipeTransportTests : IDisposable {
     }
 
     [Fact]
+    public async Task SendReceiveAsync_SplitResponse_AssemblesCompleteFrame() {
+        var session = new PipeSession();
+        using var transport = new PipeTransport(session);
+
+        var response = new byte[] { 0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x01, 0x06, 0x00, 0x64, 0x30, 0x39 };
+        var responseTask = transport.SendReceiveAsync([0x01], TestContext.Current.CancellationToken);
+
+        await session.ServerToClient.Writer.WriteAsync(response.AsMemory(0, 6), TestContext.Current.CancellationToken);
+        await Task.Delay(10, TestContext.Current.CancellationToken);
+        await session.ServerToClient.Writer.WriteAsync(response.AsMemory(6), TestContext.Current.CancellationToken);
+        session.ServerToClient.Writer.Complete();
+
+        var result = await responseTask;
+        Assert.Equal(response, result);
+    }
+
+    [Fact]
     public async Task SendReceiveAsync_SemaphorePreventsConcurrentCalls() {
         var request = new byte[] { 0x01, 0x03, 0x00, 0x00, 0x00, 0x0A };
-        var response = new byte[] { 0x01, 0x03, 0x02 };
+        var response = new byte[] { 0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x01, 0x06, 0x00, 0x64, 0x30, 0x39 };
 
         var firstTask = _transport.SendReceiveAsync(request, TestContext.Current.CancellationToken);
 
@@ -110,7 +127,7 @@ public class PipeTransportTests : IDisposable {
 
         try {
             var request = new byte[] { 0x01 };
-            var response = new byte[] { 0x01, 0x02 };
+            var response = new byte[] { 0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x01, 0x06, 0x00, 0x64, 0x30, 0x39 };
 
             var responseTask = transport.SendReceiveAsync(request, TestContext.Current.CancellationToken);
 
