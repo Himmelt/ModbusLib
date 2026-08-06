@@ -11,7 +11,7 @@
   <!-- NuGet Package Metadata -->
   <PropertyGroup>
     <PackageId>Himmelt.ModbusLib</PackageId>
-    <Version>1.0.3</Version>
+    <Version>1.0.4</Version>
     <Authors>Himmelt</Authors>
     <Company>Himmelt</Company>
     <Description>一个功能完整、高性能的Modbus客户端库，支持.NET 8/9/10平台和多种Modbus协议变体。</Description>
@@ -27,7 +27,7 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <Title>ModbusLib</Title>
     <PackageTags>modbus;modbus-rtu;modbus-tcp;modbus-udp;.net;dotnet;client;protocol</PackageTags>
-    <PackageReleaseNotes>fix(SerialTransport): 修复字符间隔超时检查逻辑</PackageReleaseNotes>
+    <PackageReleaseNotes>v1.0.4: 全面修复传输层超时/断线/帧解析缺陷，TCP 按 MBAP/RTU 精确成帧、超时后自动清理连接、重试前自动重连；UDP 支持域名；串口异步 I/O 可取消；协议层增加事务ID校验与畸形帧防护；修复 byte 泛型读写与奇数字节校验。</PackageReleaseNotes>
     <PackageIcon>nuget_logo.png</PackageIcon>
   </PropertyGroup>
 
