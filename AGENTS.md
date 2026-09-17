@@ -53,6 +53,8 @@ for t in net8.0 net9.0 net10.0; do dotnet test ModbusLib.Tests/ModbusLib.Tests.c
    tag 名不参与打包，两者必须一致：tag `v1.0.5` ↔ `<Version>1.0.5</Version>`。
    若不一致，推上去的是 csproj 里的版本（例如 tag 是 v1.0.5、csproj 还是 1.0.4，实际发布的是 1.0.4）。
 2. 需要仓库 secret **`NUGET_API_KEY`**。
+3. **符号包（.snupkg）不需要单独指定**：只要与 `.nupkg` 同目录，`dotnet nuget push` 会自动一并发布（先 `.nupkg` 走 `/api/v2/package`，再 `.snupkg` 走 `/api/v2/symbolpackage`）；可用 `--no-symbols` 显式关闭。
+   符号包发布**只支持 NuGet V3 API**，源必须是 `https://api.nuget.org/v3/index.json`（用 v2 端点或本地文件夹源都不会发符号）。
 
 ### 三、标准发布步骤
 
