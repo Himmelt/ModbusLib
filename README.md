@@ -467,6 +467,34 @@ public class NetworkConfig {
 - `Retries` 默认 `0`（不重试）。需要自动恢复时请显式设置，例如 `client.Retries = 2`。
 - 触发重试的异常包括：`ModbusTimeoutException`、`ModbusCommunicationException`、`ModbusConnectionException` 以及设备忙（`TargetDeviceBusy`）异常。
 
+#### 断线自愈（`Retries > 0` 时生效）
+
+设置 `Retries >= 1` 后，客户端具备完整的断线自愈能力，语义如下：
+
+| 情形 | `Retries = 0`（默认） | `Retries >= 1` |
+| --- | --- | --- |
+| 从未调用过 `Connect` / `ConnectAsync` 就发请求 | 抛 `ModbusConnectionException`（"客户端未连接"） | **同上**（不擅自建连，以免隐藏"忘了连接"这类编程错误） |
+| 调用过 `Connect` 但首次连接失败（设备尚未上电） | 每次请求抛异常 | 每次请求按 `Retries` 配额重试，设备上电后自愈 |
+| 已连接后断线（网线松动、设备重启） | 每次请求 0ms 抛异常，永不自愈 | **下一轮请求自动重建会话并成功** |
+| 请求已发出后超时 / 通信异常 | 异常上抛 | 重连后重发，最多 `Retries` 次 |
+
+- 自动重建会话的前提是**调用方表达过连接意图**（调用过 `Connect` / `ConnectAsync`），且该意图未被显式 `Disconnect` / `DisconnectAsync` 清除。显式断开（停机、切换设备）之后不会被自动重连顶回来。
+- 请求路径上的重连**不构成"重发"**：该次尝试尚未把请求发出去，因此对写操作没有额外的重复执行风险。
+- ⚠️ **务必显式配置超时**（`Timeout` 与 `NetworkConfig.ReceiveTimeout`）。拔网线或设备掉电时 TCP 不会发送 FIN，`IsConnected` 仍为 `true`，自愈的触发点是"读超时 → 传输层断开 → 下一轮重建"；默认值 `-1` 会让请求无限阻塞，此时任何自动重连都不会被触发。
+- 库内重连是**快速、有界**的（受 `Retries` 约束）。设备长时间不在线（分钟级）应由应用循环做退避重连，而不是靠调大 `Retries`。
+
+```csharp
+var client = new ModbusTcpClient(new NetworkConfig {
+    RemoteHost = "192.168.1.10",
+    ConnectTimeout = 3000,      // 必须显式设置
+    ReceiveTimeout = 3000,      // 必须显式设置
+    SendTimeout = 3000
+}) {
+    Timeout = 1000,             // 单次请求整体超时
+    Retries = 2                 // 开启断线自愈
+};
+```
+
 ### 数据类型转换
 
 库支持所有 `unmanaged` 类型的泛型读写，包括但不限于：
