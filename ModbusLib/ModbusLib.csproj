@@ -11,7 +11,7 @@
   <!-- NuGet Package Metadata -->
   <PropertyGroup>
     <PackageId>Himmelt.ModbusLib</PackageId>
-    <Version>1.0.5</Version>
+    <Version>1.0.6</Version>
     <Authors>Himmelt</Authors>
     <Company>Himmelt</Company>
     <Description>一个功能完整、高性能的Modbus客户端库，支持.NET 8/9/10平台和多种Modbus协议变体。</Description>
@@ -27,7 +27,7 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <Title>ModbusLib</Title>
     <PackageTags>modbus;modbus-rtu;modbus-tcp;modbus-udp;.net;dotnet;client;protocol</PackageTags>
-    <PackageReleaseNotes>v1.0.5: 修复 Channel 传输（尤其 RTU over Channel）超时后请求/响应永久失步——超时不再清空会话通道导致残留帧被后续请求误读、且库自身无法自愈；现于发请求前排空通道、超时后清理残留，并按 设备地址/功能码/帧长 校验响应相关性，丢弃错配帧与半帧碎片；DisconnectAsync 增加会话复位语义，使重试具备自愈能力；新增可选的有界会话构造（ChannelSession(int)）以防滞留帧无上限堆积。行为变更：DisconnectAsync 由空操作改为复位会话缓冲；错配/畸形响应帧会被丢弃并等待至超时（可能表现为超时而非长度不匹配）。</PackageReleaseNotes>
+    <PackageReleaseNotes>v1.0.6: 修复 TCP/UDP/串口客户端断线（网线松动、设备重启、USB 拔插）后无法自愈——原「未连接」检查位于重试循环之外，一旦进入未连接态，后续每个请求都会立即抛 ModbusConnectionException 且 Retries 完全失效（重试与重连都不会执行），对端恢复后永久失联；现在未连接按可重试的连接故障处理，在 Retries &gt;= 1 且调用方调用过 Connect/ConnectAsync 时，下一轮请求会自动重建会话并成功（重建不构成「重发」，对写操作无额外风险）。新增私有连接意图标志：ConnectAsync 置位、DisconnectAsync 复位，使显式停机不被自动重连顶回来。行为变更（仅 Retries &gt;= 1 生效）：Retries = 0（默认）行为与 1.0.5 完全一致；调用方从未调用 Connect/ConnectAsync 时仍抛「客户端未连接」，不擅自建连；零新增公开 API。注意：拔网线/设备掉电时 TCP 不发 FIN、IsConnected 仍为 true，自愈的触发点是「读超时 → 传输层断开 → 下一轮重建」，请显式配置 Timeout 与 NetworkConfig.ReceiveTimeout，否则默认 -1 会让请求无限阻塞，任何自动重连都不会被触发。</PackageReleaseNotes>
     <PackageIcon>nuget_logo.png</PackageIcon>
   </PropertyGroup>
 
