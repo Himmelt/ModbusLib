@@ -56,13 +56,17 @@ for t in net8.0 net9.0 net10.0; do dotnet test ModbusLib.Tests/ModbusLib.Tests.c
    若不一致，推上去的是 csproj 里的版本（例如 tag 是 v1.0.5、csproj 还是 1.0.4，实际发布的是 1.0.4）。
 2. **认证走 NuGet 可信发布（Trusted Publishing / OIDC），不再需要长期 API key。**
    - 工作流侧：`publish` job 必须保留 `permissions: id-token: write`，否则 OIDC 令牌发不出来。
-   - 仓库侧需要一个 secret **`NUGET_USER`**：nuget.org 的**配置文件名称**（profile name，**不是邮箱**）。
-     `NuGet/login@v1` 的 `user` 输入只接受配置文件名称，传邮箱会失败。
+   - workflow 里 `user` 直接写死为 **`Himmelt`**（nuget.org 的**配置文件名称**，
+     即 https://www.nuget.org/profiles/Himmelt ，**不是邮箱**）。`NuGet/login@v1` 只认配置文件名称，
+     传邮箱会失败；账号若改名，改 workflow 里那一行即可。**不需要任何仓库 secret。**
    - nuget.org 侧：必须先在包的 **Trusted Publishing** 策略里登记
      `repository = Himmelt/ModbusLib`、`workflow = ci.yml`（两者都要和工作流文件对得上），
      否则 OIDC 换 key 会以 403 收场。策略可按包 ID / Glob 限定范围。
    - 旧的 `NUGET_API_KEY` secret 已不再被引用，可以删除；**本地手工发布**仍需要一个在
      nuget.org 页面手工生成的 API key（CI 的 OIDC 临时 key 只在 Actions 里有效）。
+   - 可信发布策略需在 nuget.org 的包页 → Trusted Publishing 中保持 Active：
+     `Repository Owner = Himmelt`、`Repository = ModbusLib`、`Workflow = ci.yml`、
+     Scope 选「Push new packages and package versions」。
 3. **符号包（.snupkg）不需要单独指定**：只要与 `.nupkg` 同目录，`dotnet nuget push` 会自动一并发布（先 `.nupkg` 走 `/api/v2/package`，再 `.snupkg` 走 `/api/v2/symbolpackage`）；可用 `--no-symbols` 显式关闭。
    符号包发布**只支持 NuGet V3 API**，源必须是 `https://api.nuget.org/v3/index.json`（用 v2 端点或本地文件夹源都不会发符号）。
 

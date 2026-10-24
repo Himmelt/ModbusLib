@@ -46,12 +46,12 @@ jobs:
       - name: Pack
         run: dotnet pack ModbusLib/ModbusLib.csproj -c Release -o out
       # NuGet 可信发布（Trusted Publishing）：用 OIDC 换一个几分钟后就过期的临时 API key。
-      # 不再需要仓库 secret NUGET_API_KEY；user 是 nuget.org 的「配置文件名称」而非邮箱，
-      # 建议走 secret（NUGET_USER），便于账号改名时不用改 workflow。
+      # user 是 nuget.org 的「配置文件名称」（https://www.nuget.org/profiles/Himmelt），不是邮箱。
+      # 常量写死；若日后账号改名，改这一行即可。
       - name: NuGet login (OIDC → temp API key)
         uses: NuGet/login@v1
         id: login
         with:
-          user: ${{ secrets.NUGET_USER }}
+          user: Himmelt
       - name: Push to NuGet.org
         run: dotnet nuget push out/*.nupkg --source https://api.nuget.org/v3/index.json --symbol-source https://api.nuget.org/v3/index.json --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --skip-duplicate
