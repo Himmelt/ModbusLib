@@ -37,7 +37,9 @@ for t in net8.0 net9.0 net10.0; do dotnet test ModbusLib.Tests/ModbusLib.Tests.c
 
 - 触发条件：`on.push` 监听 `branches: [main]` 与 `tags: ["v*"]`。
 - `build-test` job（windows-latest）：`restore` → `build -c Release` → `test -c Release` → `pack` → 上传 artifact `nuget-packages`。
-- `publish` job（ubuntu-latest）：带 `if: startsWith(github.ref, 'refs/tags/v')` 且 `needs: build-test`，执行 `dotnet nuget push` 到 nuget.org。
+- `publish` job（ubuntu-latest）：带 `if: startsWith(github.ref, 'refs/tags/v')` 且 `needs: build-test`，
+  先 `dotnet pack`，再用 `NuGet/login@v1`（GitHub OIDC）换取 nuget.org 的**短期 API key**，
+  最后 `dotnet nuget push` 到 nuget.org。该 job 声明了 `permissions: id-token: write`。
 
 | 推送内容 | 构建/测试/打包 | 发布到 nuget.org |
 | --- | --- | --- |
@@ -52,7 +54,15 @@ for t in net8.0 net9.0 net10.0; do dotnet test ModbusLib.Tests/ModbusLib.Tests.c
 1. **版本号唯一来源是 `ModbusLib/ModbusLib.csproj` 的 `<Version>`，与 tag 名无关。**
    tag 名不参与打包，两者必须一致：tag `v1.0.5` ↔ `<Version>1.0.5</Version>`。
    若不一致，推上去的是 csproj 里的版本（例如 tag 是 v1.0.5、csproj 还是 1.0.4，实际发布的是 1.0.4）。
-2. 需要仓库 secret **`NUGET_API_KEY`**。
+2. **认证走 NuGet 可信发布（Trusted Publishing / OIDC），不再需要长期 API key。**
+   - 工作流侧：`publish` job 必须保留 `permissions: id-token: write`，否则 OIDC 令牌发不出来。
+   - 仓库侧需要一个 secret **`NUGET_USER`**：nuget.org 的**配置文件名称**（profile name，**不是邮箱**）。
+     `NuGet/login@v1` 的 `user` 输入只接受配置文件名称，传邮箱会失败。
+   - nuget.org 侧：必须先在包的 **Trusted Publishing** 策略里登记
+     `repository = Himmelt/ModbusLib`、`workflow = ci.yml`（两者都要和工作流文件对得上），
+     否则 OIDC 换 key 会以 403 收场。策略可按包 ID / Glob 限定范围。
+   - 旧的 `NUGET_API_KEY` secret 已不再被引用，可以删除；**本地手工发布**仍需要一个在
+     nuget.org 页面手工生成的 API key（CI 的 OIDC 临时 key 只在 Actions 里有效）。
 3. **符号包（.snupkg）不需要单独指定**：只要与 `.nupkg` 同目录，`dotnet nuget push` 会自动一并发布（先 `.nupkg` 走 `/api/v2/package`，再 `.snupkg` 走 `/api/v2/symbolpackage`）；可用 `--no-symbols` 显式关闭。
    符号包发布**只支持 NuGet V3 API**，源必须是 `https://api.nuget.org/v3/index.json`（用 v2 端点或本地文件夹源都不会发符号）。
 
@@ -79,4 +89,15 @@ for t in net8.0 net9.0 net10.0; do dotnet test ModbusLib.Tests/ModbusLib.Tests.c
    git tag -a vX.Y.Z -m "vX.Y.Z"
    git push <常用远端> main
    git push <常用远端> vX.Y.Z
+   ```
+
+5. tag 同步到 **GitHub** 仓库后，Actions 自动跑 `build-test` + `publish`。
+   本地不需要、也无法用 CI 的那把 OIDC 临时 key；只有在 nuget.org 上临时出问题、
+   需要手工补推时，才用页面生成的 API key：
+
+   ```bash
+   dotnet nuget push temp/pack-check-X.Y.Z/Himmelt.ModbusLib.X.Y.Z.nupkg \
+     --source https://api.nuget.org/v3/index.json \
+     --symbol-source https://api.nuget.org/v3/index.json \
+     --api-key <页面生成的 key> --skip-duplicate
    ```
