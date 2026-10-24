@@ -20,6 +20,7 @@ public sealed class UdpTransport : IModbusTransport {
     private UdpClient? _udpClient;
     private IPEndPoint? _remoteEndPoint;
     private readonly SemaphoreSlim _lock = new(1, 1);
+    private LinkState _linkState = LinkState.Unknown;
 
     /// <summary>
     /// 使用 TCP 协议帧（MBAP）创建传输
@@ -36,6 +37,12 @@ public sealed class UdpTransport : IModbusTransport {
 
     public int Timeout { get; set; } = -1;
     public bool IsConnected => _udpClient != null && _remoteEndPoint != null;
+
+    /// <inheritdoc />
+    public LinkState LinkState => _linkState;
+
+    /// <inheritdoc />
+    public event EventHandler<LinkStateChangedEventArgs>? LinkStateChanged;
 
     public async Task<bool> ConnectAsync(CancellationToken cancelToken = default) {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -72,18 +79,20 @@ public sealed class UdpTransport : IModbusTransport {
 
             // UDP 是无连接协议，这里仅配置远端端点
             _udpClient.Connect(_remoteEndPoint);
+            SetLinkState(LinkState.Up, "UDP 端点已配置");
 
             return true;
         } catch (OperationCanceledException) when (cancelToken.IsCancellationRequested) {
             throw;
         } catch (OperationCanceledException) {
-            DisconnectInternal();
+            DisconnectInternal("连接超时");
             throw new ModbusTimeoutException($"UDP [{_config.RemoteHost}:{_config.RemotePort}] 连接超时");
         } catch (Exception ex) {
-            DisconnectInternal();
+            DisconnectInternal($"连接失败: {ex.Message}");
             throw new ModbusConnectionException($"UDP 连接失败: {ex.Message}", ex);
         } finally {
             _lock.Release();
+            FlushLinkEvents();
         }
     }
 
@@ -98,13 +107,15 @@ public sealed class UdpTransport : IModbusTransport {
             return;
         }
         try {
-            DisconnectInternal();
+            DisconnectInternal("主动断开");
         } finally {
             _lock.Release();
+            FlushLinkEvents();
         }
     }
 
-    private void DisconnectInternal() {
+    private void DisconnectInternal(string? reason = null) {
+        SetLinkState(LinkState.Down, reason ?? "UDP 已断开");
         try {
             _udpClient?.Close();
         } catch (Exception ex) when (ex is SocketException || ex is ObjectDisposedException) { }
@@ -154,6 +165,7 @@ public sealed class UdpTransport : IModbusTransport {
             throw new ModbusCommunicationException($"UDP [{_config.RemoteHost}:{_config.RemotePort}] 通信异常: {ex.Message}", ex);
         } finally {
             _lock.Release();
+            FlushLinkEvents();
         }
     }
 
@@ -190,18 +202,37 @@ public sealed class UdpTransport : IModbusTransport {
     public void Dispose() {
         if (_disposed) return;
 
-        DisconnectInternal();
+        DisconnectInternal("连接已释放");
         _lock.Dispose();
         _disposed = true;
+        FlushLinkEvents();
     }
 
     public async ValueTask DisposeAsync() {
         if (_disposed) return;
 
-        DisconnectInternal();
+        DisconnectInternal("连接已释放");
         _lock.Dispose();
         _disposed = true;
+        FlushLinkEvents();
 
         await Task.CompletedTask.ConfigureAwait(false);
+    }
+
+    private void SetLinkState(LinkState state, string reason) {
+        if (_linkState == state) return;
+        _linkState = state;
+        _pendingEvent = new LinkStateChangedEventArgs(state, reason);
+    }
+
+    private LinkStateChangedEventArgs? _pendingEvent;
+
+    private void FlushLinkEvents() {
+        var args = _pendingEvent;
+        _pendingEvent = null;
+        if (args is null) return;
+#pragma warning disable CA1031 // 有意吞掉：订阅者异常不得影响通信主路径
+        try { LinkStateChanged?.Invoke(this, args); } catch { }
+#pragma warning restore CA1031
     }
 }

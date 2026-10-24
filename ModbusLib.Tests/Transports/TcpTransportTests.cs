@@ -60,7 +60,7 @@ public class TcpTransportTests : IDisposable {
     }
 
     [Fact]
-    public async Task SendReceiveAsync_Timeout_ThrowsModbusTimeoutAndDisconnects() {
+    public async Task SendReceiveAsync_Timeout_KeepsConnectionAndLinkStateUp() {
         var ct = TestContext.Current.CancellationToken;
         var listener = await StartListenerAsync();
         var port = ((IPEndPoint)listener.LocalEndpoint).Port;
@@ -79,13 +79,42 @@ public class TcpTransportTests : IDisposable {
             await release.Task; // 保持连接打开，不响应请求
         }, ct);
 
+        // 从站没回话是"这一轮没数据"，不是"链路坏了"：连接必须保留
         await Assert.ThrowsAsync<ModbusTimeoutException>(() =>
             transport.SendReceiveAsync(new byte[12], ct));
 
-        // 超时后连接应被清理，避免残留半帧数据导致后续请求错位
-        Assert.False(transport.IsConnected);
+        Assert.True(transport.IsConnected);
+        Assert.Equal(LinkState.Up, transport.LinkState);
 
         release.SetResult();
+        await serverTask;
+    }
+
+    [Fact]
+    public async Task SendReceiveAsync_PeerClosesConnection_MarksLinkBroken() {
+        var ct = TestContext.Current.CancellationToken;
+        var listener = await StartListenerAsync();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        using var transport = new TcpTransport(new NetworkConfig {
+            RemoteHost = "127.0.0.1",
+            RemotePort = port,
+            ReceiveTimeout = 5000
+        });
+        await transport.ConnectAsync(ct);
+
+        var serverTask = Task.Run(async () => {
+            using var client = await listener.AcceptTcpClientAsync(ct);
+            using var stream = client.GetStream();
+            await stream.ReadExactlyAsync(new byte[12], ct);
+            // 对端直接关闭：这是明确的链路级证据
+        }, ct);
+
+        var ex = await Assert.ThrowsAsync<ModbusCommunicationException>(() =>
+            transport.SendReceiveAsync(new byte[12], ct));
+        Assert.True(ex.IsLinkBroken);
+        Assert.Equal(LinkState.Down, transport.LinkState);
+        Assert.False(transport.IsConnected);
+
         await serverTask;
     }
 

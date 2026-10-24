@@ -1,5 +1,7 @@
 namespace ModbusLib.Interfaces;
 
+using ModbusLib.Models;
+
 /// <summary>
 /// Modbus传输层接口
 /// </summary>
@@ -21,6 +23,17 @@ public interface IModbusTransport : IDisposable, IAsyncDisposable {
     /// 获取连接状态
     /// </summary>
     bool IsConnected { get; }
+
+    /// <summary>
+    /// 链路健康状态。传输层只在拿到**明确证据**（FIN/RST/IO 异常）时才翻转为 <see cref="LinkState.Down"/>；
+    /// "请求超时但没有错误信号"不算链路断开，状态保持 <see cref="LinkState.Up"/>。
+    /// </summary>
+    LinkState LinkState { get; }
+
+    /// <summary>
+    /// 链路状态变更通知。连接被传输层关闭时会触发，调用方无需轮询。
+    /// </summary>
+    event EventHandler<LinkStateChangedEventArgs>? LinkStateChanged;
 
     /// <summary>
     /// 发送请求并接收响应

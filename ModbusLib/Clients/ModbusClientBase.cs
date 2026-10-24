@@ -14,15 +14,6 @@ public abstract class ModbusClientBase : IModbusClient {
     private bool _disposed;
 
     /// <summary>
-    /// 调用方是否表达过连接意图（调用过 <see cref="Connect"/> 或 <see cref="ConnectAsync"/>）。
-    /// 只有表达过，请求路径才允许自动重建会话；否则保持"未连接即抛错"的语义，
-    /// 以免把"忘了连接"这类编程错误隐藏成"请求偶尔能用"。
-    /// 显式 <see cref="Disconnect"/> / <see cref="DisconnectAsync"/> 会清除该意图，
-    /// 使停机、切换设备等调用方决定得到尊重；重连内部走传输层，不会清除它。
-    /// </summary>
-    private bool _connectRequested;
-
-    /// <summary>
     /// 获取一个值，表示当前对象是否已被释放
     /// </summary>
     protected bool IsDisposed => _disposed;
@@ -35,6 +26,21 @@ public abstract class ModbusClientBase : IModbusClient {
     }
 
     public bool IsConnected => Transport.IsConnected;
+
+    /// <summary>链路健康状态（由传输层维护）。</summary>
+    public LinkState LinkState => Transport.LinkState;
+
+    /// <summary>
+    /// 链路状态变更通知（链路断开时触发）。
+    /// <para>
+    /// 库不会在请求路径里隐式重连：一条连接被多个设备共享时，重连必须由连接看护者统一决定，
+    /// 否则每个设备各退避各重连，会把一次链路故障放大成 N 次重连风暴。
+    /// </para>
+    /// </summary>
+    public event EventHandler<LinkStateChangedEventArgs>? LinkStateChanged {
+        add => Transport.LinkStateChanged += value;
+        remove => Transport.LinkStateChanged -= value;
+    }
     /// <summary>
     /// 获取Modbus协议实现
     /// </summary>
@@ -47,15 +53,11 @@ public abstract class ModbusClientBase : IModbusClient {
 
     public virtual async Task<bool> ConnectAsync(CancellationToken cancelToken = default) {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        // 先置位：即使本次建连失败（例如设备尚未上电），后续请求也应允许自愈
-        _connectRequested = true;
         return await Transport.ConnectAsync(cancelToken).ConfigureAwait(false);
     }
 
     public virtual async Task DisconnectAsync(CancellationToken cancelToken = default) {
         if (_disposed) return;
-        // 显式断开 = 不再自动重连（尊重停机 / 切换设备的调用方决定）
-        _connectRequested = false;
         await Transport.DisconnectAsync(cancelToken).ConfigureAwait(false);
     }
 
@@ -440,23 +442,17 @@ public abstract class ModbusClientBase : IModbusClient {
     protected async Task<ModbusResponse> ExecuteRequestAsync(ModbusRequest request, CancellationToken cancelToken) {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        // 未连接且不满足自动重建的前提时立即上抛：调用方从未表达连接意图，或 Retries = 0。
-        // 该判断必须放在重试循环之外——ModbusConnectionException 属于可重试异常，
-        // 若放在循环内，第一次尝试的"拒绝"会被重试路径吞掉并顺手完成重连，门控即告失效。
-        if (!IsConnected && (!_connectRequested || Retries <= 0))
-            throw new ModbusConnectionException("客户端未连接");
-
         Exception? lastException = null;
 
+        // 重试只在链路仍然健康时发生：链路已断（LinkState = Down）时重发没有意义，
+        // 那属于调用方（连接看护者）的职责。库不做隐式重连。
         for (int attempt = 0; attempt <= Retries; attempt++) {
             // 检查取消令牌
             cancelToken.ThrowIfCancelRequestCN();
 
             try {
-                // 能走到这里说明允许自动重建（否则上面已抛错）。先恢复会话再发本次请求：
-                // 本次尝试尚未发出任何请求，因此不构成"重发"。
                 if (!IsConnected) {
-                    await RebuildConnectionAsync(cancelToken).ConfigureAwait(false);
+                    throw new ModbusConnectionException("客户端未连接") { IsLinkBroken = true };
                 }
 
                 var requestBytes = Protocol.BuildRequest(request);
@@ -469,11 +465,9 @@ public abstract class ModbusClientBase : IModbusClient {
                 return Protocol.ParseResponse(responseBytes, request);
             } catch (OperationCanceledException) {
                 throw; // 保留用户取消语义
-            } catch (Exception ex) when (attempt < Retries && IsRetryableException(ex)) {
+            } catch (Exception ex) when (attempt < Retries && IsRetryableException(ex) && !IsLinkBroken(ex) && LinkState == LinkState.Up) {
+                // 仅"链路仍然健康"的协议级失败（对端超时、帧错配）才值得在同一条链路上重发
                 lastException = ex;
-                // 通信层异常时先尝试断开并重连，让重试真正具备自愈能力
-                await TryReconnectAsync(cancelToken).ConfigureAwait(false);
-                // 在重试前检查取消令牌
                 cancelToken.ThrowIfCancelRequestCN();
                 await Task.Delay(100 * (attempt + 1), cancelToken).ConfigureAwait(false); // 递增延迟
             }
@@ -481,6 +475,12 @@ public abstract class ModbusClientBase : IModbusClient {
 
         throw lastException ?? new ModbusCommunicationException("请求执行失败");
     }
+
+    private static bool IsLinkBroken(Exception ex) => ex switch {
+        ModbusConnectionException => true,
+        ModbusCommunicationException m => m.IsLinkBroken,
+        _ => false
+    };
 
     private static bool IsRetryableException(Exception exception) {
         return exception is ModbusTimeoutException ||
@@ -493,21 +493,6 @@ public abstract class ModbusClientBase : IModbusClient {
     /// <summary>
     /// 重建会话：先断开清理再建立连接（与各传输的 Connect 语义一致），失败原因原样上抛。
     /// </summary>
-    private async Task RebuildConnectionAsync(CancellationToken cancelToken) {
-        await Transport.DisconnectAsync(CancellationToken.None).ConfigureAwait(false);
-        await Transport.ConnectAsync(cancelToken).ConfigureAwait(false);
-    }
-
-    private async Task TryReconnectAsync(CancellationToken cancelToken) {
-        try {
-            await RebuildConnectionAsync(cancelToken).ConfigureAwait(false);
-        } catch (OperationCanceledException) when (cancelToken.IsCancellationRequested) {
-            throw;
-        } catch (Exception ex) when (ex is ModbusConnectionException or ModbusTimeoutException or ModbusCommunicationException) {
-            // 重连失败：由下一次请求尝试抛出真实的连接异常
-        }
-    }
-
     private static byte[] ExtractReadData(ModbusResponse response, ModbusFunction function, int expectedByteCount) {
         if (response.IsError) {
             throw new ModbusException(response.ExceptionCode!.Value, response.UnitId, function);

@@ -31,6 +31,12 @@ public sealed class ChannelTransport : IModbusTransport {
     public int Timeout { get; set; } = -1;
     public bool IsConnected => !_disposed;
 
+    /// <summary>Channel 传输没有物理链路：未释放即视为 <see cref="LinkState.Up"/>。</summary>
+    public LinkState LinkState => _disposed ? LinkState.Down : LinkState.Up;
+
+    /// <summary>Channel 传输没有可丢失的物理链路，无需订阅。</summary>
+    public event EventHandler<LinkStateChangedEventArgs>? LinkStateChanged { add { } remove { } }
+
     public Task<bool> ConnectAsync(CancellationToken cancelToken = default) {
         ObjectDisposedException.ThrowIf(_disposed, this);
         return Task.FromResult(true);

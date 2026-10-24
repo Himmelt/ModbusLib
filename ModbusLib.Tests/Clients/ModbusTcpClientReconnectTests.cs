@@ -8,14 +8,16 @@ using System.Net.Sockets;
 namespace ModbusLib.Tests.Clients;
 
 /// <summary>
-/// TCP 客户端断线自愈行为验证（对应 issue「在 ExecuteRequestAsync 中增加自动重连机制」）。
+/// 断线处置职责划分验证（库只报告，宿主管重连）。
 ///
 /// 语义约定：
 /// <list type="bullet">
-/// <item><c>Retries = 0</c>（默认）：任何失败立即上抛，不重连、不重发（与历史行为一致）。</item>
-/// <item><c>Retries &gt; 0</c>：「未连接」按可重试的连接故障处理，但仅当调用方表达过连接意图
-/// （调用过 <c>Connect</c> / <c>ConnectAsync</c>）时才自动重建会话。</item>
-/// <item>显式 <c>DisconnectAsync</c>：清除连接意图，之后不再自动重建。</item>
+/// <item><b>链路级故障</b>（对端 FIN/RST、连接未建立）：上抛 <see cref="ModbusConnectionException"/>
+/// / <see cref="ModbusCommunicationException"/>（<c>IsLinkBroken = true</c>），
+/// <see cref="ModbusClientBase.LinkState"/> 翻转为 <c>Down</c>。库<b>不</b>自动重连，
+/// 重连是连接看护者（宿主持有连接的一方）的职责。</item>
+/// <item><b>协议级故障</b>（请求超时、帧错配）：连接保留、<c>LinkState</c> 仍为 <c>Up</c>；
+/// 此时 <c>Retries &gt; 0</c> 会在同一条链路上重发，绝不重建连接。</item>
 /// <item>用户取消：原样抛 <c>OperationCanceledException</c>，既不算故障（不重试）也不重发。</item>
 /// </list>
 /// </summary>
@@ -44,23 +46,23 @@ public class ModbusTcpClientReconnectTests : IDisposable {
             () => client.ReadHoldingRegistersAsync(1, 0, 2, cancelToken: ct));
         Assert.Equal("客户端未连接", ex.Message);
 
-        // 对端重启（设备上电）后，默认配置下仍不自愈：既不发请求，也不重连
+        // 对端重启（设备上电）后库仍不自愈：不发请求、不重连；重连由连接看护者负责
         server.Start();
         var beforeRequests = server.RequestsSeen;
         var beforeConnections = server.ConnectionsAccepted;
-        await Assert.ThrowsAsync<ModbusConnectionException>(
+        var ex2 = await Assert.ThrowsAsync<ModbusConnectionException>(
             () => client.ReadHoldingRegistersAsync(1, 0, 2, cancelToken: ct));
+        Assert.True(ex2.IsLinkBroken);
+        Assert.Equal(LinkState.Down, client.LinkState);
         Assert.Equal(beforeRequests, server.RequestsSeen);
         Assert.Equal(beforeConnections, server.ConnectionsAccepted);
     }
 
-    [Theory]
-    [InlineData(1)]
-    [InlineData(2)]
-    public async Task RetriesGreaterThan0_AfterServerRecovers_NextRequestSelfHeals(int retries) {
+    [Fact]
+    public async Task LinkDown_HostReconnects_ThenRequestSucceeds() {
         var ct = TestContext.Current.CancellationToken;
         var server = StartServer();
-        using var client = CreateClient(server.Port, retries: retries);
+        using var client = CreateClient(server.Port, retries: 2);
 
         Assert.True(await client.ConnectAsync(ct));
         var beforeBreak = await client.ReadHoldingRegistersAsync(1, 0, 2, cancelToken: ct);
@@ -68,19 +70,24 @@ public class ModbusTcpClientReconnectTests : IDisposable {
         // 网线松动 / 设备重启：对端断开
         server.Stop();
         await AssertDisconnectedAsync(client, ct);
-        AssertConnectionFailure(await Assert.ThrowsAnyAsync<Exception>(
-            () => client.ReadHoldingRegistersAsync(1, 0, 2, cancelToken: ct)));
+        var broken = await Assert.ThrowsAnyAsync<Exception>(
+            () => client.ReadHoldingRegistersAsync(1, 0, 2, cancelToken: ct));
+        AssertConnectionFailure(broken);
+        Assert.Equal(LinkState.Down, client.LinkState);
 
-        // 对端恢复：下一轮请求应自动重建会话（且只重连、不重发）并成功
-        server.Start();
+        // 库不会自己重连：请求只报错，不发帧
         var beforeRequests = server.RequestsSeen;
-        var beforeConnections = server.ConnectionsAccepted;
+        await Assert.ThrowsAnyAsync<Exception>(() => client.ReadHoldingRegistersAsync(1, 0, 2, cancelToken: ct));
+        Assert.Equal(beforeRequests, server.RequestsSeen);
+
+        // 对端恢复后，由连接看护者（宿主）显式重连，之后请求即恢复
+        server.Start();
+        Assert.True(await client.ConnectAsync(ct));
         var afterRecover = await client.ReadHoldingRegistersAsync(1, 0, 2, cancelToken: ct);
 
         Assert.Equal(beforeBreak[0], afterRecover[0]);
-        Assert.True(client.IsConnected, "自愈后客户端应处于已连接状态");
-        Assert.Equal(1, server.ConnectionsAccepted - beforeConnections);   // 恰好重连一次
-        Assert.Equal(1, server.RequestsSeen - beforeRequests);             // 恰好发出一个请求（重连不构成"重发"）
+        Assert.True(client.IsConnected);
+        Assert.Equal(LinkState.Up, client.LinkState);
     }
 
     [Fact]
@@ -89,26 +96,34 @@ public class ModbusTcpClientReconnectTests : IDisposable {
         var server = StartServer();
         using var client = CreateClient(server.Port, retries: 2);
 
-        // 调用方从未表达连接意图：保持"未连接即抛错"，不把编程错误隐藏成"请求偶尔能用"
+        // 从未连接过：保持"未连接即抛错"，不会隐式建连
         var ex = await Assert.ThrowsAsync<ModbusConnectionException>(
             () => client.ReadHoldingRegistersAsync(1, 0, 2, cancelToken: ct));
         Assert.Equal("客户端未连接", ex.Message);
+        Assert.True(ex.IsLinkBroken);
         Assert.False(client.IsConnected);
         Assert.Equal(0, server.ConnectionsAccepted);
         Assert.Equal(0, server.RequestsSeen);
     }
 
     [Fact]
-    public async Task FirstConnectFailed_RecoversAfterServerComesUp() {
+    public async Task FirstConnectFailed_HostReconnectSucceedsAfterServerComesUp() {
         var ct = TestContext.Current.CancellationToken;
         var port = GetFreePort();
         using var client = CreateClient(port, retries: 2);
 
-        // 设备尚未上电：首连失败，但"连接意图"已表达
+        // 设备尚未上电：首连失败，链路标记为 Down
         AssertConnectionFailure(await Assert.ThrowsAnyAsync<Exception>(() => client.ConnectAsync(ct)));
+        Assert.Equal(LinkState.Down, client.LinkState);
 
-        // 设备上电后无需调用方干预，请求路径应自行建连
+        // 设备上电后库不会自行建连：请求只会报"未连接"
         var server = StartServer(port);
+        await Assert.ThrowsAsync<ModbusConnectionException>(
+            () => client.ReadHoldingRegistersAsync(1, 0, 2, cancelToken: ct));
+        Assert.Equal(0, server.ConnectionsAccepted);
+
+        // 由连接看护者（宿主）重连，之后请求恢复
+        Assert.True(await client.ConnectAsync(ct));
         var values = await client.ReadHoldingRegistersAsync(1, 0, 2, cancelToken: ct);
 
         Assert.Equal(0x1011, (int)values[0]);
@@ -150,8 +165,9 @@ public class ModbusTcpClientReconnectTests : IDisposable {
         var values = await client.ReadHoldingRegistersAsync(1, 0, 2, cancelToken: ct);
 
         Assert.Equal(0x1011, (int)values[0]);
-        Assert.Equal(2, server.ConnectionsAccepted);   // 首连 + 超时后重连
-        Assert.Equal(2, server.RequestsSeen);          // 第 1 个被吞 → 超时断开重连 → 第 2 个成功
+        Assert.Equal(1, server.ConnectionsAccepted);   // 超时不断连接：全程一条连接
+        Assert.Equal(2, server.RequestsSeen);          // 第 1 个被吞 → 同链路重发 → 第 2 个成功
+        Assert.True(client.IsConnected);
     }
 
     [Fact]

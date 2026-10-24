@@ -1,5 +1,6 @@
 using ModbusLib.Exceptions;
 using ModbusLib.Interfaces;
+using ModbusLib.Models;
 
 namespace ModbusLib.Tests.Mocks;
 
@@ -22,25 +23,42 @@ public sealed class StaleLinkTransport : IModbusTransport {
     /// <summary>累计 <c>SendReceiveAsync</c> 调用次数。</summary>
     public int SendCalls { get; private set; }
 
+    /// <summary>模拟"链路明确断开"：用于验证客户端不再重发、且不做隐式重连。</summary>
+    public void ForceLinkDown() => LinkState = LinkState.Down;
+
+    /// <summary>只让接下来 N 次发送失败（模拟偶发丢包），之后恢复。链路状态保持 Up。</summary>
+    public int FailNextSends { get; set; }
+
     public int Timeout { get; set; } = -1;
 
     /// <summary>与 <c>SerialTransport.IsConnected</c> 一致：只看底层是否打开，不反映链路是否已失效。</summary>
     public bool IsConnected => _open;
 
+    /// <summary>与 SerialTransport 一致：通信失败不改变链路状态。</summary>
+    public LinkState LinkState { get; private set; } = LinkState.Unknown;
+
+    public event EventHandler<LinkStateChangedEventArgs>? LinkStateChanged { add { } remove { } }
+
     public Task<bool> ConnectAsync(CancellationToken cancelToken = default) {
         _open = true;
         LinkIsStale = false;          // 重建连接 = 链路恢复
+        LinkState = LinkState.Up;
         ConnectCalls++;
         return Task.FromResult(true);
     }
 
     public Task DisconnectAsync(CancellationToken cancelToken = default) {
         _open = false;
+        LinkState = LinkState.Down;
         return Task.CompletedTask;
     }
 
     public Task<byte[]> SendReceiveAsync(byte[] request, CancellationToken cancelToken = default) {
         SendCalls++;
+        if (FailNextSends > 0) {
+            FailNextSends--;
+            throw new ModbusTimeoutException("stub：本次偶发丢包（链路仍健康）");
+        }
         if (LinkIsStale) {
             // 关键：失败但不自断连接
             throw new ModbusTimeoutException("stub：链路已失效（超时），但 IsConnected 仍为 true");

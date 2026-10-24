@@ -20,19 +20,36 @@ namespace ModbusLib.Tests.Clients;
 public class ModbusClientBaseRecoveryTests {
 
     [Fact]
-    public async Task TransportStaysConnectedAfterFailure_RetryPathRebuildsLink() {
+    public async Task ProtocolLevelTimeout_LinkStillUp_RetriesOnSameLink() {
         var ct = TestContext.Current.CancellationToken;
         var transport = new StaleLinkTransport();
         using var client = new StubClient(transport) { Retries = 1 };
 
         Assert.True(await client.ConnectAsync(ct));
-        transport.LinkIsStale = true;                       // 链路已断，但 IsConnected 仍为 true
+        transport.FailNextSends = 1;                        // 只是这一次没回话，链路仍报 Up
 
         var values = await client.ReadHoldingRegistersAsync(1, 0, 2, cancelToken: ct);
 
         Assert.Equal(0x1011, (int)values[0]);
         Assert.Equal(2, transport.SendCalls);               // 第 1 次失败 + 重试 1 次
-        Assert.Equal(2, transport.ConnectCalls);            // 首连 + 重试前的强制重建
+        Assert.Equal(1, transport.ConnectCalls);            // 同链路重发，绝不重建连接
+    }
+
+    [Fact]
+    public async Task LinkDown_DoesNotResend_LeavesReconnectToHost() {
+        var ct = TestContext.Current.CancellationToken;
+        var transport = new StaleLinkTransport();
+        using var client = new StubClient(transport) { Retries = 1 };
+
+        Assert.True(await client.ConnectAsync(ct));
+        transport.LinkIsStale = true;
+        transport.ForceLinkDown();                          // 链路明确断开
+
+        await Assert.ThrowsAsync<ModbusTimeoutException>(
+            () => client.ReadHoldingRegistersAsync(1, 0, 2, cancelToken: ct));
+
+        Assert.Equal(1, transport.SendCalls);               // 不重发
+        Assert.Equal(1, transport.ConnectCalls);            // 库不隐式重连，交给连接看护者
     }
 
     [Fact]

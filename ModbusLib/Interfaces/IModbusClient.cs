@@ -26,6 +26,17 @@ public interface IModbusClient : IDisposable, IAsyncDisposable {
     /// </summary>
     bool IsConnected { get; }
 
+    /// <summary>
+    /// 链路健康状态（由传输层维护）。请求超时不会改变它，只有明确的断开证据才会。
+    /// </summary>
+    ModbusLib.Models.LinkState LinkState { get; }
+
+    /// <summary>
+    /// 链路状态变更通知（Down 时触发）。共享一条连接的调用方应订阅它来统一处理重连，
+    /// 而不是各自轮询 <see cref="IsConnected"/> 后各退避各重连。
+    /// </summary>
+    event EventHandler<ModbusLib.Models.LinkStateChangedEventArgs>? LinkStateChanged;
+
     #endregion
 
     #region 读取功能

@@ -19,6 +19,9 @@ public sealed class SerialTransport : IModbusTransport {
     private bool _disposed;
     private SerialPort? _serialPort;
     private readonly SemaphoreSlim _lock = new(1, 1);
+    private readonly object _eventLock = new();
+    private LinkStateChangedEventArgs? _pendingEvent;
+    private LinkState _linkState = LinkState.Unknown;
 
     /// <summary>
     /// 使用 RTU 协议帧创建传输
@@ -35,6 +38,12 @@ public sealed class SerialTransport : IModbusTransport {
 
     public int Timeout { get; set; } = -1;
     public bool IsConnected => _serialPort?.IsOpen == true;
+
+    /// <inheritdoc />
+    public LinkState LinkState => _linkState;
+
+    /// <inheritdoc />
+    public event EventHandler<LinkStateChangedEventArgs>? LinkStateChanged;
 
     public async Task<bool> ConnectAsync(CancellationToken cancelToken = default) {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -67,6 +76,7 @@ public sealed class SerialTransport : IModbusTransport {
 
             _serialPort.DiscardInBuffer();
             _serialPort.DiscardOutBuffer();
+            SetLinkState(LinkState.Up, "串口已打开");
 
             return true;
         } catch (OperationCanceledException) when (cancelToken.IsCancellationRequested) {
@@ -80,6 +90,7 @@ public sealed class SerialTransport : IModbusTransport {
             throw new ModbusConnectionException($"串口 {_config.PortName} 连接失败: {ex.Message}", ex);
         } finally {
             _lock.Release();
+            FlushLinkEvents();
         }
     }
 
@@ -96,9 +107,11 @@ public sealed class SerialTransport : IModbusTransport {
         try {
             if (_serialPort?.IsOpen == true) {
                 _serialPort.Close();
+                SetLinkState(LinkState.Down, "串口已关闭");
             }
         } finally {
             _lock.Release();
+            FlushLinkEvents();
         }
     }
 
@@ -123,6 +136,10 @@ public sealed class SerialTransport : IModbusTransport {
             var serialPort = _serialPort;
             serialPort.DiscardInBuffer();
 
+            var expectation = _protocol == ProtocolType.Rtu
+                ? ModbusFrameParser.TryGetRtuResponseExpectation(request)
+                : null;
+
             // 发送阶段（受 WriteTimeout 限制），使用 BaseStream 异步 I/O 以支持取消
             using (var writeCts = CancellationTokenSource.CreateLinkedTokenSource(opCts.Token)) {
                 if (_config.WriteTimeout >= 0) writeCts.CancelAfter(_config.WriteTimeout);
@@ -132,7 +149,7 @@ public sealed class SerialTransport : IModbusTransport {
             // 接收阶段（受 ReadTimeout 限制）
             using (var readCts = CancellationTokenSource.CreateLinkedTokenSource(opCts.Token)) {
                 if (_config.ReadTimeout >= 0) readCts.CancelAfter(_config.ReadTimeout);
-                return await ReceiveResponseAsync(readCts.Token).ConfigureAwait(false);
+                return await ReceiveResponseAsync(expectation, readCts.Token).ConfigureAwait(false);
             }
         } catch (OperationCanceledException) when (cancelToken.IsCancellationRequested) {
             throw; // 保留用户取消语义
@@ -141,9 +158,10 @@ public sealed class SerialTransport : IModbusTransport {
         } catch (ModbusConnectionException) {
             throw;
         } catch (Exception ex) {
-            throw new ModbusCommunicationException($"串口 {_config.PortName} 通信异常: {ex.Message}", ex);
+            throw new ModbusCommunicationException($"串口 {_config.PortName} 通信异常: {ex.Message}", ex) { IsLinkBroken = true };
         } finally {
             _lock.Release();
+            FlushLinkEvents();
         }
     }
 
@@ -151,7 +169,7 @@ public sealed class SerialTransport : IModbusTransport {
     /// 接收一帧完整响应：优先按协议精确计算帧长度（MBAP 长度字段或 RTU 字节计数字段），
     /// 以字符间隔静默时间作为兜底，避免响应被过早截断。
     /// </summary>
-    private async Task<byte[]> ReceiveResponseAsync(CancellationToken cancelToken) {
+    private async Task<byte[]> ReceiveResponseAsync(RtuResponseExpectation? expectation, CancellationToken cancelToken) {
         const int bufferSize = 256;
         var buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
         var response = new List<byte>(32);
@@ -173,6 +191,12 @@ public sealed class SerialTransport : IModbusTransport {
                     // 帧已按协议确定完整长度，直接结束
                     if (ModbusFrameParser.TryGetResponseFrameLength(CollectionsMarshal.AsSpan(response), _protocol) is int expected
                         && response.Count >= expected) {
+                        // 帧完整但不是本次请求的响应（上一轮迟到 / 总线上别的从站在答话）：丢弃重新攒
+                        if (expectation is { } frameExpect && !frameExpect.Matches(CollectionsMarshal.AsSpan(response))) {
+                            response.Clear();
+                            await Task.Delay(1, cancelToken).ConfigureAwait(false);
+                            continue;
+                        }
                         break;
                     }
 
@@ -214,9 +238,26 @@ public sealed class SerialTransport : IModbusTransport {
             _serialPort?.Dispose();
         } catch (Exception ex) when (ex is IOException || ex is ObjectDisposedException) { }
         _serialPort = null;
+        SetLinkState(LinkState.Down, "串口已释放");
         _lock.Dispose();
+        FlushLinkEvents();
 
         _disposed = true;
+    }
+
+    private void SetLinkState(LinkState state, string reason) {
+        if (_linkState == state) return;
+        _linkState = state;
+        lock (_eventLock) { _pendingEvent = new LinkStateChangedEventArgs(state, reason); }
+    }
+
+    private void FlushLinkEvents() {
+        LinkStateChangedEventArgs? args;
+        lock (_eventLock) { args = _pendingEvent; _pendingEvent = null; }
+        if (args is null) return;
+#pragma warning disable CA1031 // 有意吞掉：订阅者异常不得影响通信主路径
+        try { LinkStateChanged?.Invoke(this, args); } catch { }
+#pragma warning restore CA1031
     }
 
     public ValueTask DisposeAsync() {

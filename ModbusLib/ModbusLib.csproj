@@ -11,7 +11,7 @@
   <!-- NuGet Package Metadata -->
   <PropertyGroup>
     <PackageId>Himmelt.ModbusLib</PackageId>
-    <Version>1.0.6</Version>
+    <Version>1.0.7</Version>
     <Authors>Himmelt</Authors>
     <Company>Himmelt</Company>
     <Description>一个功能完整、高性能的Modbus客户端库，支持.NET 8/9/10平台和多种Modbus协议变体。</Description>
